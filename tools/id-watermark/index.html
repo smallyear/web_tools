@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>身份证水印生成器 - Web Tools</title>
+  <meta name="description" content="上传身份证照片，一键添加防伪水印文字，保障个人信息安全">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .watermark-layout {
+      display: grid;
+      gap: 24px;
+    }
+    
+    @media (min-width: 768px) {
+      .watermark-layout {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+    
+    .config-section {
+      margin-bottom: 20px;
+    }
+    
+    .config-section h3 {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    
+    .template-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .template-item {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .template-item:hover {
+      border-color: var(--primary);
+      background: #F0F7FF;
+    }
+    
+    .template-item.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+    
+    .range-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .range-group input {
+      flex: 1;
+    }
+    
+    .range-value {
+      font-size: 14px;
+      color: var(--text-secondary);
+      min-width: 40px;
+      text-align: right;
+    }
+    
+    .color-picker-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    #colorPicker {
+      width: 40px;
+      height: 30px;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .color-hex {
+      font-family: monospace;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .preview-wrapper {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #watermarkCanvas {
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .preview-placeholder {
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .preview-placeholder-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 工具头部 -->
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / 身份证水印生成器
+      </div>
+      <h1>🆔 身份证水印生成器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">上传身份证照片，添加防伪水印文字，保障个人信息安全</p>
+    </div>
+
+    <!-- 上传区域 -->
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📤</div>
+      <div class="upload-text">点击或拖拽上传图片</div>
+      <div class="upload-hint">支持 JPG、PNG 格式，最大10MB</div>
+      <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    </div>
+
+    <!-- 水印工具布局 -->
+    <div class="watermark-layout" id="watermarkSection" style="display: none;">
+      <!-- 左侧预览 -->
+      <div class="card preview-wrapper" id="previewWrapper">
+        <div class="preview-placeholder" id="placeholder">
+          <div class="preview-placeholder-icon">📷</div>
+          <div>上传图片后此处显示预览</div>
+        </div>
+        <canvas id="watermarkCanvas" style="display: none;"></canvas>
+      </div>
+
+      <!-- 右侧配置 -->
+      <div class="card">
+        <div class="card-title">水印配置</div>
+
+        <!-- 预设模板 -->
+        <div class="config-section">
+          <h3>选择模板</h3>
+          <div class="template-list" id="templateList">
+            <div class="template-item selected" data-index="0">仅供办理银行卡使用</div>
+            <div class="template-item" data-index="1">仅供办理签证使用</div>
+            <div class="template-item" data-index="2">仅供租房使用</div>
+            <div class="template-item" data-index="3">仅供入职使用</div>
+            <div class="template-item" data-index="4">仅供办理证件使用</div>
+            <div class="template-item" data-index="5">仅供本人使用，他用无效</div>
+          </div>
+        </div>
+
+        <!-- 自定义文字 -->
+        <div class="config-section">
+          <h3>自定义文字</h3>
+          <div class="form-group">
+            <input type="text" class="form-input" id="customText" placeholder="输入自定义文字（最多50字）" maxlength="50">
+          </div>
+        </div>
+
+        <!-- 日期 -->
+        <div class="config-section">
+          <h3>添加日期</h3>
+          <div class="form-group">
+            <input type="date" class="form-input" id="dateInput" value="">
+          </div>
+        </div>
+
+        <!-- 透明度 -->
+        <div class="config-section">
+          <h3>透明度</h3>
+          <div class="range-group">
+            <input type="range" class="form-input" id="opacityRange" min="0" max="255" value="128">
+            <span class="range-value" id="opacityValue">128</span>
+          </div>
+        </div>
+
+        <!-- 字体大小 -->
+        <div class="config-section">
+          <h3>字体大小</h3>
+          <div class="range-group">
+            <input type="range" class="form-input" id="fontSizeRange" min="10" max="80" value="30">
+            <span class="range-value" id="fontSizeValue">30px</span>
+          </div>
+        </div>
+
+        <!-- 旋转角度 -->
+        <div class="config-section">
+          <h3>旋转角度</h3>
+          <div class="range-group">
+            <input type="range" class="form-input" id="rotationRange" min="-180" max="180" value="0">
+            <span class="range-value" id="rotationValue">0°</span>
+          </div>
+        </div>
+
+        <!-- 颜色选择 -->
+        <div class="config-section">
+          <h3>水印颜色</h3>
+          <div class="color-picker-group">
+            <input type="color" id="colorPicker" value="#FF0000">
+            <span class="color-hex" id="colorHex">#FF0000</span>
+          </div>
+        </div>
+
+        <!-- 按钮组 -->
+        <div class="btn-group" style="margin-top: 24px;">
+          <button class="btn btn-secondary" id="resetBtn">🔄 重置</button>
+          <button class="btn btn-primary" id="downloadBtn">📥 下载</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script src="watermark.js"></script>
+</body>
+</html>

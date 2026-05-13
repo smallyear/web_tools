@@ -1,0 +1,515 @@
+/* 全局变量 */
+:root {
+  --primary: #1E88E5;
+  --primary-dark: #1565C0;
+  --primary-light: #64B5F6;
+  --bg: #F5F7FA;
+  --card-bg: #FFFFFF;
+  --text: #333333;
+  --text-secondary: #666666;
+  --border: #E0E0E0;
+  --success: #4CAF50;
+  --warning: #FF9800;
+  --error: #F44336;
+}
+
+/* 重置样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 导航栏 */
+.navbar {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: white;
+  padding: 16px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-brand {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar-brand:hover {
+  color: white;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 16px;
+}
+
+.navbar-link {
+  color: white;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.navbar-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 主容器 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* 首页标题 */
+.hero {
+  text-align: center;
+  padding: 60px 24px 40px;
+}
+
+.hero h1 {
+  font-size: 36px;
+  margin-bottom: 16px;
+  color: var(--primary-dark);
+}
+
+.hero p {
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* 工具卡片网格 */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.tool-card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+}
+
+.tool-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tool-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.tool-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.tool-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.tool-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tool-emoji {
+  display: inline-block;
+}
+
+/* 页脚 */
+.footer {
+  margin-top: 60px;
+  padding: 32px 24px;
+  background: var(--text);
+  color: white;
+  text-align: center;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer p {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .navbar-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .tools-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+  }
+
+  .hero p {
+    font-size: 16px;
+  }
+
+  .container {
+    padding: 24px 16px;
+  }
+
+  .hero {
+    padding: 40px 16px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 24px;
+  }
+  
+  .tool-card {
+    padding: 20px;
+  }
+
+  .navbar {
+    padding: 12px;
+  }
+  
+  .navbar-brand {
+    font-size: 16px;
+  }
+
+  .navbar-link {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+/* 通用卡片样式 */
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--primary-dark);
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+
+/* 通用表单元素 */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-select:focus,
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.15);
+}
+
+.form-input[type="range"] {
+  padding: 0;
+}
+
+/* 按钮通用样式 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  height: 40px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 23px;
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-danger {
+  background: var(--error);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #D32F2F;
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  background: #388E3C;
+}
+
+.btn-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 上传区域 */
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  background: #FAFAFA;
+  margin-bottom: 24px;
+}
+
+.upload-area:hover {
+  border-color: var(--primary);
+  background: #F0F7FF;
+}
+
+.upload-area.dragover {
+  border-color: var(--primary);
+  background: #E3F2FD;
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* 加载动画 */
+.spinner {
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.loading-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* 预览区域 */
+.preview-container {
+  background: var(--bg);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.preview-container canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 工具详情布局 */
+.tool-layout {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .tool-layout {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.tool-layout-full {
+  grid-template-columns: 1fr;
+}
+
+/* 消息提示 */
+.message {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-success {
+  background: #E8F5E9;
+  color: #2E7D32;
+  border: 1px solid #A5D6A7;
+}
+
+.message-warning {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FFCC80;
+}
+
+.message-error {
+  background: #FFEBEE;
+  color: #C62828;
+  border: 1px solid #EF9A9A;
+}
+
+/* 工具详情头部 */
+.tool-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tool-header h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.tool-header .breadcrumb {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.tool-header .breadcrumb a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.tool-header .breadcrumb a:hover {
+  text-decoration: underline;
+}
+

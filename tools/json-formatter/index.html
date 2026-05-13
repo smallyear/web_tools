@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON格式化工具 - Web Tools</title>
+  <meta name="description" content="JSON在线格式化、压缩、语法校验、高亮显示">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .json-layout {
+      display: grid;
+      gap: 24px;
+    }
+    
+    @media (min-width: 768px) {
+      .json-layout {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .editor-title {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .editor-actions .btn {
+      padding: 6px 12px;
+      height: 32px;
+      font-size: 12px;
+    }
+    
+    .code-area {
+      width: 100%;
+      height: 400px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      resize: vertical;
+      tab-size: 2;
+    }
+    
+    .code-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.15);
+    }
+    
+    .output-area {
+      width: 100%;
+      height: 400px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: auto;
+      background: #FAFAFA;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .action-bar .spacer {
+      flex: 1;
+    }
+    
+    .indent-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .indent-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / JSON格式化工具
+      </div>
+      <h1>📝 JSON格式化工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">JSON格式化、压缩、语法校验，纯前端处理，数据不出浏览器</p>
+    </div>
+
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="btn btn-primary" id="formatBtn">✨ 格式化</button>
+      <button class="btn btn-secondary" id="compressBtn">📦 压缩</button>
+      <button class="btn btn-secondary" id="escapeBtn">🔒 转义</button>
+      <button class="btn btn-secondary" id="unescapeBtn">🔓 去转义</button>
+      <select class="indent-select" id="indentSelect">
+        <option value="2">2空格</option>
+        <option value="4">4空格</option>
+        <option value="tab">Tab</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" id="clearBtn">🗑️ 清空</button>
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="errorMessage" class="message message-error" style="display: none; margin-bottom: 16px;"></div>
+
+    <!-- 成功提示 -->
+    <div id="successMessage" class="message message-success" style="display: none; margin-bottom: 16px;"></div>
+
+    <!-- 编辑器布局 -->
+    <div class="json-layout">
+      <!-- 输入 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">输入</span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="uploadJsonBtn">📂 上传JSON文件</button>
+            <button class="btn btn-secondary" id="pasteBtn">📋 粘贴</button>
+            <input type="file" id="fileInput" accept=".json,application/json" style="display: none;">
+          </div>
+        </div>
+        <textarea class="code-area" id="jsonInput" placeholder="在此粘贴或输入 JSON 文本..."></textarea>
+      </div>
+
+      <!-- 输出 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">输出</span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="copyBtn">📋 复制</button>
+            <button class="btn btn-secondary" id="downloadJsonBtn">📥 下载</button>
+          </div>
+        </div>
+        <div class="output-area" id="jsonOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (async function() {
+      const jsonInput = document.getElementById('jsonInput');
+      const jsonOutput = document.getElementById('jsonOutput');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      const indentSelect = document.getElementById('indentSelect');
+      const fileInput = document.getElementById('fileInput');
+
+      function showMsg(el, type, text) {
+        el.textContent = `${type === 'error' ? '❌' : '✅'} ${text}`;
+        el.className = `message message-${type}`;
+        el.style.display = 'flex';
+        setTimeout(() => { el.style.display = 'none'; }, 3000);
+      }
+
+      function getIndent() {
+        const val = indentSelect.value;
+        return val === 'tab' ? '\t' : parseInt(val);
+      }
+
+      function parseJSON(input) {
+        try {
+          const obj = JSON.parse(input);
+          return { obj, error: null };
+        } catch (err) {
+          return { obj: null, error: err.message };
+        }
+      }
+
+      function formatJSON() {
+        const input = jsonInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入JSON文本');
+          return;
+        }
+        const { obj, error } = parseJSON(input);
+        if (error) {
+          showMsg(errorMessage, 'error', `JSON语法错误: ${error}`);
+          return;
+        }
+        const indent = getIndent();
+        jsonOutput.textContent = JSON.stringify(obj, null, indent);
+        showMsg(successMessage, 'success', 'JSON格式化成功');
+      }
+
+      function compressJSON() {
+        const input = jsonInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入JSON文本');
+          return;
+        }
+        const { obj, error } = parseJSON(input);
+        if (error) {
+          showMsg(errorMessage, 'error', `JSON语法错误: ${error}`);
+          return;
+        }
+        jsonOutput.textContent = JSON.stringify(obj);
+        showMsg(successMessage, 'success', 'JSON压缩成功');
+      }
+
+      function escapeJSON() {
+        const input = jsonInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入JSON文本');
+          return;
+        }
+        jsonOutput.textContent = JSON.stringify(input);
+        showMsg(successMessage, 'success', '转义成功');
+      }
+
+      function unescapeJSON() {
+        const input = jsonInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入JSON文本');
+          return;
+        }
+        try {
+          jsonOutput.textContent = JSON.parse(input);
+          showMsg(successMessage, 'success', '去转义成功');
+        } catch (err) {
+          showMsg(errorMessage, 'error', `去转义失败: ${err.message}`);
+        }
+      }
+
+      // 事件绑定
+      document.getElementById('formatBtn').addEventListener('click', formatJSON);
+      document.getElementById('compressBtn').addEventListener('click', compressJSON);
+      document.getElementById('escapeBtn').addEventListener('click', escapeJSON);
+      document.getElementById('unescapeBtn').addEventListener('click', unescapeJSON);
+      
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        jsonInput.value = '';
+        jsonOutput.textContent = '';
+        errorMessage.style.display = 'none';
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        const text = jsonOutput.textContent;
+        if (!text) {
+          showMsg(errorMessage, 'error', '输出为空，无法复制');
+          return;
+        }
+        copyToClipboard(text);
+        showMsg(successMessage, 'success', '已复制到剪贴板');
+      });
+
+      document.getElementById('downloadJsonBtn').addEventListener('click', () => {
+        const text = jsonOutput.textContent;
+        if (!text) {
+          showMsg(errorMessage, 'error', '输出为空，无法下载');
+          return;
+        }
+        const blob = new Blob([text], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `formatted-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showMsg(successMessage, 'success', 'JSON已下载');
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          jsonInput.value = text;
+          showMsg(successMessage, 'success', '已粘贴');
+        } catch (err) {
+          showMsg(errorMessage, 'error', '无法读取剪贴板内容');
+        }
+      });
+
+      document.getElementById('uploadJsonBtn').addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        handleFileUpload(file, '.json,application/json', 5 * 1024 * 1024, (validFile) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            jsonInput.value = ev.target.result;
+            showMsg(successMessage, 'success', '文件读取成功');
+          };
+          reader.readAsText(file);
+        });
+      });
+
+      // 快捷键支持
+      jsonInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          formatJSON();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
