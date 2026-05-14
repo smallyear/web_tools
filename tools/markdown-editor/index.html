@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown编辑器 - Web Tools</title>
+  <meta name="description" content="在线Markdown编辑器，实时预览，支持导出HTML和PDF">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .markdown-layout {
+      display: grid;
+      gap: 16px;
+      height: calc(100vh - 200px);
+      min-height: 500px;
+    }
+
+    @media (min-width: 768px) {
+      .markdown-layout {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .editor-container,
+    .preview-container {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .editor-header,
+    .preview-header {
+      padding: 10px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #markdownInput {
+      flex: 1;
+      width: 100%;
+      border: none;
+      padding: 16px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+    }
+
+    #preview {
+      flex: 1;
+      padding: 16px;
+      overflow: auto;
+      line-height: 1.8;
+    }
+
+    #preview h1, #preview h2, #preview h3 {
+      margin-top: 24px;
+      margin-bottom: 16px;
+      color: var(--primary-dark);
+    }
+
+    #preview h1 { font-size: 28px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    #preview h2 { font-size: 24px; }
+    #preview h3 { font-size: 20px; }
+
+    #preview p {
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    #preview code {
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--error);
+    }
+
+    #preview pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+
+    #preview pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    #preview blockquote {
+      border-left: 4px solid var(--primary);
+      padding-left: 16px;
+      margin: 16px 0;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    #preview ul, #preview ol {
+      margin-bottom: 16px;
+      padding-left: 24px;
+    }
+
+    #preview li {
+      margin-bottom: 4px;
+    }
+
+    #preview a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    #preview a:hover {
+      text-decoration: underline;
+    }
+
+    #preview img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 8px 0;
+    }
+
+    #preview table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+
+    #preview th, #preview td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    #preview th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+
+    .btn-group-inline {
+      display: flex;
+      gap: 8px;
+    }
+
+    .char-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / Markdown编辑器
+      </div>
+      <h1>📝 Markdown编辑器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">实时预览，支持导出HTML和PDF，纯前端处理</p>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <span class="toolbar-title">编辑区</span>
+      <div class="btn-group-inline">
+        <button class="btn btn-secondary" id="clearBtn" title="清空内容">🗑️ 清空</button>
+        <button class="btn btn-secondary" id="copyMdBtn" title="复制Markdown">📋 复制MD</button>
+        <button class="btn btn-primary" id="exportHtmlBtn" title="导出为HTML">📄 导出HTML</button>
+        <button class="btn btn-secondary" id="exportPdfBtn" title="打印为PDF">🖨️ 导出PDF</button>
+      </div>
+    </div>
+
+    <!-- 编辑器和预览 -->
+    <div class="markdown-layout">
+      <!-- 左侧编辑 -->
+      <div class="editor-container">
+        <div class="editor-header">
+          <span>Markdown 输入</span>
+          <span class="char-count" id="charCount">0 字符</span>
+        </div>
+        <textarea id="markdownInput" placeholder="在此输入 Markdown 内容...
+
+# 标题示例
+## 二级标题
+
+这是一段正文，支持 **粗体**、*斜体* 和 `代码`。
+
+- 列表项1
+- 列表项2
+- 列表项3
+
+> 引用块
+
+[链接文本](https://example.com)
+
+![图片 alt](https://example.com/image.jpg)
+
+```javascript
+console.log('代码块');
+```"></textarea>
+      </div>
+
+      <!-- 右侧预览 -->
+      <div class="preview-container">
+        <div class="preview-header">
+          <span>实时预览</span>
+          <span style="font-size: 11px; opacity: 0.7;">自动更新</span>
+        </div>
+        <div id="preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const markdownInput = document.getElementById('markdownInput');
+      const preview = document.getElementById('preview');
+      const charCount = document.getElementById('charCount');
+      const clearBtn = document.getElementById('clearBtn');
+      const copyMdBtn = document.getElementById('copyMdBtn');
+      const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+      const exportPdfBtn = document.getElementById('exportPdfBtn');
+
+      let debounceTimer = null;
+
+      // 配置 marked
+      if (typeof marked !== 'undefined') {
+        marked.setOptions({
+          breaks: true,
+          gfm: true,
+          highlight: function(code, lang) {
+            return '<pre><code>' + code + '</code></pre>';
+          }
+        });
+      }
+
+      // 更新预览
+      function updatePreview() {
+        const raw = markdownInput.value;
+        charCount.textContent = `${raw.length} 字符`;
+
+        if (!raw.trim()) {
+          preview.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">预览区域为空，开始输入 Markdown 吧！</p>';
+          return;
+        }
+
+        if (typeof marked !== 'undefined') {
+          preview.innerHTML = marked.parse(raw);
+        } else {
+          preview.innerHTML = '<p style="color: var(--error;">Markdown 解析库加载失败，请检查网络连接。</p>';
+        }
+      }
+
+      // 防抖更新
+      markdownInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(updatePreview, 150);
+      });
+
+      // 清空
+      clearBtn.addEventListener('click', () => {
+        if (markdownInput.value && !confirm('确定要清空内容吗？')) return;
+        markdownInput.value = '';
+        updatePreview();
+        showMessage('success', '已清空');
+      });
+
+      // 复制 Markdown
+      copyMdBtn.addEventListener('click', () => {
+        if (!markdownInput.value) {
+          showMessage('warning', '内容为空');
+          return;
+        }
+        copyToClipboard(markdownInput.value);
+        showMessage('success', 'Markdown已复制');
+      });
+
+      // 导出 HTML
+      exportHtmlBtn.addEventListener('click', () => {
+        if (!markdownInput.value) {
+          showMessage('warning', '内容为空');
+          return;
+        }
+
+        const htmlContent = marked.parse(markdownInput.value);
+        const fullHtml = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown 导出</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.8; color: #333; }
+    h1, h2, h3 { color: #1565C0; margin-top: 24px; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 8px; }
+    code { background: #f5f7fa; padding: 2px 6px; border-radius: 4px; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+    pre code { background: none; color: inherit; }
+    blockquote { border-left: 4px solid #1E88E5; padding-left: 16px; color: #666; font-style: italic; }
+    img { max-width: 100%; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; }
+    th { background: #f5f7fa; }
+  </style>
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `markdown-export-${Date.now()}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showMessage('success', 'HTML已导出');
+      });
+
+      // 导出 PDF（使用浏览器打印）
+      exportPdfBtn.addEventListener('click', () => {
+        if (!markdownInput.value) {
+          showMessage('warning', '内容为空');
+          return;
+        }
+
+        showMessage('success', '正在准备打印...请在弹出的窗口选择"另存为PDF"');
+
+        setTimeout(() => {
+          const printWindow = window.open('', '_blank');
+          const htmlContent = marked.parse(markdownInput.value);
+          printWindow.document.write(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Markdown 导出</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.8; color: #333; }
+    h1, h2, h3 { color: #1565C0; margin-top: 24px; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 8px; }
+    code { background: #f5f7fa; padding: 2px 6px; border-radius: 4px; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+    pre code { background: none; color: inherit; }
+    blockquote { border-left: 4px solid #1E88E5; padding-left: 16px; color: #666; font-style: italic; }
+    img { max-width: 100%; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; }
+    th { background: #f5f7fa; }
+    @media print { body { margin: 0; } }
+  </style>
+</head>
+<body>
+${htmlContent}
+</body>
+</html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 500);
+        }, 300);
+      });
+
+      // 初始化
+      updatePreview();
+      markdownInput.focus();
+
+      // 支持 Tab 缩进
+      markdownInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = this.selectionStart;
+          const end = this.selectionEnd;
+          this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+          this.setSelectionRange(start + 2, start + 2);
+          updatePreview();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
