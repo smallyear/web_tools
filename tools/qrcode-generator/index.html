@@ -7,53 +7,17 @@
   <meta name="description" content="在线二维码生成器，文本/链接生成二维码，支持自定义大小和颜色">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
-    .qr-layout {
-      display: grid;
-      gap: 24px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    @media (min-width: 768px) {
-      .qr-layout {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    
-    .qr-preview {
-      background: var(--bg);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 300px;
-      padding: 24px;
-    }
-    
-    .qr-placeholder {
-      text-align: center;
-      color: var(--text-secondary);
-    }
-    
-    .qr-placeholder-icon {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
-    
-    #qrContainer {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    #qrContainer img {
-      display: block;
-    }
+    .qr-layout { display: grid; gap: 24px; max-width: 800px; margin: 0 auto; }
+    @media (min-width: 768px) { .qr-layout { grid-template-columns: 1fr 1fr; } }
+    .qr-preview { background: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 300px; padding: 24px; }
+    .qr-placeholder { text-align: center; color: var(--text-secondary); }
+    .qr-placeholder-icon { font-size: 64px; margin-bottom: 16px; }
+    #qrContainer { background: transparent; }
+    #qrContainer canvas, #qrContainer img { border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    #qrContainer > p { display: none; }
   </style>
 </head>
 <body>
-  <!-- 导航栏 -->
   <nav class="navbar">
     <div class="navbar-container">
       <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
@@ -65,55 +29,42 @@
 
   <div class="container">
     <div class="tool-header">
-      <div class="breadcrumb">
-        <a href="../../index.html">首页</a> / 二维码生成器
-      </div>
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 二维码生成器</div>
       <h1>📱 二维码生成器</h1>
       <p style="color: var(--text-secondary); margin-top: 8px;">输入文本或链接，一键生成二维码，支持自定义大小和颜色</p>
     </div>
 
     <div class="qr-layout">
-      <!-- 左侧配置 -->
       <div class="card">
         <div class="card-title">生成配置</div>
-        
-        <!-- 内容输入 -->
         <div class="form-group">
           <label class="form-label">文本/链接</label>
-          <textarea class="form-input" id="qrText" rows="6" placeholder="输入要生成二维码的文本或链接..."></textarea>
+          <textarea class="form-input" id="qrText" rows="4" placeholder="输入要生成二维码的文本或链接..."></textarea>
         </div>
-        
-        <!-- 尺寸选择 -->
         <div class="form-group">
           <label class="form-label">二维码尺寸</label>
           <select class="form-select" id="qrSize">
             <option value="128">128 x 128 px（小）</option>
             <option value="256" selected>256 x 256 px（中）</option>
             <option value="512">512 x 512 px（大）</option>
-            <option value="1024">1024 x 1024 px（超大）</option>
           </select>
         </div>
-        
-        <!-- 容错级别 -->
         <div class="form-group">
           <label class="form-label">容错级别</label>
-          <select class="form-select" id="qrErrorCorrect">
+          <select class="form-select" id="qrCorrectLevel">
             <option value="L">L - 低 (7%)</option>
             <option value="M" selected>M - 中 (15%)</option>
             <option value="Q">Q - 较高 (25%)</option>
             <option value="H">H - 高 (30%)</option>
           </select>
         </div>
-
-        <!-- 颜色配置 -->
         <div class="form-group">
-          <label class="form-label">前景色（二维码颜色）</label>
+          <label class="form-label">前景色</label>
           <div class="color-picker-group">
             <input type="color" id="fgColor" value="#000000">
             <span class="color-hex" id="fgHex">#000000</span>
           </div>
         </div>
-        
         <div class="form-group">
           <label class="form-label">背景色</label>
           <div class="color-picker-group">
@@ -121,15 +72,12 @@
             <span class="color-hex" id="bgHex">#FFFFFF</span>
           </div>
         </div>
-        
-        <!-- 按钮 -->
         <div class="btn-group" style="margin-top: 24px;">
           <button class="btn btn-primary" id="generateBtn">✨ 生成二维码</button>
           <button class="btn btn-secondary" id="downloadBtn">📥 下载PNG</button>
         </div>
       </div>
       
-      <!-- 右侧预览 -->
       <div class="card">
         <div class="card-title">预览</div>
         <div class="qr-preview">
@@ -137,97 +85,101 @@
             <div class="qr-placeholder-icon">📱</div>
             <div>输入文本后生成二维码</div>
           </div>
-          <div id="qrContainer" style="display: none;">
-            <canvas id="qrCanvas"></canvas>
-          </div>
+          <div id="qrContainer" style="display: none;"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 页脚 -->
   <footer class="footer">
     <div class="footer-container">
       <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
     </div>
   </footer>
 
-  <!-- qrcode.js 从 CDN 加载 -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="../../assets/js/qrcode.min.js"></script>
   <script src="../../assets/js/common.js"></script>
   <script>
-    (async function() {
-      const qrText = document.getElementById('qrText');
-      const qrSize = document.getElementById('qrSize');
-      const qrErrorCorrect = document.getElementById('qrErrorCorrect');
-      const fgColor = document.getElementById('fgColor');
-      const bgColor = document.getElementById('bgColor');
-      const fgHex = document.getElementById('fgHex');
-      const bgHex = document.getElementById('bgHex');
-      const placeholder = document.getElementById('placeholder');
-      const qrContainer = document.getElementById('qrContainer');
-      const qrCanvas = document.getElementById('qrCanvas');
-      const generateBtn = document.getElementById('generateBtn');
-      const downloadBtn = document.getElementById('downloadBtn');
+    (function() {
+      var qrText = document.getElementById('qrText');
+      var qrSize = document.getElementById('qrSize');
+      var qrCorrectLevel = document.getElementById('qrCorrectLevel');
+      var fgColor = document.getElementById('fgColor');
+      var bgColor = document.getElementById('bgColor');
+      var fgHex = document.getElementById('fgHex');
+      var bgHex = document.getElementById('bgHex');
+      var placeholder = document.getElementById('placeholder');
+      var qrContainer = document.getElementById('qrContainer');
+      var generateBtn = document.getElementById('generateBtn');
+      var downloadBtn = document.getElementById('downloadBtn');
+      
+      var qrInstance = null;
+      
+      var correctMap = {};
+      try {
+        correctMap = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
+      } catch(e) {
+        correctMap = { L: 1, M: 0, Q: 3, H: 2 };
+      }
 
       function generate() {
-        const text = qrText.value;
-        if (!text) {
-          showMessage('warning', '请输入要生成二维码的文本');
-          return;
+        var text = qrText.value.trim();
+        if (!text) { showMessage('warning', '请输入要生成二维码的文本'); return; }
+        
+        qrContainer.innerHTML = '';
+        
+        try {
+          qrInstance = new QRCode(qrContainer, {
+            text: text,
+            width: parseInt(qrSize.value),
+            height: parseInt(qrSize.value),
+            colorDark: fgColor.value,
+            colorLight: bgColor.value,
+            correctLevel: correctMap[qrCorrectLevel.value]
+          });
+          
+          setTimeout(function() {
+            var canvas = qrContainer.querySelector('canvas');
+            var img = qrContainer.querySelector('img');
+            if (canvas || img) {
+              placeholder.style.display = 'none';
+              qrContainer.style.display = 'flex';
+              
+              // If QR uses img instead of canvas, convert for download
+              if (img && !canvas) {
+                img.crossOrigin = 'anonymous';
+                canvas = document.createElement('canvas');
+                canvas.width = parseInt(qrSize.value);
+                canvas.height = parseInt(qrSize.value);
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                canvas.id = 'qrCanvas';
+                canvas.style.display = 'block';
+                qrContainer.replaceChild(canvas, img);
+              }
+              
+              showMessage('success', '二维码生成成功');
+            }
+          }, 200);
+        } catch(e) {
+          showMessage('error', '生成失败: ' + e.message);
         }
-        
-        const size = parseInt(qrSize.value);
-        const errorCorrectLevel = qrErrorCorrect.value;
-        const fg = fgColor.value;
-        const bg = bgColor.value;
-        
-        QRCode.toCanvas(qrCanvas, text, {
-          width: size,
-          margin: 4,
-          color: {
-            dark: fg,
-            light: bg
-          },
-          errorCorrectionLevel: errorCorrectLevel
-        }, (error) => {
-          if (error) {
-            showMessage('error', '生成失败: ' + error.message);
-          } else {
-            placeholder.style.display = 'none';
-            qrContainer.style.display = 'block';
-            showMessage('success', '二维码生成成功');
-          }
-        });
       }
 
       generateBtn.addEventListener('click', generate);
-      
-      // Enter键生成（如果按Ctrl+Enter）
-      qrText.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          e.preventDefault();
-          generate();
-        }
+      qrText.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
       });
-      
-      fgColor.addEventListener('input', (e) => {
-        fgHex.textContent = e.target.value;
-      });
+      fgColor.addEventListener('input', function(e) { fgHex.textContent = e.target.value; });
+      bgColor.addEventListener('input', function(e) { bgHex.textContent = e.target.value; });
 
-      bgColor.addEventListener('input', (e) => {
-        bgHex.textContent = e.target.value;
-      });
-
-      downloadBtn.addEventListener('click', () => {
-        if (qrContainer.style.display === 'none') {
-          showMessage('warning', '请先生成二维码');
-          return;
-        }
-        
-        const link = document.createElement('a');
-        link.download = `qrcode-${Date.now()}.png`;
-        link.href = qrCanvas.toDataURL('image/png');
+      downloadBtn.addEventListener('click', function() {
+        if (qrContainer.style.display === 'none') { showMessage('warning', '请先生成二维码'); return; }
+        var canvas = qrContainer.querySelector('canvas');
+        if (!canvas) { showMessage('error', 'Canvas未找到'); return; }
+        var link = document.createElement('a');
+        link.download = 'qrcode-' + Date.now() + '.png';
+        link.href = canvas.toDataURL('image/png');
         link.click();
         showMessage('success', '二维码已下载');
       });
