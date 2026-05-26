@@ -438,18 +438,46 @@
       const imageData = mainCtx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
       const data = imageData.data;
 
-      // 获取背景颜色（从四个角落采样）
-      const sampleColors = [
-        getPixel(data, 0, 0, mainCanvas.width),
-        getPixel(data, mainCanvas.width - 1, 0, mainCanvas.width),
-        getPixel(data, 0, mainCanvas.height - 1, mainCanvas.width),
-        getPixel(data, mainCanvas.width - 1, mainCanvas.height - 1, mainCanvas.width)
-      ];
+      // 从图片边缘多点采样，统计最频繁的颜色作为背景色
+      const edgeSamples = [];
+      const sampleStep = Math.max(1, Math.floor(Math.min(mainCanvas.width, mainCanvas.height) / 20));
 
-      // 计算平均背景色
-      const bgR = Math.round(sampleColors.reduce((sum, c) => sum + c.r, 0) / 4);
-      const bgG = Math.round(sampleColors.reduce((sum, c) => sum + c.g, 0) / 4);
-      const bgB = Math.round(sampleColors.reduce((sum, c) => sum + c.b, 0) / 4);
+      // 采样上边
+      for (let x = 0; x < mainCanvas.width; x += sampleStep) {
+        edgeSamples.push(getPixel(data, x, 0, mainCanvas.width));
+      }
+      // 采样下边
+      for (let x = 0; x < mainCanvas.width; x += sampleStep) {
+        edgeSamples.push(getPixel(data, x, mainCanvas.height - 1, mainCanvas.width));
+      }
+      // 采样左边
+      for (let y = sampleStep; y < mainCanvas.height - sampleStep; y += sampleStep) {
+        edgeSamples.push(getPixel(data, 0, y, mainCanvas.width));
+      }
+      // 采样右边
+      for (let y = sampleStep; y < mainCanvas.height - sampleStep; y += sampleStep) {
+        edgeSamples.push(getPixel(data, mainCanvas.width - 1, y, mainCanvas.width));
+      }
+
+      // 统计颜色频率
+      const colorMap = new Map();
+      edgeSamples.forEach(color => {
+        // 简化颜色值以提高匹配率（将RGB值除以8再乘回来）
+        const key = `${Math.round(color.r/8)*8},${Math.round(color.g/8)*8},${Math.round(color.b/8)*8}`;
+        colorMap.set(key, (colorMap.get(key) || 0) + 1);
+      });
+
+      // 找到最频繁的颜色作为背景色
+      let maxCount = 0;
+      let bgKey = '';
+      for (const [key, count] of colorMap) {
+        if (count > maxCount) {
+          maxCount = count;
+          bgKey = key;
+        }
+      }
+
+      const [bgR, bgG, bgB] = bgKey.split(',').map(Number);
 
       // 解析目标颜色
       const targetColor = hexToRgb(selectedColor);
