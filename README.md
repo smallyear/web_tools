@@ -1,7 +1,7 @@
 # Web Tools - 在线工具聚合站
 
 **💻 纯前端在线工具集合，数据不出浏览器，保护隐私**
-**🌐 国内访问：[web-tools.cn](https://web-tools.cn)**
+**🌐 访问地址：[https://smallyear.github.io/web_tools/](https://smallyear.github.io/web_tools/)**
 
 ---
 
@@ -71,6 +71,10 @@ cd /Users/grape/workspace/web_tools
 python3 -m http.server 8080
 # 访问 http://localhost:8080
 ```
+
+## 在线访问
+
+GitHub Pages 自动部署：https://smallyear.github.io/web_tools/
 
 ---
 
