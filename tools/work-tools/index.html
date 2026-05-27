@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工作工具箱 - Web Tools</title>
+  <meta name="description" content="银行日常工作工具集合：FID对比、数据处理等">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .work-layout {
+      display: grid;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* 工具模块通用样式 */
+    .work-module {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, #f8f9ff, #f0f4ff);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .module-header:hover {
+      background: linear-gradient(135deg, #f0f2ff, #e8eeff);
+    }
+
+    .module-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .module-title .icon {
+      font-size: 22px;
+    }
+
+    .module-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+    }
+
+    .module-toggle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      transition: transform 0.3s;
+    }
+
+    .module-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .module-body {
+      padding: 24px;
+      transition: max-height 0.3s ease;
+    }
+
+    .module-body.collapsed {
+      display: none;
+    }
+
+    /* FID 对比工具 */
+    .fid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .fid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .fid-input-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .fid-input-group textarea {
+      width: 100%;
+      height: 200px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      transition: border-color 0.2s;
+      background: #fafafa;
+    }
+
+    .fid-input-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+      background: white;
+    }
+
+    .fid-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-compare {
+      padding: 10px 28px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-compare:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+    }
+
+    .btn-secondary {
+      padding: 10px 20px;
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* 对比结果 */
+    .fid-result {
+      margin-top: 20px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .summary-card .num {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .summary-card .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .summary-card.card-a { background: #FFF3E0; border-color: #FFE0B2; }
+    .summary-card.card-a .num { color: #E65100; }
+    .summary-card.card-b { background: #E8F5E9; border-color: #C8E6C9; }
+    .summary-card.card-b .num { color: #2E7D32; }
+    .summary-card.card-both { background: #E3F2FD; border-color: #BBDEFB; }
+    .summary-card.card-both .num { color: #1565C0; }
+    .summary-card.card-total { background: #F3E5F5; border-color: #E1BEE7; }
+    .summary-card.card-total .num { color: #6A1B9A; }
+
+    .result-section {
+      margin-bottom: 16px;
+    }
+
+    .result-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .result-section-header.only-a {
+      background: #FFF3E0;
+      color: #E65100;
+      border: 1px solid #FFE0B2;
+      border-bottom: none;
+    }
+
+    .result-section-header.only-b {
+      background: #E8F5E9;
+      color: #2E7D32;
+      border: 1px solid #C8E6C9;
+      border-bottom: none;
+    }
+
+    .result-section-header.in-both {
+      background: #E3F2FD;
+      color: #1565C0;
+      border: 1px solid #BBDEFB;
+      border-bottom: none;
+    }
+
+    .result-section-body {
+      border: 1px solid var(--border);
+      border-radius: 0 0 8px 8px;
+      padding: 12px 16px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      background: white;
+    }
+
+    .result-section-body .fid-item {
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+    }
+
+    .fid-item.highlight-a { background: #FFF3E0; }
+    .fid-item.highlight-b { background: #E8F5E9; }
+    .fid-item.highlight-both { background: #E3F2FD; }
+
+    .copy-btn {
+      font-size: 12px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.6);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.9);
+    }
+
+    .empty-hint {
+      color: #999;
+      font-style: italic;
+      font-family: inherit;
+    }
+
+    /* 排序选项 */
+    .options-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .options-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .options-row input[type="checkbox"] {
+      accent-color: var(--primary);
+    }
+
+    /* 页面顶部 */
+    .page-header {
+      text-align: center;
+      padding: 32px 24px 0;
+    }
+
+    .page-header h1 {
+      font-size: 24px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* 占位模块 */
+    .coming-soon {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--text-secondary);
+    }
+
+    .coming-soon .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+        <a href="index.html" class="navbar-link active">工作工具箱</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 页面头部 -->
+  <div class="page-header">
+    <h1>💼 工作工具箱</h1>
+    <p>日常工作常用工具集合，数据不出浏览器</p>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="work-layout">
+
+    <!-- ==================== FID 对比工具 ==================== -->
+    <div class="work-module" id="mod-fid">
+      <div class="module-header" onclick="toggleModule('fid')">
+        <div class="module-title">
+          <span class="icon">🔍</span>
+          <span>FID 列表对比</span>
+          <span class="module-badge">常用</span>
+        </div>
+        <span class="module-toggle" id="toggle-fid">▼</span>
+      </div>
+      <div class="module-body" id="body-fid">
+        <div class="fid-layout">
+          <div class="fid-input-group">
+            <label>📋 列表 A</label>
+            <textarea id="fidA" placeholder="粘贴 FID 列表，每行一个&#10;例如：&#10;114217&#10;171227&#10;172291"></textarea>
+          </div>
+          <div class="fid-input-group">
+            <label>📋 列表 B</label>
+            <textarea id="fidB" placeholder="粘贴 FID 列表，每行一个&#10;例如：&#10;172298&#10;172328&#10;172347"></textarea>
+          </div>
+        </div>
+
+        <div class="fid-actions">
+          <button class="btn-compare" onclick="compareFids()">🔍 开始对比</button>
+          <button class="btn-secondary" onclick="swapFids()">⇄ 互换</button>
+          <button class="btn-secondary" onclick="clearFids()">✕ 清空</button>
+          <div class="options-row">
+            <label><input type="checkbox" id="fidSort" checked> 结果排序</label>
+            <label><input type="checkbox" id="fidTrim" checked> 自动去空格</label>
+          </div>
+        </div>
+
+        <!-- 对比结果 -->
+        <div class="fid-result" id="fidResult">
+          <!-- 统计卡片 -->
+          <div class="result-summary" id="fidSummary"></div>
+
+          <!-- 仅在A -->
+          <div class="result-section" id="sectionOnlyA">
+            <div class="result-section-header only-a" onclick="toggleSection('onlyA')">
+              <span>🟠 仅在 A 中（A - B）：<span id="countOnlyA">0</span> 条</span>
+              <button class="copy-btn" onclick="event.stopPropagation(); copyList('onlyA')">📋 复制</button>
+            </div>
+            <div class="result-section-body" id="listOnlyA"></div>
+          </div>
+
+          <!-- 仅在B -->
+          <div class="result-section" id="sectionOnlyB">
+            <div class="result-section-header only-b" onclick="toggleSection('onlyB')">
+              <span>🟢 仅在 B 中（B - A）：<span id="countOnlyB">0</span> 条</span>
+              <button class="copy-btn" onclick="event.stopPropagation(); copyList('onlyB')">📋 复制</button>
+            </div>
+            <div class="result-section-body" id="listOnlyB"></div>
+          </div>
+
+          <!-- 两者共有 -->
+          <div class="result-section" id="sectionBoth">
+            <div class="result-section-header in-both" onclick="toggleSection('both')">
+              <span>🔵 两者共有（A ∩ B）：<span id="countBoth">0</span> 条</span>
+              <button class="copy-btn" onclick="event.stopPropagation(); copyList('both')">📋 复制</button>
+            </div>
+            <div class="result-section-body" id="listBoth"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 后续工具占位 ==================== -->
+    <!-- 取消注释并复制此模板来添加新工具：
+    <div class="work-module" id="mod-xxx">
+      <div class="module-header" onclick="toggleModule('xxx')">
+        <div class="module-title">
+          <span class="icon">🔧</span>
+          <span>工具名称</span>
+        </div>
+        <span class="module-toggle" id="toggle-xxx">▼</span>
+      </div>
+      <div class="module-body" id="body-xxx">
+        ... 内容 ...
+      </div>
+    </div>
+    -->
+
+  </div>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script>
+    // ===== 模块折叠/展开 =====
+    function toggleModule(name) {
+      const body = document.getElementById('body-' + name);
+      const toggle = document.getElementById('toggle-' + name);
+      body.classList.toggle('collapsed');
+      toggle.classList.toggle('collapsed');
+    }
+
+    function toggleSection(name) {
+      // 预留：结果区块折叠
+    }
+
+    // ===== FID 对比核心逻辑 =====
+    function parseList(text, doTrim) {
+      return text
+        .split(/[\n\r]+/)
+        .map(s => doTrim ? s.trim() : s)
+        .filter(s => s.length > 0);
+    }
+
+    function compareFids() {
+      const doTrim = document.getElementById('fidTrim').checked;
+      const doSort = document.getElementById('fidSort').checked;
+
+      const listA = parseList(document.getElementById('fidA').value, doTrim);
+      const listB = parseList(document.getElementById('fidB').value, doTrim);
+
+      if (listA.length === 0 && listB.length === 0) {
+        alert('请至少输入一个列表的数据');
+        return;
+      }
+
+      const setA = new Set(listA);
+      const setB = new Set(listB);
+
+      const onlyA = [...setA].filter(x => !setB.has(x));
+      const onlyB = [...setB].filter(x => !setA.has(x));
+      const both = [...setA].filter(x => setB.has(x));
+
+      if (doSort) {
+        const sortNum = (a, b) => {
+          const na = parseFloat(a), nb = parseFloat(b);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        };
+        onlyA.sort(sortNum);
+        onlyB.sort(sortNum);
+        both.sort(sortNum);
+      }
+
+      // 保存数据到全局以便复制
+      window._fidResult = { onlyA, onlyB, both };
+
+      // 统计卡片
+      document.getElementById('fidSummary').innerHTML = `
+        <div class="summary-card card-a">
+          <div class="num">${setA.size}</div>
+          <div class="label">A 总数</div>
+        </div>
+        <div class="summary-card card-b">
+          <div class="num">${setB.size}</div>
+          <div class="label">B 总数</div>
+        </div>
+        <div class="summary-card card-both">
+          <div class="num">${both.length}</div>
+          <div class="label">共有</div>
+        </div>
+        <div class="summary-card card-total">
+          <div class="num">${onlyA.length + onlyB.length}</div>
+          <div class="label">差异合计</div>
+        </div>
+      `;
+
+      // 渲染列表
+      renderList('listOnlyA', onlyA, 'highlight-a');
+      renderList('listOnlyB', onlyB, 'highlight-b');
+      renderList('listBoth', both, 'highlight-both');
+
+      document.getElementById('countOnlyA').textContent = onlyA.length;
+      document.getElementById('countOnlyB').textContent = onlyB.length;
+      document.getElementById('countBoth').textContent = both.length;
+
+      // 显示结果
+      document.getElementById('fidResult').style.display = 'block';
+    }
+
+    function renderList(containerId, items, highlightClass) {
+      const el = document.getElementById(containerId);
+      if (items.length === 0) {
+        el.innerHTML = '<span class="empty-hint">（无）</span>';
+        return;
+      }
+      el.innerHTML = items
+        .map(item => `<span class="fid-item ${highlightClass}">${escapeHtml(item)}</span>`)
+        .join(' ');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function copyList(which) {
+      const data = window._fidResult;
+      if (!data) return;
+      const text = data[which].join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已复制 ' + data[which].length + ' 条');
+      }).catch(() => {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('已复制 ' + data[which].length + ' 条');
+      });
+    }
+
+    function swapFids() {
+      const a = document.getElementById('fidA');
+      const b = document.getElementById('fidB');
+      const tmp = a.value;
+      a.value = b.value;
+      b.value = tmp;
+    }
+
+    function clearFids() {
+      document.getElementById('fidA').value = '';
+      document.getElementById('fidB').value = '';
+      document.getElementById('fidResult').style.display = 'none';
+    }
+
+    // ===== Toast 提示 =====
+    function showToast(msg) {
+      let toast = document.getElementById('globalToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'globalToast';
+        toast.style.cssText = `
+          position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+          padding: 10px 24px; background: #333; color: #fff; border-radius: 8px;
+          font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s;
+          pointer-events: none;
+        `;
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+    }
+
+    // ===== 快捷键 =====
+    document.addEventListener('keydown', function(e) {
+      // Ctrl/Cmd + Enter 开始对比
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        compareFids();
+      }
+    });
+  </script>
+</body>
+</html>
