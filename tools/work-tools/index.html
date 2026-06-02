@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>工作工具箱 - Web Tools</title>
-  <meta name="description" content="银行日常工作工具集合：FID对比、数据处理等">
+  <meta name="description" content="银行日常工作工具集合：FID对比、利率计算、金额大写、身份证提取、数据脱敏、文本去重">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .work-layout {
@@ -86,9 +86,9 @@
     }
 
     @media (max-width: 768px) {
-      .fid-layout {
-        grid-template-columns: 1fr;
-      }
+      .fid-layout { grid-template-columns: 1fr; }
+      .mortgage-grid { grid-template-columns: 1fr !important; }
+      .id-info-grid { grid-template-columns: 1fr !important; }
     }
 
     .fid-input-group label {
@@ -222,26 +222,9 @@
       cursor: pointer;
     }
 
-    .result-section-header.only-a {
-      background: #FFF3E0;
-      color: #E65100;
-      border: 1px solid #FFE0B2;
-      border-bottom: none;
-    }
-
-    .result-section-header.only-b {
-      background: #E8F5E9;
-      color: #2E7D32;
-      border: 1px solid #C8E6C9;
-      border-bottom: none;
-    }
-
-    .result-section-header.in-both {
-      background: #E3F2FD;
-      color: #1565C0;
-      border: 1px solid #BBDEFB;
-      border-bottom: none;
-    }
+    .result-section-header.only-a { background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2; border-bottom: none; }
+    .result-section-header.only-b { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; border-bottom: none; }
+    .result-section-header.in-both { background: #E3F2FD; color: #1565C0; border: 1px solid #BBDEFB; border-bottom: none; }
 
     .result-section-body {
       border: 1px solid var(--border);
@@ -276,9 +259,7 @@
       transition: all 0.2s;
     }
 
-    .copy-btn:hover {
-      background: rgba(255,255,255,0.9);
-    }
+    .copy-btn:hover { background: rgba(255,255,255,0.9); }
 
     .empty-hint {
       color: #999;
@@ -304,9 +285,7 @@
       cursor: pointer;
     }
 
-    .options-row input[type="checkbox"] {
-      accent-color: var(--primary);
-    }
+    .options-row input[type="checkbox"] { accent-color: var(--primary); }
 
     /* 页面顶部 */
     .page-header {
@@ -325,17 +304,236 @@
       font-size: 14px;
     }
 
-    /* 占位模块 */
-    .coming-soon {
+    /* ===== 通用工具样式 ===== */
+    .tool-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      background: #fafafa;
+      box-sizing: border-box;
+    }
+
+    .tool-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+      background: white;
+    }
+
+    .tool-textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      transition: border-color 0.2s;
+      background: #fafafa;
+      box-sizing: border-box;
+    }
+
+    .tool-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+      background: white;
+    }
+
+    .tool-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .tool-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .tool-result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tool-result.show { display: block; }
+
+    /* ===== 利率计算器样式 ===== */
+    .mortgage-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .mortgage-grid .field label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .mortgage-grid .field input, .mortgage-grid .field select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fafafa;
+      box-sizing: border-box;
+    }
+
+    .mortgage-grid .field input:focus, .mortgage-grid .field select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+    }
+
+    .mortgage-result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .mortgage-result-card {
       text-align: center;
-      padding: 40px 24px;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .mortgage-result-card .val {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--primary);
+    }
+
+    .mortgage-result-card .lbl {
+      font-size: 13px;
       color: var(--text-secondary);
     }
 
-    .coming-soon .icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-      opacity: 0.5;
+    .amortization-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 13px;
+    }
+
+    .amortization-table th, .amortization-table td {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      text-align: right;
+    }
+
+    .amortization-table th {
+      background: #f0f4ff;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .amortization-table td:first-child { text-align: center; }
+
+    /* ===== 身份证信息样式 ===== */
+    .id-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .id-info-card {
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: white;
+    }
+
+    .id-info-card .info-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .id-info-card .info-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .id-valid { color: #2E7D32; }
+    .id-invalid { color: #C62828; }
+
+    /* ===== 脱敏工具样式 ===== */
+    .mask-options {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .mask-options label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .mask-options label:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .mask-options input[type="checkbox"] { accent-color: var(--primary); }
+
+    /* ===== 去重工具样式 ===== */
+    .dedup-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .dedup-stat-card {
+      text-align: center;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .dedup-stat-card .val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .dedup-stat-card .lbl {
+      font-size: 12px;
+      color: var(--text-secondary);
     }
   </style>
 </head>
@@ -360,7 +558,7 @@
   <!-- 主内容 -->
   <div class="work-layout">
 
-    <!-- ==================== FID 对比工具 ==================== -->
+    <!-- ==================== 1. FID 对比工具 ==================== -->
     <div class="work-module" id="mod-fid">
       <div class="module-header" onclick="toggleModule('fid')">
         <div class="module-title">
@@ -394,30 +592,23 @@
 
         <!-- 对比结果 -->
         <div class="fid-result" id="fidResult">
-          <!-- 统计卡片 -->
           <div class="result-summary" id="fidSummary"></div>
-
-          <!-- 仅在A -->
           <div class="result-section" id="sectionOnlyA">
-            <div class="result-section-header only-a" onclick="toggleSection('onlyA')">
+            <div class="result-section-header only-a">
               <span>🟠 仅在 A 中（A - B）：<span id="countOnlyA">0</span> 条</span>
               <button class="copy-btn" onclick="event.stopPropagation(); copyList('onlyA')">📋 复制</button>
             </div>
             <div class="result-section-body" id="listOnlyA"></div>
           </div>
-
-          <!-- 仅在B -->
           <div class="result-section" id="sectionOnlyB">
-            <div class="result-section-header only-b" onclick="toggleSection('onlyB')">
+            <div class="result-section-header only-b">
               <span>🟢 仅在 B 中（B - A）：<span id="countOnlyB">0</span> 条</span>
               <button class="copy-btn" onclick="event.stopPropagation(); copyList('onlyB')">📋 复制</button>
             </div>
             <div class="result-section-body" id="listOnlyB"></div>
           </div>
-
-          <!-- 两者共有 -->
           <div class="result-section" id="sectionBoth">
-            <div class="result-section-header in-both" onclick="toggleSection('both')">
+            <div class="result-section-header in-both">
               <span>🔵 两者共有（A ∩ B）：<span id="countBoth">0</span> 条</span>
               <button class="copy-btn" onclick="event.stopPropagation(); copyList('both')">📋 复制</button>
             </div>
@@ -427,21 +618,165 @@
       </div>
     </div>
 
-    <!-- ==================== 后续工具占位 ==================== -->
-    <!-- 取消注释并复制此模板来添加新工具：
-    <div class="work-module" id="mod-xxx">
-      <div class="module-header" onclick="toggleModule('xxx')">
+    <!-- ==================== 2. 利率/月供计算器 ==================== -->
+    <div class="work-module" id="mod-mortgage">
+      <div class="module-header" onclick="toggleModule('mortgage')">
         <div class="module-title">
-          <span class="icon">🔧</span>
-          <span>工具名称</span>
+          <span class="icon">🏦</span>
+          <span>利率 / 月供计算器</span>
         </div>
-        <span class="module-toggle" id="toggle-xxx">▼</span>
+        <span class="module-toggle" id="toggle-mortgage">▼</span>
       </div>
-      <div class="module-body" id="body-xxx">
-        ... 内容 ...
+      <div class="module-body" id="body-mortgage">
+        <div class="mortgage-grid">
+          <div class="field">
+            <label>贷款金额（万元）</label>
+            <input type="number" id="loanAmount" value="100" min="0" step="1">
+          </div>
+          <div class="field">
+            <label>年利率（%）</label>
+            <input type="number" id="loanRate" value="3.5" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>贷款期限（年）</label>
+            <input type="number" id="loanYears" value="30" min="1" max="50" step="1">
+          </div>
+        </div>
+        <div class="options-row" style="margin-top:12px;">
+          <label>还款方式：</label>
+          <label><input type="radio" name="repayType" value="equal" checked> 等额本息</label>
+          <label><input type="radio" name="repayType" value="principal"> 等额本金</label>
+        </div>
+        <div class="tool-actions">
+          <button class="btn-compare" onclick="calcMortgage()">🧮 计算</button>
+          <button class="btn-secondary" onclick="document.getElementById('mortgageResult').classList.remove('show')">清空结果</button>
+        </div>
+        <div class="tool-result" id="mortgageResult">
+          <div class="mortgage-result-grid" id="mortgageCards"></div>
+          <div style="margin-top:16px;">
+            <button class="btn-secondary" onclick="toggleAmortTable()" id="amortToggleBtn">📊 显示还款明细</button>
+          </div>
+          <div id="amortTableWrap" style="display:none; max-height:400px; overflow:auto; margin-top:12px;">
+            <table class="amortization-table" id="amortTable">
+              <thead id="amortHead"></thead>
+              <tbody id="amortBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
-    -->
+
+    <!-- ==================== 3. 金额大写转换 ==================== -->
+    <div class="work-module" id="mod-upper">
+      <div class="module-header" onclick="toggleModule('upper')">
+        <div class="module-title">
+          <span class="icon">💰</span>
+          <span>金额大写转换</span>
+        </div>
+        <span class="module-toggle" id="toggle-upper">▼</span>
+      </div>
+      <div class="module-body" id="body-upper">
+        <div style="max-width:600px;">
+          <label class="tool-label">输入金额（数字）</label>
+          <input type="text" class="tool-input" id="amountInput" placeholder="例如：12345678.90" oninput="convertAmount()">
+          <div class="tool-actions">
+            <button class="btn-secondary" onclick="document.getElementById('amountInput').value='';document.getElementById('amountResult').classList.remove('show')">清空</button>
+          </div>
+        </div>
+        <div class="tool-result" id="amountResult">
+          <label class="tool-label" style="margin-bottom:8px;">人民币大写</label>
+          <div id="amountOutput" style="font-size:20px; font-weight:700; color:#C62828; letter-spacing:2px; word-break:break-all;"></div>
+          <button class="btn-secondary" style="margin-top:12px;" onclick="copyAmountResult()">📋 复制</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 4. 身份证信息提取 ==================== -->
+    <div class="work-module" id="mod-idcard">
+      <div class="module-header" onclick="toggleModule('idcard')">
+        <div class="module-title">
+          <span class="icon">🪪</span>
+          <span>身份证信息提取</span>
+        </div>
+        <span class="module-toggle" id="toggle-idcard">▼</span>
+      </div>
+      <div class="module-body" id="body-idcard">
+        <div style="max-width:600px;">
+          <label class="tool-label">输入身份证号码（18位）</label>
+          <input type="text" class="tool-input" id="idCardInput" placeholder="例如：110101199001011234" maxlength="18" oninput="extractID()">
+        </div>
+        <div class="tool-result" id="idCardResult">
+          <div class="id-info-grid" id="idInfoGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 5. 数据脱敏工具 ==================== -->
+    <div class="work-module" id="mod-mask">
+      <div class="module-header" onclick="toggleModule('mask')">
+        <div class="module-title">
+          <span class="icon">🛡️</span>
+          <span>数据脱敏工具</span>
+        </div>
+        <span class="module-toggle" id="toggle-mask">▼</span>
+      </div>
+      <div class="module-body" id="body-mask">
+        <label class="tool-label">输入需要脱敏的文本</label>
+        <textarea class="tool-textarea" id="maskInput" placeholder="粘贴包含手机号、身份证号、姓名、银行卡号等敏感信息的文本&#10;&#10;例如：&#10;张三 13812345678 身份证：110101199001011234&#10;银行卡：6222021234567890123"></textarea>
+        <div class="mask-options">
+          <label><input type="checkbox" id="maskPhone" checked> 📱 手机号</label>
+          <label><input type="checkbox" id="maskID" checked> 🪪 身份证</label>
+          <label><input type="checkbox" id="maskBank" checked> 💳 银行卡</label>
+          <label><input type="checkbox" id="maskEmail" checked> 📧 邮箱</label>
+          <label><input type="checkbox" id="maskName"> 👤 姓名（实验性）</label>
+        </div>
+        <div class="tool-actions">
+          <button class="btn-compare" onclick="maskData()">🛡️ 执行脱敏</button>
+          <button class="btn-secondary" onclick="document.getElementById('maskInput').value='';document.getElementById('maskResult').classList.remove('show')">清空</button>
+        </div>
+        <div class="tool-result" id="maskResult">
+          <label class="tool-label">脱敏结果</label>
+          <textarea class="tool-textarea" id="maskOutput" readonly style="background:#fff; min-height:120px;"></textarea>
+          <div class="tool-actions" style="margin-top:8px;">
+            <button class="btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('maskOutput').value).then(()=>showToast('已复制'))">📋 复制结果</button>
+            <span id="maskStats" style="font-size:13px; color:var(--text-secondary);"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 6. 文本去重工具 ==================== -->
+    <div class="work-module" id="mod-dedup">
+      <div class="module-header" onclick="toggleModule('dedup')">
+        <div class="module-title">
+          <span class="icon">🧹</span>
+          <span>文本去重工具</span>
+        </div>
+        <span class="module-toggle" id="toggle-dedup">▼</span>
+      </div>
+      <div class="module-body" id="body-dedup">
+        <label class="tool-label">输入文本（每行一条）</label>
+        <textarea class="tool-textarea" id="dedupInput" placeholder="粘贴需要去重的文本，每行一条&#10;&#10;例如：&#10;apple&#10;banana&#10;apple&#10;cherry&#10;banana"></textarea>
+        <div class="options-row">
+          <label><input type="checkbox" id="dedupTrim" checked> 忽略首尾空格</label>
+          <label><input type="checkbox" id="dedupCase"> 忽略大小写</label>
+          <label><input type="checkbox" id="dedupEmpty" checked> 跳过空行</label>
+          <label><input type="checkbox" id="dedupSort"> 结果排序</label>
+        </div>
+        <div class="tool-actions">
+          <button class="btn-compare" onclick="dedupText()">🧹 去重</button>
+          <button class="btn-secondary" onclick="document.getElementById('dedupInput').value='';document.getElementById('dedupResult').classList.remove('show')">清空</button>
+        </div>
+        <div class="tool-result" id="dedupResult">
+          <div class="dedup-stats" id="dedupStats"></div>
+          <label class="tool-label">去重结果</label>
+          <textarea class="tool-textarea" id="dedupOutput" readonly style="background:#fff; min-height:150px;"></textarea>
+          <div class="tool-actions" style="margin-top:8px;">
+            <button class="btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('dedupOutput').value).then(()=>showToast('已复制'))">📋 复制结果</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -459,133 +794,6 @@
       const toggle = document.getElementById('toggle-' + name);
       body.classList.toggle('collapsed');
       toggle.classList.toggle('collapsed');
-    }
-
-    function toggleSection(name) {
-      // 预留：结果区块折叠
-    }
-
-    // ===== FID 对比核心逻辑 =====
-    function parseList(text, doTrim) {
-      return text
-        .split(/[\n\r]+/)
-        .map(s => doTrim ? s.trim() : s)
-        .filter(s => s.length > 0);
-    }
-
-    function compareFids() {
-      const doTrim = document.getElementById('fidTrim').checked;
-      const doSort = document.getElementById('fidSort').checked;
-
-      const listA = parseList(document.getElementById('fidA').value, doTrim);
-      const listB = parseList(document.getElementById('fidB').value, doTrim);
-
-      if (listA.length === 0 && listB.length === 0) {
-        alert('请至少输入一个列表的数据');
-        return;
-      }
-
-      const setA = new Set(listA);
-      const setB = new Set(listB);
-
-      const onlyA = [...setA].filter(x => !setB.has(x));
-      const onlyB = [...setB].filter(x => !setA.has(x));
-      const both = [...setA].filter(x => setB.has(x));
-
-      if (doSort) {
-        const sortNum = (a, b) => {
-          const na = parseFloat(a), nb = parseFloat(b);
-          if (!isNaN(na) && !isNaN(nb)) return na - nb;
-          return a.localeCompare(b);
-        };
-        onlyA.sort(sortNum);
-        onlyB.sort(sortNum);
-        both.sort(sortNum);
-      }
-
-      // 保存数据到全局以便复制
-      window._fidResult = { onlyA, onlyB, both };
-
-      // 统计卡片
-      document.getElementById('fidSummary').innerHTML = `
-        <div class="summary-card card-a">
-          <div class="num">${setA.size}</div>
-          <div class="label">A 总数</div>
-        </div>
-        <div class="summary-card card-b">
-          <div class="num">${setB.size}</div>
-          <div class="label">B 总数</div>
-        </div>
-        <div class="summary-card card-both">
-          <div class="num">${both.length}</div>
-          <div class="label">共有</div>
-        </div>
-        <div class="summary-card card-total">
-          <div class="num">${onlyA.length + onlyB.length}</div>
-          <div class="label">差异合计</div>
-        </div>
-      `;
-
-      // 渲染列表
-      renderList('listOnlyA', onlyA, 'highlight-a');
-      renderList('listOnlyB', onlyB, 'highlight-b');
-      renderList('listBoth', both, 'highlight-both');
-
-      document.getElementById('countOnlyA').textContent = onlyA.length;
-      document.getElementById('countOnlyB').textContent = onlyB.length;
-      document.getElementById('countBoth').textContent = both.length;
-
-      // 显示结果
-      document.getElementById('fidResult').style.display = 'block';
-    }
-
-    function renderList(containerId, items, highlightClass) {
-      const el = document.getElementById(containerId);
-      if (items.length === 0) {
-        el.innerHTML = '<span class="empty-hint">（无）</span>';
-        return;
-      }
-      el.innerHTML = items
-        .map(item => `<span class="fid-item ${highlightClass}">${escapeHtml(item)}</span>`)
-        .join(' ');
-    }
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    function copyList(which) {
-      const data = window._fidResult;
-      if (!data) return;
-      const text = data[which].join('\n');
-      navigator.clipboard.writeText(text).then(() => {
-        showToast('已复制 ' + data[which].length + ' 条');
-      }).catch(() => {
-        // fallback
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast('已复制 ' + data[which].length + ' 条');
-      });
-    }
-
-    function swapFids() {
-      const a = document.getElementById('fidA');
-      const b = document.getElementById('fidB');
-      const tmp = a.value;
-      a.value = b.value;
-      b.value = tmp;
-    }
-
-    function clearFids() {
-      document.getElementById('fidA').value = '';
-      document.getElementById('fidB').value = '';
-      document.getElementById('fidResult').style.display = 'none';
     }
 
     // ===== Toast 提示 =====
@@ -610,12 +818,534 @@
 
     // ===== 快捷键 =====
     document.addEventListener('keydown', function(e) {
-      // Ctrl/Cmd + Enter 开始对比
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         compareFids();
       }
     });
+
+    // =====================================================================
+    // 1. FID 对比
+    // =====================================================================
+    function parseList(text, doTrim) {
+      return text.split(/[\n\r]+/).map(s => doTrim ? s.trim() : s).filter(s => s.length > 0);
+    }
+
+    function compareFids() {
+      const doTrim = document.getElementById('fidTrim').checked;
+      const doSort = document.getElementById('fidSort').checked;
+      const listA = parseList(document.getElementById('fidA').value, doTrim);
+      const listB = parseList(document.getElementById('fidB').value, doTrim);
+
+      if (listA.length === 0 && listB.length === 0) {
+        alert('请至少输入一个列表的数据');
+        return;
+      }
+
+      const setA = new Set(listA);
+      const setB = new Set(listB);
+      const onlyA = [...setA].filter(x => !setB.has(x));
+      const onlyB = [...setB].filter(x => !setA.has(x));
+      const both  = [...setA].filter(x => setB.has(x));
+
+      if (doSort) {
+        const sortNum = (a, b) => {
+          const na = parseFloat(a), nb = parseFloat(b);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        };
+        onlyA.sort(sortNum);
+        onlyB.sort(sortNum);
+        both.sort(sortNum);
+      }
+
+      window._fidResult = { onlyA, onlyB, both };
+
+      document.getElementById('fidSummary').innerHTML = `
+        <div class="summary-card card-a"><div class="num">${setA.size}</div><div class="label">A 总数</div></div>
+        <div class="summary-card card-b"><div class="num">${setB.size}</div><div class="label">B 总数</div></div>
+        <div class="summary-card card-both"><div class="num">${both.length}</div><div class="label">共有</div></div>
+        <div class="summary-card card-total"><div class="num">${onlyA.length + onlyB.length}</div><div class="label">差异合计</div></div>
+      `;
+
+      renderList('listOnlyA', onlyA, 'highlight-a');
+      renderList('listOnlyB', onlyB, 'highlight-b');
+      renderList('listBoth', both, 'highlight-both');
+
+      document.getElementById('countOnlyA').textContent = onlyA.length;
+      document.getElementById('countOnlyB').textContent = onlyB.length;
+      document.getElementById('countBoth').textContent = both.length;
+      document.getElementById('fidResult').style.display = 'block';
+    }
+
+    function renderList(containerId, items, highlightClass) {
+      const el = document.getElementById(containerId);
+      if (items.length === 0) {
+        el.innerHTML = '<span class="empty-hint">（无）</span>';
+        return;
+      }
+      el.innerHTML = items.map(item => `<span class="fid-item ${highlightClass}">${escapeHtml(item)}</span>`).join(' ');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function copyList(which) {
+      const data = window._fidResult;
+      if (!data) return;
+      const text = data[which].join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已复制 ' + data[which].length + ' 条');
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('已复制 ' + data[which].length + ' 条');
+      });
+    }
+
+    function swapFids() {
+      const a = document.getElementById('fidA');
+      const b = document.getElementById('fidB');
+      const tmp = a.value;
+      a.value = b.value;
+      b.value = tmp;
+    }
+
+    function clearFids() {
+      document.getElementById('fidA').value = '';
+      document.getElementById('fidB').value = '';
+      document.getElementById('fidResult').style.display = 'none';
+    }
+
+    // =====================================================================
+    // 2. 利率/月供计算器
+    // =====================================================================
+    function calcMortgage() {
+      const P = parseFloat(document.getElementById('loanAmount').value) * 10000; // 万元→元
+      const annualRate = parseFloat(document.getElementById('loanRate').value) / 100;
+      const years = parseInt(document.getElementById('loanYears').value);
+      const type = document.querySelector('input[name="repayType"]:checked').value;
+
+      if (isNaN(P) || isNaN(annualRate) || isNaN(years) || P <= 0 || annualRate < 0 || years <= 0) {
+        alert('请输入有效的贷款参数');
+        return;
+      }
+
+      const N = years * 12;
+      const r = annualRate / 12; // 月利率
+      let monthlyPayment, totalInterest, totalPayment;
+      const schedule = [];
+
+      if (type === 'equal') {
+        // 等额本息
+        if (r === 0) {
+          monthlyPayment = P / N;
+        } else {
+          monthlyPayment = P * r * Math.pow(1 + r, N) / (Math.pow(1 + r, N) - 1);
+        }
+        totalPayment = monthlyPayment * N;
+        totalInterest = totalPayment - P;
+
+        let remaining = P;
+        for (let i = 1; i <= N; i++) {
+          const interestPart = remaining * r;
+          const principalPart = monthlyPayment - interestPart;
+          remaining -= principalPart;
+          schedule.push({
+            month: i,
+            payment: monthlyPayment,
+            principal: principalPart,
+            interest: interestPart,
+            remaining: Math.max(0, remaining)
+          });
+        }
+      } else {
+        // 等额本金
+        const principalPerMonth = P / N;
+        totalInterest = 0;
+        totalPayment = 0;
+        let remaining = P;
+
+        for (let i = 1; i <= N; i++) {
+          const interestPart = remaining * r;
+          const payment = principalPerMonth + interestPart;
+          remaining -= principalPerMonth;
+          totalInterest += interestPart;
+          totalPayment += payment;
+          schedule.push({
+            month: i,
+            payment: payment,
+            principal: principalPerMonth,
+            interest: interestPart,
+            remaining: Math.max(0, remaining)
+          });
+        }
+        monthlyPayment = schedule[0].payment; // 首月
+      }
+
+      const fmt = n => n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      let cardsHtml = '';
+      if (type === 'equal') {
+        cardsHtml = `
+          <div class="mortgage-result-card"><div class="val">¥${fmt(monthlyPayment)}</div><div class="lbl">每月月供</div></div>
+        `;
+      } else {
+        cardsHtml = `
+          <div class="mortgage-result-card"><div class="val">¥${fmt(schedule[0].payment)}</div><div class="lbl">首月月供</div></div>
+          <div class="mortgage-result-card"><div class="val">¥${fmt(schedule[N-1].payment)}</div><div class="lbl">末月月供</div></div>
+        `;
+      }
+      cardsHtml += `
+        <div class="mortgage-result-card"><div class="val">¥${fmt(totalInterest)}</div><div class="lbl">总利息</div></div>
+        <div class="mortgage-result-card"><div class="val">¥${fmt(totalPayment)}</div><div class="lbl">还款总额</div></div>
+      `;
+
+      document.getElementById('mortgageCards').innerHTML = cardsHtml;
+      window._amortSchedule = schedule;
+      document.getElementById('amortTableWrap').style.display = 'none';
+      document.getElementById('amortToggleBtn').textContent = '📊 显示还款明细';
+      document.getElementById('mortgageResult').classList.add('show');
+    }
+
+    function toggleAmortTable() {
+      const wrap = document.getElementById('amortTableWrap');
+      const btn = document.getElementById('amortToggleBtn');
+      if (wrap.style.display === 'none') {
+        renderAmortTable();
+        wrap.style.display = 'block';
+        btn.textContent = '📊 隐藏还款明细';
+      } else {
+        wrap.style.display = 'none';
+        btn.textContent = '📊 显示还款明细';
+      }
+    }
+
+    function renderAmortTable() {
+      const data = window._amortSchedule;
+      if (!data) return;
+      const fmt = n => n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      document.getElementById('amortHead').innerHTML = '<tr><th>期数</th><th>月供</th><th>本金</th><th>利息</th><th>剩余本金</th></tr>';
+
+      // 只渲染前 120 期（10年），避免页面卡顿
+      const show = data.length > 120 ? data.slice(0, 120) : data;
+      let html = show.map(d =>
+        `<tr><td>${d.month}</td><td>${fmt(d.payment)}</td><td>${fmt(d.principal)}</td><td>${fmt(d.interest)}</td><td>${fmt(d.remaining)}</td></tr>`
+      ).join('');
+
+      if (data.length > 120) {
+        html += `<tr><td colspan="5" style="text-align:center;color:#999;">... 共 ${data.length} 期，仅显示前 120 期 ...</td></tr>`;
+      }
+      document.getElementById('amortBody').innerHTML = html;
+    }
+
+    // =====================================================================
+    // 3. 金额大写转换
+    // =====================================================================
+    function convertAmount() {
+      const raw = document.getElementById('amountInput').value.trim();
+      if (!raw) {
+        document.getElementById('amountResult').classList.remove('show');
+        return;
+      }
+      const result = toChineseAmount(raw);
+      if (result === null) {
+        document.getElementById('amountResult').classList.remove('show');
+        return;
+      }
+      document.getElementById('amountOutput').textContent = result;
+      document.getElementById('amountResult').classList.add('show');
+    }
+
+    function toChineseAmount(str) {
+      // 支持逗号分隔
+      str = str.replace(/,/g, '');
+
+      // 验证是否为合法数字
+      if (!/^-?\d+(\.\d+)?$/.test(str)) return null;
+
+      const negative = str.startsWith('-');
+      if (negative) str = str.slice(1);
+
+      const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+      const units = ['', '拾', '佰', '仟'];
+      const bigUnits = ['', '万', '亿', '万亿'];
+
+      let [intPart, decPart] = str.split('.');
+      intPart = intPart.replace(/^0+/, '') || '0';
+
+      // 整数部分
+      let intResult = '';
+      if (intPart === '0') {
+        intResult = '零';
+      } else {
+        // 按4位一组分组
+        const groups = [];
+        let temp = intPart;
+        while (temp.length > 0) {
+          groups.unshift(temp.slice(-4));
+          temp = temp.slice(0, -4);
+        }
+
+        for (let gi = 0; gi < groups.length; gi++) {
+          const g = groups[gi];
+          let groupStr = '';
+          let zeroFlag = false;
+
+          for (let i = 0; i < g.length; i++) {
+            const d = parseInt(g[i]);
+            if (d === 0) {
+              zeroFlag = true;
+            } else {
+              if (zeroFlag) {
+                groupStr += '零';
+                zeroFlag = false;
+              }
+              groupStr += digits[d] + units[g.length - 1 - i];
+            }
+          }
+
+          if (groupStr) {
+            intResult += groupStr + bigUnits[groups.length - 1 - gi];
+          } else if (intResult && gi < groups.length - 1) {
+            // 整组为零但前面有内容，加零
+            // 不加，由下一组处理
+          }
+        }
+
+        // 清理连续零
+        intResult = intResult.replace(/零+/g, '零').replace(/零$/, '');
+      }
+
+      // 小数部分
+      let decResult = '';
+      if (decPart && decPart.length >= 1) {
+        const jiao = parseInt(decPart[0] || '0');
+        const fen  = decPart.length >= 2 ? parseInt(decPart[1] || '0') : 0;
+
+        if (jiao === 0 && fen === 0) {
+          decResult = '整';
+        } else {
+          if (jiao > 0) {
+            decResult += digits[jiao] + '角';
+          } else if (fen > 0) {
+            decResult += '零';
+          }
+          if (fen > 0) {
+            decResult += digits[fen] + '分';
+          }
+        }
+      } else {
+        decResult = '整';
+      }
+
+      return (negative ? '负' : '') + '人民币' + intResult + '元' + decResult;
+    }
+
+    function copyAmountResult() {
+      const text = document.getElementById('amountOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => showToast('已复制'));
+    }
+
+    // =====================================================================
+    // 4. 身份证信息提取
+    // =====================================================================
+    const ID_REGIONS = {
+      '11': '北京', '12': '天津', '13': '河北', '14': '山西', '15': '内蒙古',
+      '21': '辽宁', '22': '吉林', '23': '黑龙江',
+      '31': '上海', '32': '江苏', '33': '浙江', '34': '安徽', '35': '福建', '36': '江西', '37': '山东',
+      '41': '河南', '42': '湖北', '43': '湖南', '44': '广东', '45': '广西', '46': '海南',
+      '50': '重庆', '51': '四川', '52': '贵州', '53': '云南', '54': '西藏',
+      '61': '陕西', '62': '甘肃', '63': '青海', '64': '宁夏', '65': '新疆',
+      '71': '台湾', '81': '香港', '82': '澳门', '91': '国外'
+    };
+
+    function extractID() {
+      const raw = document.getElementById('idCardInput').value.trim();
+      if (!raw) {
+        document.getElementById('idCardResult').classList.remove('show');
+        return;
+      }
+      if (raw.length !== 18) {
+        document.getElementById('idCardResult').classList.remove('show');
+        return;
+      }
+
+      const id = raw.toUpperCase();
+      const birth = id.substring(6, 14);
+      const year = birth.substring(0, 4);
+      const month = birth.substring(4, 6);
+      const day = birth.substring(6, 8);
+      const sexCode = parseInt(id.substring(16, 17));
+      const regionCode = id.substring(0, 2);
+      const region = ID_REGIONS[regionCode] || '未知地区';
+
+      // 校验码验证
+      const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+      const checkChars = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+      let sum = 0;
+      for (let i = 0; i < 17; i++) {
+        sum += parseInt(id[i]) * weights[i];
+      }
+      const expectedCheck = checkChars[sum % 11];
+      const isValid = id[17] === expectedCheck;
+
+      // 年龄计算
+      const today = new Date();
+      const birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      // 生肖
+      const zodiacAnimals = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+      const zodiac = zodiacAnimals[(parseInt(year) - 1900) % 12];
+
+      // 星座
+      const m = parseInt(month), d = parseInt(day);
+      const zodiacSigns = [
+        [1, 20, '水瓶座'], [2, 19, '双鱼座'], [3, 21, '白羊座'], [4, 20, '金牛座'],
+        [5, 21, '双子座'], [6, 22, '巨蟹座'], [7, 23, '狮子座'], [8, 23, '处女座'],
+        [9, 23, '天秤座'], [10, 24, '天蝎座'], [11, 23, '射手座'], [12, 22, '摩羯座']
+      ];
+      let constellation = '摩羯座';
+      for (let i = 0; i < zodiacSigns.length; i++) {
+        if (m === zodiacSigns[i][0] && d <= zodiacSigns[i][1]) {
+          constellation = zodiacSigns[i][2];
+          break;
+        } else if (m === zodiacSigns[i][0] && d > zodiacSigns[i][1]) {
+          constellation = zodiacSigns[(i + 1) % 12][2];
+          break;
+        }
+      }
+
+      const fields = [
+        { label: '校验状态', value: isValid ? '✅ 有效' : '❌ 无效', cls: isValid ? 'id-valid' : 'id-invalid' },
+        { label: '所在地区', value: `${region} (${regionCode})` },
+        { label: '出生日期', value: `${year}年${month}月${day}日` },
+        { label: '年龄', value: `${age} 岁` },
+        { label: '性别', value: sexCode % 2 === 1 ? '男' : '女' },
+        { label: '生肖', value: zodiac },
+        { label: '星座', value: constellation },
+        { label: '顺序码', value: id.substring(14, 17) },
+      ];
+
+      document.getElementById('idInfoGrid').innerHTML = fields.map(f => `
+        <div class="id-info-card">
+          <div class="info-label">${f.label}</div>
+          <div class="info-value ${f.cls || ''}">${f.value}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('idCardResult').classList.add('show');
+    }
+
+    // =====================================================================
+    // 5. 数据脱敏
+    // =====================================================================
+    function maskData() {
+      let text = document.getElementById('maskInput').value;
+      if (!text.trim()) {
+        alert('请输入需要脱敏的文本');
+        return;
+      }
+
+      let count = 0;
+
+      // 手机号：13x/14x/15x/16x/17x/18x/19x 开头的11位
+      if (document.getElementById('maskPhone').checked) {
+        text = text.replace(/(?<!\d)(1[3-9]\d)\d{4}(\d{4})(?!\d)/g, (m, p1, p2) => { count++; return p1 + '****' + p2; });
+      }
+
+      // 身份证：18位
+      if (document.getElementById('maskID').checked) {
+        text = text.replace(/(?<!\d)(\d{6})\d{8}(\d{3}[\dXx])(?!\d)/g, (m, p1, p2) => { count++; return p1 + '********' + p2; });
+      }
+
+      // 银行卡：16-19位数字
+      if (document.getElementById('maskBank').checked) {
+        text = text.replace(/(?<!\d)(\d{4})\d{8,11}(\d{4})(?!\d)/g, (m, p1, p2) => { count++; return p1 + ' **** **** ' + p2; });
+      }
+
+      // 邮箱
+      if (document.getElementById('maskEmail').checked) {
+        text = text.replace(/([a-zA-Z0-9._%+-]{1,3})[a-zA-Z0-9._%+-]*(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, (m, p1, p2) => { count++; return p1 + '***' + p2; });
+      }
+
+      // 姓名（实验性）：2-4个汉字，前面有"姓名"、"名字"等关键词，或在行首
+      if (document.getElementById('maskName').checked) {
+        text = text.replace(/(?<=姓名[：:]\s*)([\u4e00-\u9fa5]{1})([\u4e00-\u9fa5]{1,3})/g, (m, p1, p2) => { count++; return p1 + '*'.repeat(p2.length); });
+        text = text.replace(/(?<=^|\n)([\u4e00-\u9fa5]{1})([\u4e00-\u9fa5])(?=\s)/gm, (m, p1, p2) => { count++; return p1 + '*'; });
+      }
+
+      document.getElementById('maskOutput').value = text;
+      document.getElementById('maskStats').textContent = `共脱敏 ${count} 处`;
+      document.getElementById('maskResult').classList.add('show');
+    }
+
+    // =====================================================================
+    // 6. 文本去重
+    // =====================================================================
+    function dedupText() {
+      const raw = document.getElementById('dedupInput').value;
+      if (!raw.trim()) {
+        alert('请输入需要去重的文本');
+        return;
+      }
+
+      const doTrim = document.getElementById('dedupTrim').checked;
+      const doCase = document.getElementById('dedupCase').checked;
+      const skipEmpty = document.getElementById('dedupEmpty').checked;
+      const doSort = document.getElementById('dedupSort').checked;
+
+      let lines = raw.split(/[\n\r]+/);
+      const totalLines = lines.length;
+
+      // 处理
+      const seen = new Set();
+      const result = [];
+      let duplicateCount = 0;
+
+      for (let line of lines) {
+        let processed = doTrim ? line.trim() : line;
+        const key = doCase ? processed.toLowerCase() : processed;
+
+        if (skipEmpty && !key) continue;
+
+        if (seen.has(key)) {
+          duplicateCount++;
+          continue;
+        }
+        seen.add(key);
+        result.push(processed);
+      }
+
+      if (doSort) {
+        result.sort((a, b) => {
+          if (doCase) return a.toLowerCase().localeCompare(b.toLowerCase());
+          return a.localeCompare(b);
+        });
+      }
+
+      document.getElementById('dedupOutput').value = result.join('\n');
+      document.getElementById('dedupStats').innerHTML = `
+        <div class="dedup-stat-card"><div class="val">${totalLines}</div><div class="lbl">原始行数</div></div>
+        <div class="dedup-stat-card"><div class="val">${result.length}</div><div class="lbl">去重后</div></div>
+        <div class="dedup-stat-card"><div class="val">${duplicateCount}</div><div class="lbl">重复行</div></div>
+        <div class="dedup-stat-card"><div class="val">${((1 - duplicateCount / totalLines) * 100).toFixed(1)}%</div><div class="lbl">唯一率</div></div>
+      `;
+      document.getElementById('dedupResult').classList.add('show');
+    }
   </script>
 </body>
 </html>
