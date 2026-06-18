@@ -134,11 +134,14 @@
     <!-- 输入区 -->
     <div class="card">
       <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>输入（每行一个值，自动忽略行号）</span>
-        <button class="btn btn-secondary" id="pasteBtn" style="padding: 6px 12px; font-size: 12px; height: 28px;">📋 粘贴</button>
+        <span>输入（粘贴任意格式的列表）</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span id="detectedFormat" style="font-size: 12px; color: var(--primary); background: #E3F2FD; padding: 4px 10px; border-radius: 12px; display: none;"></span>
+          <button class="btn btn-secondary" id="pasteBtn" style="padding: 6px 12px; font-size: 12px; height: 28px;">📋 粘贴</button>
+        </div>
       </div>
-      <textarea class="input-area" id="inputArea" placeholder="粘贴内容，例如：&#10;00007&#10;00431&#10;00468&#10;&#10;或带行号：&#10;1  00007&#10;2  00431&#10;3  00468&#10;&#10;支持：制表符/空格分隔、CSV逗号分隔、已有引号等"></textarea>
-      <p class="paste-hint">💡 支持从数据库查询结果、Excel、CSV 等粘贴，自动识别行号并去除</p>
+      <textarea class="input-area" id="inputArea" placeholder="粘贴任意格式，自动识别：&#10;&#10;纯文本行：        SQL IN：             Python list：         JSON数组：&#10;00007              IN ('00007',         ['00007',             ["00007",&#10;00431               '00431',             '00431',              "00431",&#10;00468               '00468')             '00468']              "00468"]&#10;&#10;带行号：           CSV逗号分隔：        Python set：&#10;1  00007            00007,00431,00468    {'00007','00431'}&#10;2  00431&#10;3  00468"></textarea>
+      <p class="paste-hint">💡 智能识别：SQL IN、Python list/set、JSON数组、CSV、带行号的查询结果、纯文本行</p>
     </div>
 
     <!-- 选项 -->
@@ -168,6 +171,15 @@
 
     <!-- 输出区 -->
     <div class="format-grid">
+      <!-- 纯文本（每行一个） -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>📝 纯文本（每行一个）</span>
+          <button class="btn btn-secondary copy-btn" data-target="plainOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="plainOutput"></div>
+      </div>
+
       <!-- SQL IN -->
       <div class="card output-card">
         <div class="card-title">
@@ -241,41 +253,105 @@
       const addQuotes = document.getElementById('addQuotes');
       const quoteStyle = document.getElementById('quoteStyle');
       const countDisplay = document.getElementById('countDisplay');
+      const detectedFormat = document.getElementById('detectedFormat');
 
-      // 解析输入：自动去除行号（数字+分隔符在行首的情况）
-      function parseInput(raw) {
-        let lines = raw.split('\n');
+      const FORMAT_LABELS = {
+        'sql': '🗄️ SQL IN/NOT IN',
+        'python-list': '🐍 Python List',
+        'python-set': '🐍 Python Set',
+        'json': '📦 JSON Array',
+        'csv': '📄 CSV',
+        'lines-with-numbers': '🔢 带行号',
+        'plain': '📝 纯文本',
+        'empty': ''
+      };
 
-        if (trimSpaces.checked) {
-          lines = lines.map(l => l.trim());
+      // 智能解析输入，返回 { items: string[], format: string }
+      function smartParse(raw) {
+        const trimmed = raw.trim();
+        if (!trimmed) return { items: [], format: 'empty' };
+
+        // 1. JSON Array: [...] or JSON with IN/NOT IN prefix
+        const jsonMatch = trimmed.match(/(?:\[[\s\S]*\])/);
+        if (jsonMatch) {
+          try {
+            const arr = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(arr)) {
+              return { items: arr.map(String), format: 'json' };
+            }
+          } catch (e) { /* not valid JSON, continue */ }
         }
 
-        if (removeEmpty.checked) {
-          lines = lines.filter(l => l.length > 0);
-        }
-
-        // 自动去除行号：匹配行首的数字+分隔符（空格、制表符、点号、逗号等）
-        // 例如：1  00007  或  1. 00007  或  1,00007  或  1|00007
-        lines = lines.map(line => {
-          const match = line.match(/^\d+[\s\t.,|)\]]+(.+)$/);
-          return match ? match[1].trim() : line;
-        });
-
-        // 如果值被引号包裹，去掉引号
-        lines = lines.map(line => {
-          const trimmed = line.trim();
-          if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-              (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
-            return trimmed.slice(1, -1);
+        // 2. SQL IN / NOT IN: IN ('a','b') or NOT IN ('a','b') or ('a','b')
+        const sqlMatch = trimmed.match(/(?:NOT\s+)?IN\s*\(([\s\S]+)\)/i) || trimmed.match(/^\(([\s\S]+)\)$/);
+        if (sqlMatch) {
+          const inner = sqlMatch[1];
+          // Try parsing as JSON array (with brackets added)
+          try {
+            const arr = JSON.parse('[' + inner + ']');
+            if (Array.isArray(arr) && arr.length > 0) {
+              return { items: arr.map(String), format: 'sql' };
+            }
+          } catch (e) { /* continue */ }
+          // Fallback: split by comma, strip quotes
+          const items = inner.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+          if (items.length > 0) {
+            return { items, format: 'sql' };
           }
-          return trimmed;
-        });
-
-        if (removeDuplicates.checked) {
-          lines = [...new Set(lines)];
         }
 
-        return lines;
+        // 3. Python set: {'a', 'b'} or set([...])
+        const pySetMatch = trimmed.match(/^\{([\s\S]+)\}$/);
+        if (pySetMatch && !trimmed.includes('\n')) {
+          const inner = pySetMatch[1];
+          try {
+            const arr = JSON.parse('[' + inner + ']');
+            if (Array.isArray(arr) && arr.length > 0) {
+              return { items: arr.map(String), format: 'python-set' };
+            }
+          } catch (e) { /* continue */ }
+          const items = inner.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+          if (items.length > 0) {
+            return { items, format: 'python-set' };
+          }
+        }
+
+        // 4. Python list: ['a', 'b'] — same as JSON array, already handled above
+        // (Python list syntax with single quotes is not valid JSON, handle separately)
+        const pyListMatch = trimmed.match(/^\[([\s\S]+)\]$/);
+        if (pyListMatch) {
+          const inner = pyListMatch[1];
+          const items = inner.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+          if (items.length > 0) {
+            return { items, format: 'python-list' };
+          }
+        }
+
+        // 5. Multi-line: check for row numbers, CSV per line, or plain lines
+        let lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+
+        // Check if lines look like "number separator value" (row numbers)
+        const rowNumPattern = /^\d+[\s\t.,|)\]]+(.+)$/;
+        const hasRowNumbers = lines.filter(l => rowNumPattern.test(l)).length > lines.length * 0.5;
+        if (hasRowNumbers) {
+          const items = lines.map(l => {
+            const m = l.match(rowNumPattern);
+            return m ? m[1].trim() : l;
+          });
+          return { items, format: 'lines-with-numbers' };
+        }
+
+        // 6. Single-line CSV: a,b,c,d (no newlines, or all on one line)
+        if (lines.length === 1 && lines[0].includes(',')) {
+          const parts = lines[0].split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+          if (parts.length > 1) {
+            return { items: parts, format: 'csv' };
+          }
+        }
+
+        // 7. Multi-line, each line is a value (possibly with quotes)
+        const items = lines.map(l => l.replace(/^['"]|['"]$/g, '').trim()).filter(Boolean);
+        return { items, format: 'plain' };
       }
 
       function getQuote() {
@@ -285,32 +361,52 @@
       }
 
       function render() {
-        const items = parseInput(inputArea.value);
-        const [lq, rq] = getQuote();
+        const { items: rawItems, format } = smartParse(inputArea.value);
+
+        // Apply user options
+        let items = rawItems;
+        if (trimSpaces.checked) items = items.map(s => s.trim());
+        items = items.filter(s => s.length > 0);
+        if (removeDuplicates.checked) items = [...new Set(items)];
+
+        // Show detected format badge
+        if (format !== 'empty' && FORMAT_LABELS[format]) {
+          detectedFormat.textContent = '识别: ' + FORMAT_LABELS[format];
+          detectedFormat.style.display = 'inline';
+        } else {
+          detectedFormat.style.display = 'none';
+        }
+
         countDisplay.textContent = items.length;
 
         if (items.length === 0) {
-          ['sqlOutput', 'sqlNotOutput', 'pyOutput', 'pySetOutput', 'jsonOutput', 'csvOutput'].forEach(id => {
+          ['plainOutput', 'sqlOutput', 'sqlNotOutput', 'pyOutput', 'pySetOutput', 'jsonOutput', 'csvOutput'].forEach(id => {
             document.getElementById(id).textContent = '';
           });
           return;
         }
 
+        const [lq, rq] = getQuote();
+        const quoted = items.map(i => `${lq}${i}${rq}`);
+
+        // 纯文本（每行一个）
+        document.getElementById('plainOutput').textContent = items.join('\n');
+
         // SQL IN
         document.getElementById('sqlOutput').textContent =
-          `IN (${items.map(i => `${lq}${i}${rq}`).join(',')})`;
+          `IN (${quoted.join(',')})`;
 
         // SQL NOT IN
         document.getElementById('sqlNotOutput').textContent =
-          `NOT IN (${items.map(i => `${lq}${i}${rq}`).join(',')})`;
+          `NOT IN (${quoted.join(',')})`;
 
         // Python List
         document.getElementById('pyOutput').textContent =
-          `[${items.map(i => `${lq}${i}${rq}`).join(', ')}]`;
+          `[${quoted.join(', ')}]`;
 
         // Python Set
         document.getElementById('pySetOutput').textContent =
-          `{${items.map(i => `${lq}${i}${rq}`).join(', ')}}`;
+          `{${quoted.join(', ')}}`;
 
         // JSON Array (always double quotes for JSON validity)
         document.getElementById('jsonOutput').textContent =
