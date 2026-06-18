@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>证件照背景更换 - Web Tools</title>
+  <meta name="description" content="在线证件照背景更换，支持蓝底、白底、红底，纯前端处理，保护隐私">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .bg-changer-layout {
+      display: grid;
+      gap: 24px;
+    }
+
+    @media (min-width: 900px) {
+      .bg-changer-layout {
+        grid-template-columns: 1fr 280px;
+      }
+
+      .sidebar-sticky {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+      }
+    }
+
+    .upload-area-large {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 60px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #FAFAFA;
+    }
+
+    .upload-area-large:hover,
+    .upload-area-large.dragover {
+      border-color: var(--primary);
+      background: #F0F7FF;
+    }
+
+    .upload-icon-large {
+      font-size: 72px;
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+
+    .upload-text-large {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .upload-hint-large {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .preview-container {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .image-work-area {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      background: repeating-conic-gradient(#e0e0e0 0% 25%, transparent 0% 50%) 0 0 / 20px 20px;
+      border-radius: 8px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .canvas-wrapper canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .control-panel {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .control-group {
+      margin-bottom: 24px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .color-option {
+      position: relative;
+      cursor: pointer;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .color-option:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .color-option.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .color-preview {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .color-blue { background: #438EDB; color: white; }
+    .color-white { background: #FFFFFF; color: #333; }
+    .color-red { background: #C40D12; color: white; }
+    .color-gray { background: #808080; color: white; }
+
+    .tolerance-control {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .tolerance-value {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-download {
+      grid-column: 1 / -1;
+    }
+
+    .comparison-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .comparison-item {
+      text-align: center;
+    }
+
+    .comparison-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .comparison-canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .tips-box {
+      background: #FFF3E0;
+      border-left: 3px solid #FF9800;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #E65100;
+    }
+
+    .tips-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .tips-item {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">返回首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div class="page-header">
+        <h1>🎨 证件照背景更换</h1>
+        <p>在线更换证件照背景，支持蓝底、白底、红底，纯前端处理保护隐私</p>
+      </div>
+
+      <div class="bg-changer-layout">
+        <div class="main-area">
+          <!-- 上传区域 -->
+          <div id="uploadArea" class="upload-area-large">
+            <div class="upload-icon-large">📷</div>
+            <div class="upload-text-large">点击或拖拽上传证件照</div>
+            <div class="upload-hint-large">支持 JPG、PNG 格式，建议照片清晰、背景均匀</div>
+            <input type="file" id="fileInput" accept="image/jpeg,image/png">
+          </div>
+
+          <!-- 预览区域 -->
+          <div id="previewContainer" class="preview-container">
+            <div class="image-work-area">
+              <div class="canvas-wrapper">
+                <canvas id="mainCanvas"></canvas>
+              </div>
+            </div>
+
+            <div class="comparison-view">
+              <div class="comparison-item">
+                <div class="comparison-label">原图</div>
+                <canvas id="originalCanvas" class="comparison-canvas"></canvas>
+              </div>
+              <div class="comparison-item">
+                <div class="comparison-label">处理后</div>
+                <canvas id="resultCanvas" class="comparison-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="sidebar-sticky">
+          <div class="control-panel">
+            <div class="control-group">
+              <div class="control-title">🎨 选择背景颜色</div>
+              <div class="color-picker-grid">
+                <div class="color-option color-blue active" data-color="#438EDB">
+                  <div class="color-preview">蓝底</div>
+                </div>
+                <div class="color-option color-white" data-color="#FFFFFF">
+                  <div class="color-preview">白底</div>
+                </div>
+                <div class="color-option color-red" data-color="#C40D12">
+                  <div class="color-preview">红底</div>
+                </div>
+                <div class="color-option color-gray" data-color="#808080">
+                  <div class="color-preview">灰底</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="control-title">🎯 容差调节</div>
+              <input type="range" id="toleranceSlider" class="tolerance-control" min="1" max="100" value="30">
+              <div class="tolerance-value">容差值: <span id="toleranceValue">30</span></div>
+            </div>
+
+            <div class="control-group">
+              <div class="control-title">💡 使用提示</div>
+              <div class="tips-box">
+                <div class="tips-title">最佳效果建议：</div>
+                <div class="tips-item">• 原图背景尽量均匀</div>
+                <div class="tips-item">• 人物与背景对比明显</div>
+                <div class="tips-item">• 调整容差值获得更好效果</div>
+                <div class="tips-item">• 蓝底/白底适合证件照</div>
+              </div>
+            </div>
+
+            <div class="action-buttons">
+              <button id="resetBtn" class="btn btn-secondary">重置</button>
+              <button id="applyBtn" class="btn btn-primary">应用背景</button>
+              <button id="downloadBtn" class="btn btn-success btn-download">下载图片</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const mainCanvas = document.getElementById('mainCanvas');
+    const originalCanvas = document.getElementById('originalCanvas');
+    const resultCanvas = document.getElementById('resultCanvas');
+    const mainCtx = mainCanvas.getContext('2d');
+    const originalCtx = originalCanvas.getContext('2d');
+    const resultCtx = resultCanvas.getContext('2d');
+
+    const toleranceSlider = document.getElementById('toleranceSlider');
+    const toleranceValue = document.getElementById('toleranceValue');
+    const colorOptions = document.querySelectorAll('.color-option');
+    const resetBtn = document.getElementById('resetBtn');
+    const applyBtn = document.getElementById('applyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let originalImage = null;
+    let selectedColor = '#438EDB';
+    let tolerance = 30;
+
+    // 上传相关
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    });
+
+    function handleFile(file) {
+      if (!file.type.match(/image\/(jpeg|png)/)) {
+        alert('请上传 JPG 或 PNG 格式的图片');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          originalImage = img;
+          displayImage(img);
+          uploadArea.style.display = 'none';
+          previewContainer.style.display = 'block';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function displayImage(img) {
+      const maxWidth = 800;
+      const maxHeight = 600;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = (maxWidth / width) * height;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (maxHeight / height) * width;
+        height = maxHeight;
+      }
+
+      mainCanvas.width = width;
+      mainCanvas.height = height;
+      originalCanvas.width = width;
+      originalCanvas.height = height;
+      resultCanvas.width = width;
+      resultCanvas.height = height;
+
+      mainCtx.drawImage(img, 0, 0, width, height);
+      originalCtx.drawImage(img, 0, 0, width, height);
+      resultCtx.drawImage(img, 0, 0, width, height);
+    }
+
+    // 颜色选择
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        colorOptions.forEach(o => o.classList.remove('active'));
+        option.classList.add('active');
+        selectedColor = option.dataset.color;
+        if (originalImage) applyBackgroundChange();
+      });
+    });
+
+    // 容差调节
+    toleranceSlider.addEventListener('input', (e) => {
+      tolerance = parseInt(e.target.value);
+      toleranceValue.textContent = tolerance;
+    });
+
+    // 应用背景
+    applyBtn.addEventListener('click', () => {
+      if (!originalImage) {
+        alert('请先上传图片');
+        return;
+      }
+      applyBackgroundChange();
+    });
+
+    function applyBackgroundChange() {
+      const imageData = mainCtx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+      const data = imageData.data;
+
+      // 从图片边缘多点采样，统计最频繁的颜色作为背景色
+      const edgeSamples = [];
+      const sampleStep = Math.max(1, Math.floor(Math.min(mainCanvas.width, mainCanvas.height) / 20));
+
+      // 采样上边
+      for (let x = 0; x < mainCanvas.width; x += sampleStep) {
+        edgeSamples.push(getPixel(data, x, 0, mainCanvas.width));
+      }
+      // 采样下边
+      for (let x = 0; x < mainCanvas.width; x += sampleStep) {
+        edgeSamples.push(getPixel(data, x, mainCanvas.height - 1, mainCanvas.width));
+      }
+      // 采样左边
+      for (let y = sampleStep; y < mainCanvas.height - sampleStep; y += sampleStep) {
+        edgeSamples.push(getPixel(data, 0, y, mainCanvas.width));
+      }
+      // 采样右边
+      for (let y = sampleStep; y < mainCanvas.height - sampleStep; y += sampleStep) {
+        edgeSamples.push(getPixel(data, mainCanvas.width - 1, y, mainCanvas.width));
+      }
+
+      // 统计颜色频率
+      const colorMap = new Map();
+      edgeSamples.forEach(color => {
+        // 简化颜色值以提高匹配率（将RGB值除以8再乘回来）
+        const key = `${Math.round(color.r/8)*8},${Math.round(color.g/8)*8},${Math.round(color.b/8)*8}`;
+        colorMap.set(key, (colorMap.get(key) || 0) + 1);
+      });
+
+      // 找到最频繁的颜色作为背景色
+      let maxCount = 0;
+      let bgKey = '';
+      for (const [key, count] of colorMap) {
+        if (count > maxCount) {
+          maxCount = count;
+          bgKey = key;
+        }
+      }
+
+      const [bgR, bgG, bgB] = bgKey.split(',').map(Number);
+
+      // 解析目标颜色
+      const targetColor = hexToRgb(selectedColor);
+
+      // 替换背景
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // 计算与背景色的距离
+        const distance = Math.sqrt(
+          Math.pow(r - bgR, 2) +
+          Math.pow(g - bgG, 2) +
+          Math.pow(b - bgB, 2)
+        );
+
+        // 如果距离在容差范围内，替换为目标颜色
+        if (distance < tolerance * 4.41) {
+          data[i] = targetColor.r;
+          data[i + 1] = targetColor.g;
+          data[i + 2] = targetColor.b;
+        }
+      }
+
+      mainCtx.putImageData(imageData, 0, 0);
+      resultCtx.putImageData(imageData, 0, 0);
+    }
+
+    function getPixel(data, x, y, width) {
+      const index = (y * width + x) * 4;
+      return {
+        r: data[index],
+        g: data[index + 1],
+        b: data[index + 2]
+      };
+    }
+
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 };
+    }
+
+    // 重置
+    resetBtn.addEventListener('click', () => {
+      if (!originalImage) return;
+      mainCtx.drawImage(originalImage, 0, 0, mainCanvas.width, mainCanvas.height);
+      resultCtx.drawImage(originalImage, 0, 0, resultCanvas.width, resultCanvas.height);
+    });
+
+    // 下载
+    downloadBtn.addEventListener('click', () => {
+      if (!originalImage) {
+        alert('请先处理图片');
+        return;
+      }
+      const link = document.createElement('a');
+      link.download = '证件照_' + new Date().getTime() + '.png';
+      link.href = resultCanvas.toDataURL('image/png');
+      link.click();
+    });
+  </script>
+</body>
+</html>

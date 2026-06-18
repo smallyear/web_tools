@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>密码生成器 - Web Tools</title>
+  <meta name="description" content="随机密码生成器，支持自定义长度和字符类型，密码强度评估">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .password-layout {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .generated-password {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 24px;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      word-break: break-all;
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: all;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .generated-password:hover {
+      border-color: var(--primary);
+    }
+
+    .generated-password.empty {
+      color: var(--text-secondary);
+      font-size: 16px;
+      letter-spacing: normal;
+      font-style: italic;
+    }
+
+    .strength-meter {
+      margin-bottom: 24px;
+    }
+
+    .strength-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .strength-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      width: 0%;
+    }
+
+    .strength-weak { background: var(--error); width: 33%; }
+    .strength-medium { background: var(--warning); width: 66%; }
+    .strength-strong { background: var(--success); width: 100%; }
+
+    .control-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .control-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .range-group {
+      margin-bottom: 20px;
+    }
+
+    .range-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .length-value {
+      font-weight: 600;
+      color: var(--primary-dark);
+      font-size: 18px;
+    }
+
+    .option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .option-item:hover {
+      background: #E3F2FD;
+    }
+
+    .option-item .label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .option-item .count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-left: 8px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+
+    .char-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .char-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+
+    .btn-group-main {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-group-main .btn {
+      flex: 1;
+    }
+
+    .strength-text {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .strength-weak-text { color: var(--error); }
+    .strength-medium-text { color: var(--warning); }
+    .strength-strong-text { color: var(--success); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / 密码生成器
+      </div>
+      <h1>🔐 密码生成器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">生成高强度随机密码，支持自定义规则，评估密码强度</p>
+    </div>
+
+    <div class="password-layout">
+      <!-- 生成的密码 -->
+      <div class="generated-password empty" id="passwordDisplay" title="点击复制">
+        点击"生成密码"按钮开始
+      </div>
+
+      <!-- 强度指示器 -->
+      <div class="strength-meter" id="strengthMeter" style="display: none;">
+        <div class="strength-label">
+          <span>密码强度</span>
+          <span class="strength-text" id="strengthText">-</span>
+        </div>
+        <div class="strength-bar">
+          <div class="strength-fill" id="strengthFill"></div>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);" id="strengthDesc"></div>
+      </div>
+
+      <!-- 控制面板 -->
+      <div class="control-card">
+        <div class="control-card-title">⚙️ 密码设置</div>
+
+        <!-- 长度选择 -->
+        <div class="range-group">
+          <div class="range-label">
+            <span>密码长度</span>
+            <span class="length-value" id="lengthValue">16</span>
+          </div>
+          <input type="range" id="lengthRange" min="6" max="64" value="16">
+        </div>
+
+        <!-- 字符类型 -->
+        <div class="control-card-title" style="font-size: 14px; margin-top: 20px;">字符类型</div>
+        <div class="option-group" style="margin-top: 12px;">
+          <label class="option-item">
+            <div>
+              <span class="label">大写字母 (A-Z)</span>
+              <span class="count">26 个字符</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="uppercase" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </label>
+
+          <label class="option-item">
+            <div>
+              <span class="label">小写字母 (a-z)</span>
+              <span class="count">26 个字符</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="lowercase" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </label>
+
+          <label class="option-item">
+            <div>
+              <span class="label">数字 (0-9)</span>
+              <span class="count">10 个字符</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="numbers" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </label>
+
+          <label class="option-item">
+            <div>
+              <span class="label">特殊符号 (!@#$%...) </span>
+              <span class="count">32 个字符</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="symbols" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </label>
+        </div>
+
+        <!-- 字符预览 -->
+        <div style="margin-top: 16px;">
+          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">可用字符</div>
+          <div class="char-preview" id="charPreview"></div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-group-main">
+        <button class="btn btn-primary" id="generateBtn">✨ 生成密码</button>
+        <button class="btn btn-secondary" id="copyBtn" disabled>📋 复制</button>
+      </div>
+
+      <!-- 提示信息 -->
+      <div style="margin-top: 16px; padding: 12px; background: #FFF3E0; border-radius: 6px; font-size: 13px; color: #E65100;">
+        💡 <strong>提示：</strong>点击生成的密码可以快速复制。建议使用所有字符类型组合以获得更高强度。
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      // DOM 元素
+      const passwordDisplay = document.getElementById('passwordDisplay');
+      const lengthRange = document.getElementById('lengthRange');
+      const lengthValue = document.getElementById('lengthValue');
+      const uppercase = document.getElementById('uppercase');
+      const lowercase = document.getElementById('lowercase');
+      const numbers = document.getElementById('numbers');
+      const symbols = document.getElementById('symbols');
+      const charPreview = document.getElementById('charPreview');
+      const generateBtn = document.getElementById('generateBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const strengthMeter = document.getElementById('strengthMeter');
+      const strengthText = document.getElementById('strengthText');
+      const strengthFill = document.getElementById('strengthFill');
+      const strengthDesc = document.getElementById('strengthDesc');
+
+      let currentPassword = '';
+
+      // 字符集
+      const CHAR_SETS = {
+        uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        lowercase: 'abcdefghijklmnopqrstuvwxyz',
+        numbers: '0123456789',
+        symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+      };
+
+      // 更新长度显示和字符预览
+      function updateUI() {
+        const length = parseInt(lengthRange.value);
+        lengthValue.textContent = length;
+
+        // 构建可用字符集
+        let charSet = '';
+        if (uppercase.checked) charSet += CHAR_SETS.uppercase;
+        if (lowercase.checked) charSet += CHAR_SETS.lowercase;
+        if (numbers.checked) charSet += CHAR_SETS.numbers;
+        if (symbols.checked) charSet += CHAR_SETS.symbols;
+
+        // 字符预览（最多显示 40 个）
+        charPreview.innerHTML = '';
+        const previewChars = charSet.split('').slice(0, 40).map(c =>
+          `<span class="char-tag">${c}</span>`
+        ).join('');
+        charPreview.innerHTML = previewChars;
+        if (charSet.length > 40) {
+          charPreview.innerHTML += `<span class="char-tag">+${charSet.length - 40}</span>`;
+        }
+
+        // 启用/禁用生成按钮
+        generateBtn.disabled = charSet.length === 0;
+        copyBtn.disabled = currentPassword === '';
+
+        // 更新密码显示样式
+        if (currentPassword) {
+          passwordDisplay.classList.remove('empty');
+        } else {
+          passwordDisplay.classList.add('empty');
+        }
+      }
+
+      // 生成密码
+      function generatePassword() {
+        let charSet = '';
+        if (uppercase.checked) charSet += CHAR_SETS.uppercase;
+        if (lowercase.checked) charSet += CHAR_SETS.lowercase;
+        if (numbers.checked) charSet += CHAR_SETS.numbers;
+        if (symbols.checked) charSet += CHAR_SETS.symbols;
+
+        if (charSet.length === 0) {
+          showMessage('error', '请至少选择一种字符类型');
+          return;
+        }
+
+        const length = parseInt(lengthRange.value);
+        let password = '';
+
+        // 确保每种选中的类型至少有一个字符
+        if (uppercase.checked) {
+          password += getRandomChar(CHAR_SETS.uppercase);
+        }
+        if (lowercase.checked) {
+          password += getRandomChar(CHAR_SETS.lowercase);
+        }
+        if (numbers.checked) {
+          password += getRandomChar(CHAR_SETS.numbers);
+        }
+        if (symbols.checked) {
+          password += getRandomChar(CHAR_SETS.symbols);
+        }
+
+        // 填充剩余长度
+        for (let i = password.length; i < length; i++) {
+          password += getRandomChar(charSet);
+        }
+
+        // 打乱顺序
+        password = shuffleString(password);
+        currentPassword = password;
+
+        passwordDisplay.textContent = password;
+        passwordDisplay.classList.remove('empty');
+        copyBtn.disabled = false;
+
+        // 计算并显示强度
+        calculateStrength(password);
+        showMessage('success', '密码已生成');
+      }
+
+      function getRandomChar(str) {
+        return str[Math.floor(Math.random() * str.length)];
+      }
+
+      function shuffleString(str) {
+        const arr = str.split('');
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr.join('');
+      }
+
+      // 密码强度计算
+      function calculateStrength(password) {
+        let score = 0;
+        const len = password.length;
+
+        // 长度得分
+        if (len >= 8) score += 1;
+        if (len >= 12) score += 1;
+        if (len >= 16) score += 1;
+        if (len >= 20) score += 1;
+
+        // 字符类型得分
+        if (/[a-z]/.test(password)) score += 1;
+        if (/[A-Z]/.test(password)) score += 1;
+        if (/[0-9]/.test(password)) score += 1;
+        if (/[^a-zA-Z0-9]/.test(password)) score += 2;
+
+        // 总分 0-10
+        let level, className, desc;
+        if (score <= 2) {
+          level = '弱';
+          className = 'strength-weak';
+          desc = '密码太简单，容易被破解';
+        } else if (score <= 5) {
+          level = '中等';
+          className = 'strength-medium';
+          desc = '密码强度一般，建议增加长度和字符类型';
+        } else {
+          level = '强';
+          className = 'strength-strong';
+          desc = '密码强度高，安全性好';
+        }
+
+        strengthMeter.style.display = 'block';
+        strengthText.textContent = level;
+        strengthText.className = 'strength-text ' + (className === 'strength-weak' ? 'strength-weak-text' : className === 'strength-medium' ? 'strength-medium-text' : 'strength-strong-text');
+        strengthFill.className = 'strength-fill ' + className;
+        strengthDesc.textContent = desc;
+      }
+
+      // 复制密码
+      copyBtn.addEventListener('click', () => {
+        if (!currentPassword) return;
+        copyToClipboard(currentPassword);
+        showMessage('success', '密码已复制到剪贴板');
+      });
+
+      // 点击密码直接复制
+      passwordDisplay.addEventListener('click', () => {
+        if (currentPassword) {
+          copyToClipboard(currentPassword);
+          showMessage('success', '密码已复制');
+        }
+      });
+
+      // 生成按钮
+      generateBtn.addEventListener('click', generatePassword);
+
+      // 实时更新
+      [lengthRange, uppercase, lowercase, numbers, symbols].forEach(el => {
+        el.addEventListener('change', updateUI);
+        el.addEventListener('input', updateUI);
+      });
+
+      // 初始化
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
