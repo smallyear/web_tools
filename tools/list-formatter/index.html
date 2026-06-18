@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>列表格式转换器 - Web Tools</title>
+  <meta name="description" content="将ID列表转换为SQL IN、Python list、JSON数组等格式，开发者必备工具">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .format-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .format-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .output-card {
+      position: relative;
+    }
+
+    .output-card .card-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .output-card .copy-btn {
+      padding: 4px 10px;
+      font-size: 12px;
+      height: 28px;
+    }
+
+    .output-block {
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 12px;
+      background: #FAFAFA;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 80px;
+      max-height: 200px;
+      overflow: auto;
+      user-select: all;
+    }
+
+    .input-area {
+      width: 100%;
+      height: 240px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      resize: vertical;
+    }
+
+    .input-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.15);
+    }
+
+    .options-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .options-bar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .options-bar input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .stat-bar {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .stat-bar span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .paste-hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / 列表格式转换器
+      </div>
+      <h1>📋 列表格式转换器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">粘贴ID列表，一键转为 SQL IN、Python list、JSON 数组等格式，开发者必备</p>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>输入（每行一个值，自动忽略行号）</span>
+        <button class="btn btn-secondary" id="pasteBtn" style="padding: 6px 12px; font-size: 12px; height: 28px;">📋 粘贴</button>
+      </div>
+      <textarea class="input-area" id="inputArea" placeholder="粘贴内容，例如：&#10;00007&#10;00431&#10;00468&#10;&#10;或带行号：&#10;1  00007&#10;2  00431&#10;3  00468&#10;&#10;支持：制表符/空格分隔、CSV逗号分隔、已有引号等"></textarea>
+      <p class="paste-hint">💡 支持从数据库查询结果、Excel、CSV 等粘贴，自动识别行号并去除</p>
+    </div>
+
+    <!-- 选项 -->
+    <div class="options-bar">
+      <label>
+        <input type="checkbox" id="trimSpaces" checked> 去除首尾空格
+      </label>
+      <label>
+        <input type="checkbox" id="removeEmpty" checked> 忽略空行
+      </label>
+      <label>
+        <input type="checkbox" id="removeDuplicates"> 去重
+      </label>
+      <label>
+        <input type="checkbox" id="addQuotes" checked> 添加引号
+      </label>
+      <select id="quoteStyle" class="form-select" style="width: auto; height: 32px; font-size: 13px; padding: 4px 8px;">
+        <option value="single">单引号 '</option>
+        <option value="double">双引号 "</option>
+      </select>
+    </div>
+
+    <!-- 统计 -->
+    <div class="stat-bar" id="statBar">
+      <span>📊 共 <strong id="countDisplay">0</strong> 项</span>
+    </div>
+
+    <!-- 输出区 -->
+    <div class="format-grid">
+      <!-- SQL IN -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>🗄️ SQL IN</span>
+          <button class="btn btn-secondary copy-btn" data-target="sqlOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="sqlOutput"></div>
+      </div>
+
+      <!-- SQL NOT IN -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>🗄️ SQL NOT IN</span>
+          <button class="btn btn-secondary copy-btn" data-target="sqlNotOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="sqlNotOutput"></div>
+      </div>
+
+      <!-- Python List -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>🐍 Python List</span>
+          <button class="btn btn-secondary copy-btn" data-target="pyOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="pyOutput"></div>
+      </div>
+
+      <!-- Python Set -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>🐍 Python Set</span>
+          <button class="btn btn-secondary copy-btn" data-target="pySetOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="pySetOutput"></div>
+      </div>
+
+      <!-- JSON Array -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>📦 JSON Array</span>
+          <button class="btn btn-secondary copy-btn" data-target="jsonOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="jsonOutput"></div>
+      </div>
+
+      <!-- CSV / 逗号分隔 -->
+      <div class="card output-card">
+        <div class="card-title">
+          <span>📄 CSV (逗号分隔)</span>
+          <button class="btn btn-secondary copy-btn" data-target="csvOutput">📋 复制</button>
+        </div>
+        <div class="output-block" id="csvOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const inputArea = document.getElementById('inputArea');
+      const trimSpaces = document.getElementById('trimSpaces');
+      const removeEmpty = document.getElementById('removeEmpty');
+      const removeDuplicates = document.getElementById('removeDuplicates');
+      const addQuotes = document.getElementById('addQuotes');
+      const quoteStyle = document.getElementById('quoteStyle');
+      const countDisplay = document.getElementById('countDisplay');
+
+      // 解析输入：自动去除行号（数字+分隔符在行首的情况）
+      function parseInput(raw) {
+        let lines = raw.split('\n');
+
+        if (trimSpaces.checked) {
+          lines = lines.map(l => l.trim());
+        }
+
+        if (removeEmpty.checked) {
+          lines = lines.filter(l => l.length > 0);
+        }
+
+        // 自动去除行号：匹配行首的数字+分隔符（空格、制表符、点号、逗号等）
+        // 例如：1  00007  或  1. 00007  或  1,00007  或  1|00007
+        lines = lines.map(line => {
+          const match = line.match(/^\d+[\s\t.,|)\]]+(.+)$/);
+          return match ? match[1].trim() : line;
+        });
+
+        // 如果值被引号包裹，去掉引号
+        lines = lines.map(line => {
+          const trimmed = line.trim();
+          if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+              (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+            return trimmed.slice(1, -1);
+          }
+          return trimmed;
+        });
+
+        if (removeDuplicates.checked) {
+          lines = [...new Set(lines)];
+        }
+
+        return lines;
+      }
+
+      function getQuote() {
+        if (!addQuotes.checked) return ['', ''];
+        const q = quoteStyle.value === 'single' ? "'" : '"';
+        return [q, q];
+      }
+
+      function render() {
+        const items = parseInput(inputArea.value);
+        const [lq, rq] = getQuote();
+        countDisplay.textContent = items.length;
+
+        if (items.length === 0) {
+          ['sqlOutput', 'sqlNotOutput', 'pyOutput', 'pySetOutput', 'jsonOutput', 'csvOutput'].forEach(id => {
+            document.getElementById(id).textContent = '';
+          });
+          return;
+        }
+
+        // SQL IN
+        document.getElementById('sqlOutput').textContent =
+          `IN (${items.map(i => `${lq}${i}${rq}`).join(',')})`;
+
+        // SQL NOT IN
+        document.getElementById('sqlNotOutput').textContent =
+          `NOT IN (${items.map(i => `${lq}${i}${rq}`).join(',')})`;
+
+        // Python List
+        document.getElementById('pyOutput').textContent =
+          `[${items.map(i => `${lq}${i}${rq}`).join(', ')}]`;
+
+        // Python Set
+        document.getElementById('pySetOutput').textContent =
+          `{${items.map(i => `${lq}${i}${rq}`).join(', ')}}`;
+
+        // JSON Array (always double quotes for JSON validity)
+        document.getElementById('jsonOutput').textContent =
+          JSON.stringify(items, null, 2);
+
+        // CSV
+        document.getElementById('csvOutput').textContent = items.join(',');
+      }
+
+      // 绑定事件
+      inputArea.addEventListener('input', render);
+      [trimSpaces, removeEmpty, removeDuplicates, addQuotes].forEach(el => {
+        el.addEventListener('change', render);
+      });
+      quoteStyle.addEventListener('change', render);
+
+      // 粘贴按钮
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          inputArea.value = text;
+          render();
+          showMessage('success', '已粘贴');
+        } catch (err) {
+          showMessage('error', '无法读取剪贴板内容');
+        }
+      });
+
+      // 复制按钮
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const targetId = btn.getAttribute('data-target');
+          const text = document.getElementById(targetId).textContent;
+          if (!text) {
+            showMessage('error', '输出为空');
+            return;
+          }
+          await copyToClipboard(text);
+          showMessage('success', '已复制到剪贴板');
+        });
+      });
+
+      // Ctrl+Enter 触发
+      inputArea.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          render();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
