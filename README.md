@@ -45,8 +45,7 @@ GitHub Pages 自动部署：https://smallyear.github.io/web_tools/
 - [x] 搜索 + 分类筛选
 - [x] 暗黑模式
 - [x] GitHub Pages 部署
-- [ ] 自定义域名配置
-- [ ] ICP 备案
+- [ ] Cloudflare 域名购买 + DNS 映射
 
 ## 贡献
 

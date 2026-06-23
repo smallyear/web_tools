@@ -41,11 +41,7 @@
 
 ## 🔄 待完成（需手动操作）
 
-- [ ] 自定义域名配置 → `DOMAIN_SETUP.md`
-- [ ] ICP 备案 → `DOMAIN_SETUP.md`
-- [ ] Cloudflare CDN 配置 → `DOMAIN_SETUP.md`
-- [ ] 页脚挂载备案号
-- [ ] 国内访问速度测试
+- [ ] Cloudflare 域名购买 + DNS 映射 → `DOMAIN_SETUP.md`
 
 ---
 
