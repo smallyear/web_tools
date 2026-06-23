@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UUID生成器 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tool-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.tool-options label{font-weight:600;font-size:14px}
+.tool-options input[type=number]{width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.tool-options select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-secondary{background:#6c757d;color:#fff}
+.result-box{width:100%;min-height:200px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius:6px;resize:vertical;background:#f9f9f9;box-sizing:border-box}
+.count-info{font-size:13px;color:#666;margin-bottom:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+@media(max-width:768px){.tool-options{flex-direction:column;gap:10px}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>UUID生成器</span></div>
+<div class="card tool-header"><h1>UUID生成器</h1><p>生成随机UUID v4（基于加密安全随机数）</p></div>
+<div class="card">
+<div class="tool-options">
+<div><label>数量：</label><input type="number" id="quantity" min="1" max="100" value="1"></div>
+<div><label>格式：</label>
+<select id="hyphen">
+<option value="yes">带连字符</option>
+<option value="no">无连字符</option>
+</select>
+</div>
+<div><label>大小写：</label>
+<select id="caseFmt">
+<option value="lower">小写</option>
+<option value="upper">大写</option>
+</select>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="generate()">🎲 生成</button>
+<button class="btn btn-success" onclick="copyAll()">📋 复制全部</button>
+<button class="btn btn-secondary" onclick="clearAll()">清空</button>
+</div>
+<div class="count-info" id="countInfo"></div>
+<textarea class="result-box" id="output" readonly placeholder="生成的UUID将显示在这里..."></textarea>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+function generateUUIDv4(){
+const buf=new Uint8Array(16);
+crypto.getRandomValues(buf);
+buf[6]=(buf[6]&0x0f)|0x40;
+buf[8]=(buf[8]&0x3f)|0x80;
+const hex=Array.from(buf).map(b=>b.toString(16).padStart(2,'0')).join('');
+return hex;
+}
+
+function formatUUID(hex,hyphen){
+if(hyphen==='yes'){
+return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+}
+return hex;
+}
+
+function generate(){
+const qty=Math.max(1,Math.min(100,parseInt(document.getElementById('quantity').value)||1));
+const hyphen=document.getElementById('hyphen').value;
+const caseFmt=document.getElementById('caseFmt').value;
+const uuids=[];
+for(let i=0;i<qty;i++){
+let hex=generateUUIDv4();
+let uuid=formatUUID(hex,hyphen);
+uuid=caseFmt==='upper'?uuid.toUpperCase():uuid.toLowerCase();
+uuids.push(uuid);
+}
+document.getElementById('output').value=uuids.join('\n');
+document.getElementById('countInfo').textContent='已生成 '+uuids.length+' 个UUID';
+}
+
+function copyAll(){
+const val=document.getElementById('output').value;
+if(!val){showMessage('请先生成UUID');return}
+copyToClipboard(val);
+showMessage('已复制全部UUID');
+}
+
+function clearAll(){
+document.getElementById('output').value='';
+document.getElementById('countInfo').textContent='';
+}
+</script>
+</body>
+</html>

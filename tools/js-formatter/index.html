@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaScript格式化/压缩 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.io-row{display:flex;gap:12px;margin-bottom:12px}
+.io-row>div{flex:1;display:flex;flex-direction:column}
+.io-row textarea,.io-row .output{flex:1;min-height:300px;font-family:monospace;font-size:13px;padding:10px;border:1px solid #ddd;border-radius:6px;resize:vertical}
+.io-row .output{background:#f9f9f9;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.btn-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-secondary{background:#6c757d;color:#fff}
+select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+@media(max-width:768px){.io-row{flex-direction:column}.io-row textarea,.io-row .output{min-height:200px}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>JavaScript格式化/压缩</span></div>
+<div class="card tool-header"><h1>JavaScript格式化/压缩</h1><p>格式化美化或压缩JavaScript代码</p></div>
+<div class="card">
+<div class="btn-row">
+<button class="btn btn-primary" onclick="beautify()">✨ 格式化</button>
+<button class="btn btn-primary" onclick="minify()">📦 压缩</button>
+<select id="indentSize"><option value="2">2空格</option><option value="4">4空格</option><option value="tab">Tab</option></select>
+<button class="btn btn-success" onclick="copyOutput()">📋 复制结果</button>
+<button class="btn btn-secondary" onclick="clearAll()">清空</button>
+</div>
+<div class="io-row">
+<div><label style="font-weight:600;margin-bottom:4px">输入 JavaScript</label><textarea id="input" placeholder="粘贴 JavaScript 代码..."></textarea></div>
+<div><label style="font-weight:600;margin-bottom:4px">输出结果</label><div class="output" id="output">结果将显示在这里...</div></div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+function getIndent(){
+const v=document.getElementById('indentSize').value;
+return v==='tab'?'\t':' '.repeat(parseInt(v));
+}
+
+function beautify(){
+const code=document.getElementById('input').value;
+if(!code.trim()){showMessage('请输入代码');return}
+const indent=getIndent();
+let result='',level=0,inStr=false,strCh='',inLineComment=false,inBlockComment=false,prevCh='',i=0;
+const src=code;
+function ws(){return indent.repeat(level)}
+let lineStart=true;
+while(i<src.length){
+const ch=src[i],next=src[i+1];
+// Handle comments
+if(!inStr&&ch==='/'&&next==='/'){inLineComment=true;if(lineStart)result+=ws();result+=ch;i++;lineStart=false;continue}
+if(inLineComment){result+=ch;if(ch==='\n'){inLineComment=false;result+=ws().replace(/[^\n]/g,'');lineStart=true}i++;continue}
+if(!inStr&&ch==='/'&&next==='*'){inBlockComment=true;if(lineStart)result+=ws();result+='/*';i+=2;lineStart=false;continue}
+if(inBlockComment){result+=ch;if(ch==='*'&&next==='/'){result+='/';i+=2;inBlockComment=false}else i++;continue}
+// Handle strings
+if(!inStr&&(ch==='"'||ch==="'"||ch==='`')){
+inStr=true;strCh=ch;if(lineStart){result+=ws();lineStart=false}result+=ch;i++;continue}
+if(inStr){
+result+=ch;
+if(ch==='\\'){result+=src[i+1]||'';i+=2;continue}
+if(ch===strCh)inStr=false;
+i++;continue}
+// Whitespace
+if(ch==='\n'){lineStart=true;i++;continue}
+if(ch===' '||ch==='\t'){i++;continue}
+lineStart=false;
+// Opening braces
+if(ch==='{'||ch==='('||ch==='['){
+result+=ch;
+let nextNonSpace='';
+let j=i+1;while(j<src.length&&(src[j]===' '||src[j]==='\t'||src[j]==='\n'))j++;
+if(j<src.length)nextNonSpace=src[j];
+if(nextNonSpace!=='}'&&nextNonSpace!==')'&&nextNonSpace!==']'){
+result+='\n';level++;result+=ws();
+}
+i++;continue}
+// Closing braces
+if(ch==='}'||ch===')'||ch===']'){
+result+='\n';level=Math.max(0,level-1);result+=ws()+ch;
+let j=i+1;while(j<src.length&&(src[j]===' '||src[j]==='\t'))j++;
+if(j<src.length&&src[j]!==';'&&src[j]!==','&&src[j]!==')'&&src[j]!=='}'&&src[j]!==']'&&src[j]!=='\n'){
+result+='\n'+ws();
+}
+i++;continue}
+// Semicolons
+if(ch===';'){
+result+=';\n';
+let j=i+1;while(j<src.length&&(src[j]===' '||src[j]==='\t'))j++;
+if(j<src.length&&(src[j]==='}')){}else{result+=ws()}
+i++;continue}
+// Operators and punctuation with spaces
+if('+-*/%=<>!&|?:'.includes(ch)){
+let j=i;while(j<src.length&&'+-*/%=<>!&|?:'.includes(src[j]))j++;
+const op=src.slice(i,j);
+const needSpaceBefore=!('({[=;:,!&|?'.includes(prevCh)||prevCh==='');
+result+=(needSpaceBefore&&i>0?' ':'')+op+' ';
+prevCh=op;i=j;lineStart=false;continue}
+// Comma
+if(ch===','){result+=', ';i++;prevCh=',';continue}
+result+=ch;prevCh=ch;i++;
+}
+// Clean up extra blank lines
+result=result.replace(/\n{3,}/g,'\n\n').replace(/ +\n/g,'\n').trim()+'\n';
+document.getElementById('output').textContent=result;
+}
+
+function minify(){
+const code=document.getElementById('input').value;
+if(!code.trim()){showMessage('请输入代码');return}
+let result='',inStr=false,strCh='',i=0;
+const src=code;
+while(i<src.length){
+const ch=src[i],next=src[i+1];
+// Line comment
+if(!inStr&&ch==='/'&&next==='/'){while(i<src.length&&src[i]!=='\n')i++;continue}
+// Block comment
+if(!inStr&&ch==='/'&&next==='*'){i+=2;while(i<src.length-1&&!(src[i]==='*'&&src[i+1]==='/'))i++;i+=2;continue}
+// Strings
+if(!inStr&&(ch==='"'||ch==="'"||ch==='`')){
+inStr=true;strCh=ch;result+=ch;i++;continue}
+if(inStr){result+=ch;if(ch==='\\'){result+=src[i+1]||'';i+=2;continue}if(ch===strCh)inStr=false;i++;continue}
+// Newlines and whitespace
+if(ch==='\n'||ch==='\r'){i++;continue}
+if(ch===' '||ch==='\t'){
+let j=i;while(j<src.length&&(src[j]===' '||src[j]==='\t'))j++;
+const prev=result[result.length-1]||'';
+const nxt=src[j]||'';
+const needSpace=(
+(prev.match(/[a-zA-Z0-9_$]/)&&nxt.match(/[a-zA-Z0-9_$]/))||
+(prev==='/'&&nxt==='*')||
+(prev==='#'&&nxt==='!')
+);
+if(needSpace)result+=' ';
+i=j;continue}
+result+=ch;i++;
+}
+document.getElementById('output').textContent=result;
+}
+
+function copyOutput(){const t=document.getElementById('output').textContent;if(!t||t==='结果将显示在这里...')return;copyToClipboard(t);showMessage('已复制结果')}
+function clearAll(){document.getElementById('input').value='';document.getElementById('output').textContent='结果将显示在这里...'}
+</script>
+</body>
+</html>

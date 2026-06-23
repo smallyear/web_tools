@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随机数生成器 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;margin-bottom:16px}
+.form-group label{display:block;font-weight:600;font-size:14px;margin-bottom:4px}
+.form-group input[type=number]{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box}
+.checkbox-row{display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.checkbox-row label{font-size:14px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-secondary{background:#6c757d;color:#fff}
+.result-box{width:100%;min-height:200px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius:6px;resize:vertical;background:#f9f9f9;box-sizing:border-box}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.stat-card{background:#f0f4f8;padding:12px;border-radius:8px;text-align:center}
+.stat-card .stat-label{font-size:12px;color:#666}
+.stat-card .stat-value{font-size:18px;font-weight:700;color:#333;margin-top:4px;word-break:break-all}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+@media(max-width:768px){.form-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>随机数生成器</span></div>
+<div class="card tool-header"><h1>随机数生成器</h1><p>生成指定范围内的随机数，支持去重和排序</p></div>
+<div class="card">
+<div class="form-grid">
+<div class="form-group"><label>最小值</label><input type="number" id="minVal" value="1"></div>
+<div class="form-group"><label>最大值</label><input type="number" id="maxVal" value="100"></div>
+<div class="form-group"><label>数量 (1-1000)</label><input type="number" id="quantity" min="1" max="1000" value="10"></div>
+<div class="form-group"><label>小数位数 (0-10)</label><input type="number" id="decimals" min="0" max="10" value="0"></div>
+</div>
+<div class="checkbox-row">
+<label><input type="checkbox" id="allowDup" checked> 允许重复</label>
+<label><input type="checkbox" id="sortAsc"> 升序排列</label>
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="generate()">🎲 生成</button>
+<button class="btn btn-success" onclick="copyOutput()">📋 复制结果</button>
+<button class="btn btn-secondary" onclick="clearAll()">清空</button>
+</div>
+<textarea class="result-box" id="output" readonly placeholder="生成的随机数将显示在这里..."></textarea>
+<div class="stats" id="stats" style="display:none">
+<div class="stat-card"><div class="stat-label">总和</div><div class="stat-value" id="statSum">-</div></div>
+<div class="stat-card"><div class="stat-label">平均值</div><div class="stat-value" id="statAvg">-</div></div>
+<div class="stat-card"><div class="stat-label">最小值</div><div class="stat-value" id="statMin">-</div></div>
+<div class="stat-card"><div class="stat-label">最大值</div><div class="stat-value" id="statMax">-</div></div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+function generate(){
+const min=parseFloat(document.getElementById('minVal').value);
+const max=parseFloat(document.getElementById('maxVal').value);
+const qty=Math.max(1,Math.min(1000,parseInt(document.getElementById('quantity').value)||1));
+const dec=Math.max(0,Math.min(10,parseInt(document.getElementById('decimals').value)||0));
+const allowDup=document.getElementById('allowDup').checked;
+const sortAsc=document.getElementById('sortAsc').checked;
+
+if(isNaN(min)||isNaN(max)){showMessage('请输入有效的最小值和最大值');return}
+if(min>=max){showMessage('最小值必须小于最大值');return}
+if(!allowDup){
+const range=max-min;
+const possible=dec===0?Math.floor(range)+1:range;
+if(qty>possible){showMessage('不允许重复时，数量不能超过范围内可能的数值个数');return}
+}
+
+const nums=[];
+const seen=new Set();
+const maxAttempts=qty*100;
+let attempts=0;
+while(nums.length<qty&&attempts<maxAttempts){
+attempts++;
+let num;
+if(dec===0){
+num=Math.floor(Math.random()*(max-min+1))+min;
+}else{
+num=parseFloat((Math.random()*(max-min)+min).toFixed(dec));
+}
+if(!allowDup){
+if(seen.has(num))continue;
+seen.add(num);
+}
+nums.push(num);
+}
+
+if(sortAsc)nums.sort((a,b)=>a-b);
+
+const sum=nums.reduce((a,b)=>a+b,0);
+const avg=nums.length?sum/nums.length:0;
+const nMin=nums.length?Math.min(...nums):0;
+const nMax=nums.length?Math.max(...nums):0;
+
+document.getElementById('output').value=nums.join('\n');
+document.getElementById('stats').style.display='grid';
+document.getElementById('statSum').textContent=sum.toFixed(dec);
+document.getElementById('statAvg').textContent=avg.toFixed(dec);
+document.getElementById('statMin').textContent=nMin.toFixed(dec);
+document.getElementById('statMax').textContent=nMax.toFixed(dec);
+}
+
+function copyOutput(){
+const val=document.getElementById('output').value;
+if(!val){showMessage('请先生成随机数');return}
+copyToClipboard(val);
+showMessage('已复制结果');
+}
+
+function clearAll(){
+document.getElementById('output').value='';
+document.getElementById('stats').style.display='none';
+}
+</script>
+</body>
+</html>

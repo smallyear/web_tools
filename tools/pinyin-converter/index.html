@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汉语拼音转换 - 在线工具箱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.navbar a{color:#fff;text-decoration:none;font-weight:600;font-size:18px}
+.breadcrumb{padding:12px 20px;font-size:14px;color:#666;max-width:800px;margin:0 auto}
+.breadcrumb a{color:#667eea;text-decoration:none}
+.container{max-width:800px;margin:0 auto;padding:0 20px 40px}
+.tool-header{text-align:center;padding:20px 0 30px}
+.tool-header h1{font-size:28px;color:#333;margin-bottom:8px}
+.tool-header p{color:#888;font-size:15px}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#444;font-size:14px}
+textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;resize:vertical;min-height:120px;font-family:inherit;transition:border-color .2s}
+textarea:focus{outline:none;border-color:#667eea}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:100%;padding:12px;margin-bottom:10px}
+.btn-primary:hover{opacity:.9}
+.btn-copy{background:#f0f0ff;color:#667eea;border:2px solid #667eea;font-size:13px;padding:6px 16px}
+.btn-copy:hover{background:#667eea;color:#fff}
+.options{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.options label{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:6px 12px;background:#f8f9ff;border-radius:6px;border:1px solid #e0e0ff}
+.output-area{background:#f8f9ff;border:2px solid #e8e8ff;border-radius:10px;padding:16px;min-height:100px;font-size:18px;line-height:2;word-break:break-all}
+.result-actions{margin-top:12px;display:flex;gap:10px}
+.tone1{color:#e74c3c}.tone2{color:#e67e22}.tone3{color:#27ae60}.tone4{color:#2980b9}.tone0{color:#666}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:20px}
+@media(max-width:600px){.container{padding:0 12px 30px}.tool-header h1{font-size:22px}.card{padding:16px}.options{gap:6px}}
+</style>
+</head>
+<body>
+<nav class="navbar"><a href="../../index.html">🧰 在线工具箱</a><span style="color:#ddd;font-size:13px">汉语拼音转换</span></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <a href="../../index.html">工具列表</a> &gt; 汉语拼音转换</div>
+<div class="container">
+<div class="tool-header"><h1>🔤 汉语拼音转换</h1><p>输入中文文本，转换为拼音（含声调标注）</p></div>
+<div class="card">
+<div class="form-group"><label>输入中文文本</label><textarea id="input" placeholder="请输入中文文本..." oninput="convert()">你好世界，这是一段测试文字。</textarea></div>
+<div class="options">
+<label><input type="checkbox" id="opt-tone" checked onchange="convert()"> 声调标记</label>
+<label><input type="checkbox" id="opt-number" onchange="convert()"> 声调数字</label>
+<label><input type="checkbox" id="opt-cap" onchange="convert()"> 首字母大写</label>
+</div>
+<button class="btn btn-primary" onclick="convert()">转换拼音</button>
+<div class="form-group"><label>拼音结果</label><div class="output-area" id="output"></div></div>
+<div class="result-actions"><button class="btn btn-copy" onclick="copyResult()">📋 复制拼音</button></div>
+</div>
+</div>
+<footer>在线工具箱 &copy; 2026</footer>
+<script>
+// Compact pinyin dictionary - covers ~600 most common characters
+// Format: each entry is "字pinyin" (pinyin with tone digit 1-5)
+const PY_RAW="一yi1不bu4了le5人ren2我wo3在zai4有you3他ta1这zhe4为wei2之zhi1大da4来lai2以yi3个ge4中zhong1上shang4们men2到dao4说shuo1国guo2和he2地de5也ye3子zi3时shi2道dao4出chu1会hui4三san1要yao4于yu2下xia4得de2可ke3你ni3年nian2生sheng1自zi4学xue2对dui4所suo3家jia1用yong4当dang1天tian1过guo4小xiao3作zuo4理li3公gong1多duo1日ri4方fang1如ru2已yi3经jing1把ba3与yu3那na4它ta1两liang3好hao3她ta1东dong1西xi1只zhi3很hen3让rang4又you4从cong2做zuo4分fen1还hai2种zhong3心xin1前qian2些xie1因yin1面mian4力li4开kai1但dan4身shen1明ming2起qi3看kan4定ding4见jian4其qi2自zi4问wen4什shen2位wei4次ci4走zou3海hai3入ru4风feng1月yue4机ji1去qu4想xiang3没mei2过guo4点dian3发fa1能neng2而er2都dou1动dong4同tong2关guan1最zui4现xian4经jing1吗ma5被bei4里li3干gan4头tou2太tai4事shi4长chang2儿er2怎zen3回hui2向xiang4听ting1等deng3然ran2利li4所suo3间jian1全quan2打da3每mei3新xin1论lun4加jia1再zai4表biao3体ti3各ge4知zhi1做zuo4给gei3才cai2许xu3计ji4记ji4情qing2原yuan2节jie2战zhan4反fan3常chang2路lu4光guang1口kou3认ren4使shi3务wu4期qi1带dai4感gan3快kuai4将jiang1据ju4求qiu2先xian1任ren4真zhen1传chuan2取qu3改gai3林lin2话hua4却que4接jie1变bian4达da2单dan1切qie4必bi4五wu3步bu4张zhang1象xiang4随sui2花hua1识shi2术shu4研yan2拉la1土tu3写xie3百bai3女nv3青qing1美mei3念nian4眼yan3活huo2业ye4该gai1化hua4持chi2通tong1笔bi3士shi4交jiao1市shi4且qie3世shi4气qi4正zheng4台tai2直zhi2区qu1半ban4石shi2毛mao2性xing4收shou1南nan2片pian4几ji3整zheng3九jiu3马ma3火huo3转zhuan3件jian4管guan3并bing4入ru4代dai4回hui2王wang2教jiao4边bian1思si1神shen2完wan2复fu4重zhong4破po4她ta1色se4形xing2差cha4安an1飞fei1存cun2强qiang2题ti2合he2行xing2空kong1度du4金jin1品pin3春chun1军jun1排pai2办ban4质zhi4巴ba1告gao4友you3效xiao4比bi3克ke4判pan4周zhou1备bei4财cai2现xian4营ying2弱ruo4权quan2响xiang3离li2满man3华hua2证zheng4省sheng3布bu4县xian4注zhu4夜ye4答da2决jue2场chang3爱ai4线xian4参can1死si3规gui1究jiu1纪ji4态tai4阳yang2及ji2夫fu1策ce4局ju2细xi4劳lao2设she4指zhi3北bei3连lian2共gong4视shi4易yi4星xing1近jin4影ying3均jun1黑hei1算suan4验yan4压ya1单dan1则ze2除chu2难nan2需xu1便bian4胜sheng4标biao1严yan2红hong2候hou4闻wen2父fu4源yuan2汽qi4式shi4列lie4吉ji2古gu3治zhi4速su4预yu4值zhi2智zhi4建jian4章zhang1员yuan2处chu3号hao4精jing1层ceng2依yi1温wen1灵ling2州zhou1觉jue2条tiao2集ji2根gen1志zhi4翻fan1级ji2格ge2继ji4调diao4历li4端duan4适shi4势shi4维wei2选xuan3素su4且qie3兵bing1乃nai3远yuan3司si1观guan1既ji4英ying1争zheng1防fang2互hu4环huan2阵zhen4证zheng4采cai3央yang1助zhu4究jiu1刚gang1宁ning2弹dan4火huo3坏huai4副fu4源yuan2兴xing1尔er3找zhao3追zhui1响xiang3否fou3罗luo2独du2容rong2充chong1企qi3条tiao2粉fen3环huan2述shu4义yi4固gu4灯deng1永yong3居ju1标biao1随sui2感gan3独du2害hai4例li4洲zhou1信xin4大da4利li4丰feng1预yu4鲜xian1仍reng2置zhi4科ke1南nan2七qi1民min2份fen4住zhu4创chuang4换huan4亚ya4投tou2整zheng3信xin4写xie3诉su4报bao4劳lao2号hao4乱luan4汉han4热re4岁sui4八ba1份fen4田tian2肯ken3围wei2卡ka3希xi1雷lei2阅yue4超chao1飞fei1越yue4苦ku3具ju4议yi4局ju2般ban1若ruo4突tu1黄huang2概gai4虽sui1木mu4退tui4病bing4某mu3转zhuan3语yu3细xi4列lie4推tui1负fu4血xue4视shi4叶ye4形xing2望wang4术shu4技ji4录lu4句ju4率lv4娘niang2认ren4双shuang1杀sha1证zheng4派pai4草cao3肯ken3斤jin1调tiao2苦ku3专zhuan1百bai3费fei4资zi1药yao4飞fei1缺que1艺yi4数shu4叶ye4项xiang4片pian4靠kao4血xie3花hua1配pei4考kao3阵zhen4跑pao3值zhi2满man3背bei1四si4角jue2包bao1简jian3园yuan2读du2虫chong2仅jin3角jiao3础chu3办ban4历li4雪xue3图tu2团tuan2层ceng2群qun2错cuo4较jiao4态tai4联lian2范fan4部bu4楼lou2推tui1格ge2电dian4床chuang2否fou3密mi4规gui1毛mao2营ying2副fu4座zuo4仅jin3凡fan2苏su1旅lv3容rong2极ji2宣xuan1竟jing4绝jue2距ju4需xu1初chu1防fang2评ping2调tiao4降jiang4即ji2职zhi2环huan2夜ye4铁tie3限xian4母mu3权quan2属shu3树shu4绿lv4惊jing1简jian3范fan4岁sui4录lu4既ji4阴yin1付fu4派pai4束shu4仅jin3啊a1墨mo4归gui1叶ye4";
+
+// Parse dictionary
+const PY={};
+(function(){
+let i=0;
+const s=PY_RAW;
+while(i<s.length){
+const code=s.charCodeAt(i);
+if(code>=0x4e00&&code<=0x9fff){
+const ch=s[i];
+i++;
+let py='';
+while(i<s.length){
+const c=s[i];
+const cc=s.charCodeAt(i);
+if((c>='a'&&c<='z')||(c>='1'&&c<='5')||c==='ü'){
+py+=c;
+i++;
+}else{
+break;
+}
+}
+if(py){
+// Remove trailing digits to get tone, store full like "hao3"
+PY[ch]=py;
+}
+}else{
+i++;
+}
+}
+})();
+
+// Tone mark conversion
+const TONES={
+'a':'āáǎà',
+'e':'ēéěè',
+'i':'īíǐì',
+'o':'ōóǒò',
+'u':'ūúǔù',
+'ü':'ǖǘǚǜ'
+};
+
+function pinyinWithTone(py){
+const tone=parseInt(py.slice(-1));
+const base=py.slice(0,-1);
+if(!tone||tone<1||tone>5)return base;
+if(tone===5)return base;
+// Find which vowel gets the tone mark
+// Rules: a > o > e > i/u (when together, the 2nd gets it)
+if(base.includes('a')){
+return base.replace('a',TONES['a'][tone-1]);
+}
+if(base.includes('o')){
+return base.replace('o',TONES['o'][tone-1]);
+}
+if(base.includes('e')){
+return base.replace('e',TONES['e'][tone-1]);
+}
+// Special: iu - tone on u
+if(base.includes('iu')){
+return base.replace('u',TONES['u'][tone-1]);
+}
+if(base.includes('ui')){
+return base.replace('i',TONES['i'][tone-1]);
+}
+if(base.includes('i')){
+return base.replace('i',TONES['i'][tone-1]);
+}
+if(base.includes('u')){
+return base.replace('u',TONES['u'][tone-1]);
+}
+if(base.includes('ü')){
+return base.replace('ü',TONES['ü'][tone-1]);
+}
+return base;
+}
+
+function getPy(char){
+return PY[char]||'';
+}
+
+function convert(){
+const text=document.getElementById('input').value;
+const withTone=document.getElementById('opt-tone').checked;
+const withNumber=document.getElementById('opt-number').checked;
+const capFirst=document.getElementById('opt-cap').checked;
+const out=document.getElementById('output');
+let isFirstChar=true;
+let html='';
+for(const char of text){
+if(/[\u4e00-\u9fff]/.test(char)){
+const raw=getPy(char);
+if(raw){
+const tone=parseInt(raw.slice(-1));
+let display='';
+if(withNumber){
+display=raw;
+}else if(withTone){
+display=pinyinWithTone(raw);
+}else{
+display=raw.replace(/[1-5]/,'');
+}
+if(capFirst&&isFirstChar){
+display=display.charAt(0).toUpperCase()+display.slice(1);
+isFirstChar=false;
+}
+const tc='tone'+(tone||0);
+html+='<span class="'+tc+'">'+display+'</span> ';
+continue;
+}
+}
+if(char===' '||char==='\n'){
+html+=char;
+}else if(/[，。！？、；：""''（）—…\s]/.test(char)){
+html+=char;
+isFirstChar=true;
+}else if(/[a-zA-Z0-9]/.test(char)){
+html+=char;
+isFirstChar=false;
+}else{
+html+=char;
+isFirstChar=true;
+}
+}
+out.innerHTML=html||'<span style="color:#999">请输入中文文本</span>';
+}
+
+function copyResult(){
+const text=document.getElementById('output').innerText;
+if(navigator.clipboard){
+navigator.clipboard.writeText(text).then(()=>{
+const d=document.createElement('div');
+d.textContent='已复制';
+d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;z-index:999';
+document.body.appendChild(d);
+setTimeout(()=>d.remove(),2000);
+});
+}
+}
+
+convert();
+</script>
+</body>
+</html>

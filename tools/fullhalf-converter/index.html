@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全角半角转换 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.io-row{display:flex;gap:12px;margin-bottom:12px}
+.io-row>div{flex:1;display:flex;flex-direction:column}
+.io-row textarea{flex:1;min-height:250px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius:6px;resize:vertical;box-sizing:border-box}
+.btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
+.btn-info{background:#17a2b8;color:#fff}.btn-info:hover{background:#138496}
+.btn-warning{background:#f0ad4e;color:#fff}.btn-warning:hover{background:#ec971f}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-secondary{background:#6c757d;color:#fff}
+.hint{font-size:12px;color:#888;margin-bottom:12px;line-height:1.6}
+.char-table{font-size:13px;color:#555;background:#f9f9f9;padding:10px;border-radius:6px;margin-bottom:12px;line-height:1.8}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+@media(max-width:768px){.io-row{flex-direction:column}.io-row textarea{min-height:180px}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>全角半角转换</span></div>
+<div class="card tool-header"><h1>全角半角转换</h1><p>全角字符与半角字符互相转换，支持字母、数字、标点符号</p></div>
+<div class="card">
+<div class="char-table">
+<strong>支持转换：</strong>字母 Ａ-Ｚ ↔ A-Z &nbsp;|&nbsp; 数字 ０-９ ↔ 0-9 &nbsp;|&nbsp; 空格、标点符号
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="toHalf()">全角→半角</button>
+<button class="btn btn-info" onclick="toFull()">半角→全角</button>
+<button class="btn btn-warning" onclick="convertAll()">全部转换</button>
+<button class="btn btn-success" onclick="copyOutput()">📋 复制结果</button>
+<button class="btn btn-secondary" onclick="swapIO()">🔄 互换</button>
+<button class="btn btn-secondary" onclick="clearAll()">清空</button>
+</div>
+<div class="io-row">
+<div><label style="font-weight:600;margin-bottom:4px">输入文本</label><textarea id="input" placeholder="请输入要转换的文本..." oninput="liveConvert()"></textarea></div>
+<div><label style="font-weight:600;margin-bottom:4px">转换结果</label><textarea id="output" readonly placeholder="转换结果将显示在这里..."></textarea></div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+// Fullwidth to halfwidth conversion map
+function fullToHalf(str){
+let result='';
+for(let i=0;i<str.length;i++){
+let code=str.charCodeAt(i);
+// Fullwidth space U+3000 -> regular space
+if(code===0x3000){result+=' ';continue}
+// Fullwidth ! to ~ (U+FF01 to U+FF5E) -> U+0021 to U+007E
+if(code>=0xFF01&&code<=0xFF5E){result+=String.fromCharCode(code-0xFEE0);continue}
+result+=str[i];
+}
+return result;
+}
+
+// Halfwidth to fullwidth conversion
+function halfToFull(str){
+let result='';
+for(let i=0;i<str.length;i++){
+let code=str.charCodeAt(i);
+// Regular space -> fullwidth space
+if(code===0x0020){result+=String.fromCharCode(0x3000);continue}
+// U+0021 to U+007E -> Fullwidth U+FF01 to U+FF5E
+if(code>=0x0021&&code<=0x007E){result+=String.fromCharCode(code+0xFEE0);continue}
+result+=str[i];
+}
+return result;
+}
+
+let lastMode='half';
+function toHalf(){
+const val=document.getElementById('input').value;
+if(!val){showMessage('请输入文本');return}
+document.getElementById('output').value=fullToHalf(val);
+lastMode='half';
+}
+function toFull(){
+const val=document.getElementById('input').value;
+if(!val){showMessage('请输入文本');return}
+document.getElementById('output').value=halfToFull(val);
+lastMode='full';
+}
+function convertAll(){
+const val=document.getElementById('input').value;
+if(!val){showMessage('请输入文本');return}
+// Detect: if more fullwidth chars, convert full->half; otherwise half->full
+let fullCount=0,halfCount=0;
+for(let i=0;i<val.length;i++){
+const c=val.charCodeAt(i);
+if((c>=0xFF01&&c<=0xFF5E)||c===0x3000)fullCount++;
+else if((c>=0x0021&&c<=0x007E)||c===0x0020)halfCount++;
+}
+if(fullCount>=halfCount){
+document.getElementById('output').value=fullToHalf(val);
+lastMode='half';
+showMessage('检测到全角字符较多，已转为半角');
+}else{
+document.getElementById('output').value=halfToFull(val);
+lastMode='full';
+showMessage('检测到半角字符较多，已转为全角');
+}
+}
+
+function liveConvert(){
+// optional real-time preview
+}
+
+function copyOutput(){
+const val=document.getElementById('output').value;
+if(!val){showMessage('没有可复制的内容');return}
+copyToClipboard(val);
+showMessage('已复制结果');
+}
+function swapIO(){
+const inp=document.getElementById('input');
+const out=document.getElementById('output');
+const tmp=inp.value;
+inp.value=out.value;
+out.value=tmp;
+}
+function clearAll(){
+document.getElementById('input').value='';
+document.getElementById('output').value='';
+}
+</script>
+</body>
+</html>

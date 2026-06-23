@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMI体质指数计算 - 在线工具箱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.navbar a{color:#fff;text-decoration:none;font-weight:600;font-size:18px}
+.breadcrumb{padding:12px 20px;font-size:14px;color:#666;max-width:800px;margin:0 auto}
+.breadcrumb a{color:#667eea;text-decoration:none}
+.container{max-width:800px;margin:0 auto;padding:0 20px 40px}
+.tool-header{text-align:center;padding:20px 0 30px}
+.tool-header h1{font-size:28px;color:#333;margin-bottom:8px}
+.tool-header p{color:#888;font-size:15px}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.row{display:flex;gap:16px}
+.row .form-group{flex:1}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#444;font-size:14px}
+.form-group input,.form-group select{width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#667eea}
+.btn{padding:12px 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:100%;padding:12px}
+.btn-primary:hover{opacity:.9}
+.btn-copy{background:#f0f0ff;color:#667eea;border:2px solid #667eea;font-size:13px;padding:6px 16px;margin-top:10px}
+.btn-copy:hover{background:#667eea;color:#fff}
+.result-box{background:#f8f9ff;border:2px solid #e8e8ff;border-radius:10px;padding:20px;margin-top:16px;display:none}
+.result-box.show{display:block}
+.bmi-value{text-align:center;padding:20px 0}
+.bmi-number{font-size:56px;font-weight:800;line-height:1}
+.bmi-category{font-size:20px;font-weight:600;margin-top:8px}
+.bmi-category.underweight{color:#3498db}
+.bmi-category.normal{color:#27ae60}
+.bmi-category.overweight{color:#e67e22}
+.bmi-category.obese{color:#e74c3c}
+.bmi-scale{margin:24px 0 16px;position:relative}
+.bmi-bar{height:24px;border-radius:12px;overflow:hidden;display:flex;position:relative}
+.bmi-bar .seg{height:100%;transition:opacity .3s}
+.bmi-bar .seg.uw{background:linear-gradient(90deg,#74b9ff,#0984e3)}
+.bmi-bar .seg.n{background:linear-gradient(90deg,#55efc4,#00b894)}
+.bmi-bar .seg.ow{background:linear-gradient(90deg,#ffeaa7,#fdcb6e)}
+.bmi-bar .seg.ob{background:linear-gradient(90deg,#fab1a0,#e17055)}
+.bmi-pointer{position:absolute;top:-8px;width:4px;height:40px;background:#333;border-radius:2px;transition:left .5s ease;transform:translateX(-50%)}
+.bmi-pointer::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #333}
+.bmi-labels{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-top:8px}
+.result-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed #e0e0e0}
+.result-item:last-child{border-bottom:none}
+.result-item .label{color:#666;font-size:14px}
+.result-item .value{font-weight:700;color:#333;font-size:15px}
+.result-item .value.highlight{color:#667eea;font-size:18px}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+.info-card{background:#fff;border:1px solid #eee;border-radius:8px;padding:12px;text-align:center}
+.info-card .num{font-size:24px;font-weight:700;color:#667eea}
+.info-card .desc{font-size:12px;color:#888;margin-top:4px}
+.scale-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
+.scale-legend .item{display:flex;align-items:center;gap:4px;font-size:13px;color:#666}
+.scale-legend .dot{width:12px;height:12px;border-radius:50%}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:20px}
+@media(max-width:600px){.row{flex-direction:column;gap:0}.container{padding:0 12px 30px}.tool-header h1{font-size:22px}.card{padding:16px}.bmi-number{font-size:44px}.info-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<nav class="navbar"><a href="../../index.html">🧰 在线工具箱</a><span style="color:#ddd;font-size:13px">BMI体质指数计算</span></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <a href="../../index.html">工具列表</a> &gt; BMI体质指数计算</div>
+<div class="container">
+<div class="tool-header"><h1>⚖️ BMI体质指数计算</h1><p>根据身高体重计算BMI，评估健康状况</p></div>
+<div class="card">
+<div class="row">
+<div class="form-group"><label>身高（cm）</label><input type="number" id="height" placeholder="如：170" step="0.1"></div>
+<div class="form-group"><label>体重（kg）</label><input type="number" id="weight" placeholder="如：65" step="0.1"></div>
+</div>
+<div class="row">
+<div class="form-group"><label>年龄（可选）</label><input type="number" id="age" placeholder="如：25"></div>
+<div class="form-group"><label>性别（可选）</label><select id="gender"><option value="">不指定</option><option value="male">男</option><option value="female">女</option></select></div>
+</div>
+<button class="btn btn-primary" onclick="calcBMI()">计算BMI</button>
+<div class="result-box" id="result">
+<div class="bmi-value">
+<div class="bmi-number" id="bmi-num">--</div>
+<div class="bmi-category" id="bmi-cat">请计算</div>
+</div>
+<div class="bmi-scale">
+<div class="bmi-bar">
+<div class="seg uw" style="width:20%"></div>
+<div class="seg n" style="width:30%"></div>
+<div class="seg ow" style="width:25%"></div>
+<div class="seg ob" style="width:25%"></div>
+</div>
+<div class="bmi-pointer" id="bmi-pointer" style="left:50%"></div>
+<div class="bmi-labels"><span>15</span><span>18.5</span><span>24</span><span>28</span><span>40</span></div>
+</div>
+<div class="scale-legend">
+<div class="item"><div class="dot" style="background:#0984e3"></div>偏瘦 &lt;18.5</div>
+<div class="item"><div class="dot" style="background:#00b894"></div>正常 18.5-24</div>
+<div class="item"><div class="dot" style="background:#fdcb6e"></div>偏胖 24-28</div>
+<div class="item"><div class="dot" style="background:#e17055"></div>肥胖 &gt;28</div>
+</div>
+<div style="margin-top:20px">
+<div class="result-item"><span class="label">BMI指数</span><span class="value highlight" id="r-bmi">-</span></div>
+<div class="result-item"><span class="label">身体状态</span><span class="value" id="r-status">-</span></div>
+<div class="result-item"><span class="label">健康体重范围</span><span class="value" id="r-range">-</span></div>
+<div class="result-item"><span class="label">距健康体重</span><span class="value" id="r-diff">-</span></div>
+</div>
+<div class="info-grid">
+<div class="info-card"><div class="num" id="i-height">-</div><div class="desc">身高(cm)</div></div>
+<div class="info-card"><div class="num" id="i-weight">-</div><div class="desc">体重(kg)</div></div>
+<div class="info-card"><div class="num" id="i-ideal">-</div><div class="desc">理想体重(kg)</div></div>
+<div class="info-card"><div class="num" id="i-bmr">-</div><div class="desc">基础代谢率(kcal)</div></div>
+</div>
+<button class="btn btn-copy" onclick="copyResult()">📋 复制结果</button>
+</div>
+</div>
+</div>
+<footer>在线工具箱 &copy; 2026 | 中国成人BMI标准</footer>
+<script>
+function calcBMI(){
+const h=parseFloat(document.getElementById('height').value);
+const w=parseFloat(document.getElementById('weight').value);
+if(!h||!w||h<=0||w<=0){alert('请输入有效的身高和体重');return;}
+const hm=h/100;
+const bmi=w/(hm*hm);
+const bmiRound=Math.round(bmi*10)/10;
+// Category (Chinese standard)
+let cat='',catClass='',status='';
+if(bmi<18.5){cat='偏瘦';catClass='underweight';status='体重偏低，建议适当增加营养';}
+else if(bmi<24){cat='正常';catClass='normal';status='体重正常，请继续保持';}
+else if(bmi<28){cat='偏胖';catClass='overweight';status='体重偏重，建议控制饮食和运动';}
+else{cat='肥胖';catClass='obese';status='肥胖，建议咨询医生制定减重计划';}
+document.getElementById('bmi-num').textContent=bmiRound;
+document.getElementById('bmi-num').style.color=catClass==='normal'?'#27ae60':catClass==='underweight'?'#3498db':catClass==='overweight'?'#e67e22':'#e74c3c';
+const catEl=document.getElementById('bmi-cat');
+catEl.textContent=cat;catEl.className='bmi-category '+catClass;
+// Pointer position (scale 15-40)
+const pct=Math.max(0,Math.min(100,(bmi-15)/(40-15)*100));
+document.getElementById('bmi-pointer').style.left=pct+'%';
+// Healthy weight range
+const minW=(18.5*hm*hm).toFixed(1);
+const maxW=(24*hm*hm).toFixed(1);
+const idealW=(22*hm*hm).toFixed(1);
+const diff=w-22*hm*hm;
+document.getElementById('r-bmi').textContent=bmiRound;
+document.getElementById('r-status').textContent=status;
+document.getElementById('r-range').textContent=minW+' ~ '+maxW+' kg';
+document.getElementById('r-diff').textContent=(diff>0?'超出 ':'不足 ')+Math.abs(diff).toFixed(1)+' kg';
+document.getElementById('i-height').textContent=h;
+document.getElementById('i-weight').textContent=w;
+document.getElementById('i-ideal').textContent=idealW;
+// BMR (Harris-Benedict)
+const age=parseInt(document.getElementById('age').value)||30;
+const gender=document.getElementById('gender').value;
+let bmr;
+if(gender==='female'){
+bmr=447.593+9.247*w+3.098*h-4.330*age;
+}else{
+bmr=88.362+13.397*w+4.799*h-5.677*age;
+}
+document.getElementById('i-bmr').textContent=Math.round(bmr);
+document.getElementById('result').classList.add('show');
+}
+function copyResult(){
+const text=`BMI计算结果
+BMI指数：${document.getElementById('r-bmi').textContent}
+身体状态：${document.getElementById('r-status').textContent}
+健康体重范围：${document.getElementById('r-range').textContent}
+距健康体重：${document.getElementById('r-diff').textContent}
+理想体重：${document.getElementById('i-ideal').textContent} kg
+基础代谢率：${document.getElementById('i-bmr').textContent} kcal`;
+if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)});
+}
+</script>
+</body>
+</html>

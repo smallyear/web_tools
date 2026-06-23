@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摩斯电码编解码 - 在线工具箱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.navbar a{color:#fff;text-decoration:none;font-weight:600;font-size:18px}
+.breadcrumb{padding:12px 20px;font-size:14px;color:#666;max-width:800px;margin:0 auto}
+.breadcrumb a{color:#667eea;text-decoration:none}
+.container{max-width:800px;margin:0 auto;padding:0 20px 40px}
+.tool-header{text-align:center;padding:20px 0 30px}
+.tool-header h1{font-size:28px;color:#333;margin-bottom:8px}
+.tool-header p{color:#888;font-size:15px}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#444;font-size:14px}
+textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;resize:vertical;min-height:100px;font-family:monospace;transition:border-color .2s}
+textarea:focus{outline:none;border-color:#667eea}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;flex:1}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:#f0f0ff;color:#667eea;border:2px solid #667eea;flex:1}
+.btn-secondary:hover{background:#667eea;color:#fff}
+.btn-audio{background:#27ae60;color:#fff;flex:1}
+.btn-audio:hover{background:#219a52}
+.btn-copy{background:#f0f0ff;color:#667eea;border:2px solid #667eea;font-size:13px;padding:6px 16px}
+.btn-copy:hover{background:#667eea;color:#fff}
+.btn-ref{background:#fff3e0;color:#e67e22;border:2px solid #e67e22;font-size:13px;padding:6px 16px}
+.btn-ref:hover{background:#e67e22;color:#fff}
+.result-actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+.morse-ref{display:none;background:#f8f9ff;border:2px solid #e8e8ff;border-radius:10px;padding:20px;margin-top:16px}
+.morse-ref.show{display:block}
+.morse-ref h3{margin-bottom:12px;color:#667eea;font-size:16px}
+.morse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.morse-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:6px;border:1px solid #eee;font-size:14px}
+.morse-item .char{font-weight:700;color:#333;min-width:20px}
+.morse-item .code{font-family:monospace;color:#667eea}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:20px}
+.playing{animation:pulse .3s ease-in-out}
+@keyframes pulse{50%{transform:scale(1.05)}}
+@media(max-width:600px){.container{padding:0 12px 30px}.tool-header h1{font-size:22px}.card{padding:16px}.morse-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}}
+</style>
+</head>
+<body>
+<nav class="navbar"><a href="../../index.html">🧰 在线工具箱</a><span style="color:#ddd;font-size:13px">摩斯电码编解码</span></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <a href="../../index.html">工具列表</a> &gt; 摩斯电码编解码</div>
+<div class="container">
+<div class="tool-header"><h1>📡 摩斯电码编解码</h1><p>文字与摩斯电码双向转换，支持音频播放</p></div>
+<div class="card">
+<div class="form-group"><label>文字输入</label><textarea id="text-input" placeholder="输入文字，如：HELLO WORLD">HELLO WORLD</textarea></div>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="textToMorse()">文字 → 摩斯 ▼</button>
+<button class="btn btn-secondary" onclick="morseToText()">摩斯 → 文字 ▲</button>
+</div>
+<div class="form-group"><label>摩斯电码输出</label><textarea id="morse-output" placeholder="摩斯电码（点 . 和划 -）"></textarea></div>
+<div class="btn-row">
+<button class="btn btn-audio" id="play-btn" onclick="playMorse()">🔊 播放音频</button>
+</div>
+<div class="result-actions">
+<button class="btn btn-copy" onclick="copyMorse()">📋 复制摩斯码</button>
+<button class="btn btn-copy" onclick="copyText()">📋 复制文字</button>
+<button class="btn btn-ref" onclick="toggleRef()">📖 查看摩斯码表</button>
+</div>
+<div class="morse-ref" id="ref-table"></div>
+</div>
+</div>
+<footer>在线工具箱 &copy; 2026</footer>
+<script>
+const MORSE_MAP={
+'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---',
+'K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-',
+'U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..',
+'0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
+'.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--','/':'-..-.','(':'-.--.',')':'-.--.-','&':'.-...',':':'---...',
+';':'-.-.-.','=':'-...-','+':'.-.-.','_':'..--.-','"':'.-..-.','$':'...-..-','@':'.--.-.',
+"'":'.----.'
+};
+// Reverse map
+const REVERSE_MAP={};
+for(const[k,v]of Object.entries(MORSE_MAP))REVERSE_MAP[v]=k;
+function textToMorse(){
+const text=document.getElementById('text-input').value.toUpperCase();
+const output=[];
+for(const ch of text){
+if(ch===' '){output.push('/ ');continue;}
+const code=MORSE_MAP[ch];
+if(code)output.push(code+' ');
+}
+document.getElementById('morse-output').value=output.join('').trim();
+}
+function morseToText(){
+const morse=document.getElementById('morse-output').value.trim();
+const words=morse.split(/\s*\/\s*/);
+const result=[];
+for(const word of words){
+const letters=word.trim().split(/\s+/);
+let decoded='';
+for(const code of letters){
+if(!code)continue;
+decoded+=REVERSE_MAP[code]||'?';
+}
+result.push(decoded);
+}
+document.getElementById('text-input').value=result.join(' ');
+}
+let audioCtx=null;
+function getAudioCtx(){
+if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+return audioCtx;
+}
+function playBeep(freq,duration){
+return new Promise(resolve=>{
+const ctx=getAudioCtx();
+const osc=ctx.createOscillator();
+const gain=ctx.createGain();
+osc.connect(gain);
+gain.connect(ctx.destination);
+osc.frequency.value=freq;
+osc.type='sine';
+gain.gain.value=0.3;
+osc.start();
+gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration);
+osc.stop(ctx.currentTime+duration);
+setTimeout(resolve,duration*1000+50);
+});
+}
+async function playMorse(){
+const morse=document.getElementById('morse-output').value.trim();
+if(!morse){alert('请先生成摩斯电码');return;}
+const btn=document.getElementById('play-btn');
+btn.disabled=true;btn.textContent='🔊 播放中...';
+const unit=80;// ms per unit
+const freq=700;
+for(const ch of morse){
+if(ch==='.')await playBeep(freq,unit/1000);
+else if(ch==='-')await playBeep(freq,unit*3/1000);
+else if(ch===' ')await new Promise(r=>setTimeout(r,unit*2));
+else if(ch==='/')await new Promise(r=>setTimeout(r,unit*5));
+await new Promise(r=>setTimeout(r,unit/1000));
+}
+btn.disabled=false;btn.textContent='🔊 播放音频';
+}
+function toggleRef(){
+const ref=document.getElementById('ref-table');
+if(ref.classList.contains('show')){ref.classList.remove('show');return;}
+let html='<h3>📡 摩斯电码对照表</h3><div class="morse-grid">';
+const all=[...Object.entries(MORSE_MAP)];
+all.sort((a,b)=>{
+const order='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const ai=order.indexOf(a[0]);const bi=order.indexOf(b[0]);
+return(ai===-1?99:ai)-(bi===-1?99:bi);
+});
+for(const[char,code]of all){
+html+=`<div class="morse-item"><span class="char">${char}</span><span class="code">${code}</span></div>`;
+}
+html+='</div>';
+ref.innerHTML=html;
+ref.classList.add('show');
+}
+function copyMorse(){copy(document.getElementById('morse-output').value)}
+function copyText(){copy(document.getElementById('text-input').value)}
+function copy(text){if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)})}
+</script>
+</body>
+</html>

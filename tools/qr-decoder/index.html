@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二维码解码器 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.upload-area{border:2px dashed #ccc;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .3s,background .3s;margin-bottom:16px;position:relative}
+.upload-area:hover,.upload-area.dragover{border-color:#4a90d9;background:#f0f6ff}
+.upload-area .icon{font-size:48px;margin-bottom:12px}
+.upload-area p{color:#666;font-size:14px;margin:4px 0}
+.preview-container{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-start}
+.preview-box{position:relative;max-width:300px;flex-shrink:0}
+.preview-box img{max-width:100%;max-height:300px;border:1px solid #ddd;border-radius:8px}
+.preview-box canvas{max-width:100%;max-height:300px;border:1px solid #ddd;border-radius:8px}
+.result-panel{flex:1;min-width:200px}
+.result-panel .result-label{font-weight:600;margin-bottom:8px;font-size:15px}
+.result-content{background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:14px;min-height:60px;word-break:break-all;font-size:14px;line-height:1.6}
+.result-content a{color:#4a90d9;text-decoration:underline}
+.btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.hidden{display:none}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+@media(max-width:768px){.preview-container{flex-direction:column;align-items:center}.preview-box{max-width:100%}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>二维码解码器</span></div>
+<div class="card tool-header"><h1>二维码解码器</h1><p>上传或粘贴二维码图片，自动解码内容</p></div>
+<div class="card">
+<div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+<div class="icon">📷</div>
+<p><strong>点击上传</strong> 或 拖拽图片到此处</p>
+<p style="color:#999;font-size:12px">也支持 Ctrl+V 粘贴截图</p>
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+</div>
+<div class="preview-container hidden" id="previewSection">
+<div class="preview-box"><canvas id="canvas"></canvas></div>
+<div class="result-panel">
+<div class="result-label">解码结果：</div>
+<div class="result-content" id="result">-</div>
+<div class="btn-row" style="margin-top:12px">
+<button class="btn btn-success" onclick="copyResult()">📋 复制内容</button>
+<button class="btn btn-primary" onclick="resetAll()">🔄 重新上传</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+let decodedText='';
+
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')});
+dropZone.addEventListener('dragleave',()=>{dropZone.classList.remove('dragover')});
+dropZone.addEventListener('drop',e=>{
+e.preventDefault();
+dropZone.classList.remove('dragover');
+if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0])});
+document.addEventListener('paste',e=>{
+const items=e.clipboardData&&e.clipboardData.items;
+if(!items)return;
+for(const item of items){
+if(item.type.startsWith('image/')){
+e.preventDefault();
+handleFile(item.getAsFile());
+return;
+}
+}
+});
+
+function handleFile(file){
+if(!file||!file.type.startsWith('image/')){showMessage('请选择图片文件');return}
+const reader=new FileReader();
+reader.onload=function(){
+const img=new Image();
+img.onload=function()decodeImage(img);
+img.src=reader.result;
+};
+reader.readAsDataURL(file);
+}
+
+function decodeImage(img){
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+canvas.width=img.width;
+canvas.height=img.height;
+ctx.drawImage(img,0,0);
+const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+const code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
+
+document.getElementById('previewSection').classList.remove('hidden');
+if(code){
+decodedText=code.data;
+// Draw highlight around QR code
+if(code.location){
+ctx.strokeStyle='rgba(76,175,80,0.8)';
+ctx.lineWidth=4;
+ctx.beginPath();
+ctx.moveTo(code.location.topLeftCorner.x,code.location.topLeftCorner.y);
+ctx.lineTo(code.location.topRightCorner.x,code.location.topRightCorner.y);
+ctx.lineTo(code.location.bottomRightCorner.x,code.location.bottomRightCorner.y);
+ctx.lineTo(code.location.bottomLeftCorner.x,code.location.bottomLeftCorner.y);
+ctx.closePath();
+ctx.stroke();
+}
+// Show result
+const el=document.getElementById('result');
+if(isURL(code.data)){
+el.innerHTML='<a href="'+escapeHTML(code.data)+'" target="_blank" rel="noopener">'+escapeHTML(code.data)+'</a>';
+}else{
+el.textContent=code.data;
+}
+showMessage('解码成功！');
+}else{
+decodedText='';
+document.getElementById('result').textContent='未能识别二维码，请确保图片清晰且包含二维码';
+showMessage('未检测到二维码');
+}
+}
+
+function isURL(s){try{const u=new URL(s);return u.protocol==='http:'||u.protocol==='https:'}catch(e){return false}}
+
+function escapeHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function copyResult(){
+if(!decodedText){showMessage('没有可复制的内容');return}
+copyToClipboard(decodedText);
+showMessage('已复制解码内容');
+}
+
+function resetAll(){
+document.getElementById('previewSection').classList.add('hidden');
+document.getElementById('fileInput').value='';
+decodedText='';
+const canvas=document.getElementById('canvas');
+canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+}
+</script>
+</body>
+</html>
