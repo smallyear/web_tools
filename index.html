@@ -4,12 +4,116 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Web Tools - 在线工具聚合站</title>
-  <meta name="description" content="免费在线工具集合：身份证水印、JSON格式化、二维码生成、Base64编解码">
-  <meta name="keywords" content="工具,身份证水印,JSON,二维码,Base64,在线工具">
+  <meta name="description" content="免费在线工具集合：25+实用工具，纯前端运行，数据不出浏览器">
+  <meta name="keywords" content="在线工具,开发者工具,文本处理,编码解码,格式化,计算器">
   <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .search-wrapper {
+      max-width: 520px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 14px 20px 14px 48px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px;
+      background: var(--card-bg);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.12);
+    }
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s;
+      padding: 4px 8px;
+      color: var(--text-secondary);
+    }
+    .search-clear.visible { opacity: 1; }
+    .search-clear:hover { color: var(--text); }
+
+    .category-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .category-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card-bg);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .category-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .category-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .category-btn .cat-count {
+      display: inline-block;
+      background: rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+    .category-btn.active .cat-count {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .tools-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .tools-header .tool-count {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .tool-card.hidden { display: none; }
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+      display: none;
+    }
+    .no-results .no-results-icon { font-size: 48px; margin-bottom: 12px; }
+    .no-results.visible { display: block; }
+  </style>
 </head>
 <body>
-  <!-- 导航栏 -->
   <nav class="navbar">
     <div class="navbar-container">
       <a href="index.html" class="navbar-brand">🛠️ Web Tools</a>
@@ -19,220 +123,209 @@
     </div>
   </nav>
 
-  <!-- 主内容 -->
   <div class="main-wrapper">
     <div class="hero">
       <h1>🛠️ Web Tools 在线工具箱</h1>
-      <p>实用工具集合，纯前端运行，数据不出浏览器</p>
+      <p>25+ 实用工具，纯前端运行，数据不出浏览器</p>
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索工具... 如：JSON、正则、时间戳、Base64">
+        <button class="search-clear" id="searchClear">✕</button>
+      </div>
     </div>
 
     <div class="container">
-      <!-- 工具列表 -->
-    <div class="tools-grid">
-      <!-- 身份证水印 -->
-      <a href="tools/id-watermark/index.html" class="tool-card">
-        <div class="tool-icon">🆔</div>
-        <div class="tool-name">身份证水印生成器</div>
-        <div class="tool-desc">上传身份证，一键添加防伪水印文字，保障个人信息安全</div>
-        <span class="tool-tag"><span class="tool-emoji">⭐</span> 核心工具</span>
-      </a>
+      <div class="category-bar" id="categoryBar"></div>
 
-      <!-- JSON格式化 -->
-      <a href="tools/json-formatter/index.html" class="tool-card">
-        <div class="tool-icon">📝</div>
-        <div class="tool-name">JSON格式化工具</div>
-        <div class="tool-desc">JSON格式化、压缩、语法校验、高亮显示</div>
-        <span class="tool-tag">👨‍💻 开发者工具</span>
-      </a>
+      <div class="tools-header">
+        <span class="tool-count" id="toolCount">共 25 个工具</span>
+      </div>
 
-      <!-- 二维码生成 -->
-      <a href="tools/qrcode-generator/index.html" class="tool-card">
-        <div class="tool-icon">📱</div>
-        <div class="tool-name">二维码生成器</div>
-        <div class="tool-desc">文本/链接生成二维码，支持自定义大小和颜色</div>
-        <span class="tool-tag">🔧 实用工具</span>
-      </a>
+      <div class="tools-grid" id="toolsGrid">
+        <a href="tools/id-watermark/index.html" class="tool-card" data-category="图像工具" data-keywords="身份证 水印 隐私 安全">
+          <div class="tool-icon">🆔</div>
+          <div class="tool-name">身份证水印生成器</div>
+          <div class="tool-desc">上传身份证，一键添加防伪水印文字，保障个人信息安全</div>
+          <span class="tool-tag"><span class="tool-emoji">⭐</span> 核心工具</span>
+        </a>
 
-      <!-- Base64编解码 -->
-      <a href="tools/base64-converter/index.html" class="tool-card">
-        <div class="tool-icon">🔤</div>
-        <div class="tool-name">Base64编解码工具</div>
-        <div class="tool-desc">文字编解码、图片转Base64，在线调试工具</div>
-        <span class="tool-tag">👨‍💻 开发者工具</span>
-      </a>
+        <a href="tools/json-formatter/index.html" class="tool-card" data-category="开发者工具" data-keywords="JSON 格式化 压缩 美化 校验">
+          <div class="tool-icon">📝</div>
+          <div class="tool-name">JSON格式化工具</div>
+          <div class="tool-desc">JSON格式化、压缩、语法校验、高亮显示</div>
+          <span class="tool-tag">👨‍💻 开发者工具</span>
+        </a>
 
-      <!-- 列表格式转换器 -->
-      <a href="tools/list-formatter/index.html" class="tool-card">
-        <div class="tool-icon">📋</div>
-        <div class="tool-name">列表格式转换器</div>
-        <div class="tool-desc">粘贴ID列表，一键转为SQL IN、Python list、JSON数组等格式</div>
-        <span class="tool-tag">👨‍💻 开发者工具</span>
-      </a>
+        <a href="tools/qrcode-generator/index.html" class="tool-card" data-category="图像工具" data-keywords="二维码 QR code 生成">
+          <div class="tool-icon">📱</div>
+          <div class="tool-name">二维码生成器</div>
+          <div class="tool-desc">文本/链接生成二维码，支持自定义大小和颜色</div>
+          <span class="tool-tag">🔧 实用工具</span>
+        </a>
 
-      <!-- Markdown编辑器 -->
-      <a href="tools/markdown-editor/index.html" class="tool-card">
-        <div class="tool-icon">📝</div>
-        <div class="tool-name">Markdown编辑器</div>
-        <div class="tool-desc">实时预览，支持导出HTML和PDF，纯前端处理</div>
-        <span class="tool-tag">📄 文档工具</span>
-      </a>
+        <a href="tools/base64-converter/index.html" class="tool-card" data-category="编码解码" data-keywords="Base64 编码 解码 图片转码">
+          <div class="tool-icon">🔤</div>
+          <div class="tool-name">Base64编解码工具</div>
+          <div class="tool-desc">文字编解码、图片转Base64，在线调试工具</div>
+          <span class="tool-tag">👨‍💻 开发者工具</span>
+        </a>
 
-      <!-- 图片压缩 -->
-      <a href="tools/image-compressor/index.html" class="tool-card">
-        <div class="tool-icon">🗜️</div>
-        <div class="tool-name">图片压缩工具</div>
-        <div class="tool-desc">在线压缩JPG、PNG图片，降低文件大小，保护隐私</div>
-        <span class="tool-tag">🖼️ 图片工具</span>
-      </a>
+        <a href="tools/list-formatter/index.html" class="tool-card" data-category="开发者工具" data-keywords="列表 SQL IN Python JSON 数组 格式转换 FID">
+          <div class="tool-icon">📋</div>
+          <div class="tool-name">列表格式转换器</div>
+          <div class="tool-desc">粘贴ID列表，一键转为SQL IN、Python list、JSON数组等格式</div>
+          <span class="tool-tag">👨‍💻 开发者工具</span>
+        </a>
 
-      <!-- 图片裁剪 -->
-      <a href="tools/image-cropper/index.html" class="tool-card">
-        <div class="tool-icon">✂️</div>
-        <div class="tool-name">图片裁剪工具</div>
-        <div class="tool-desc">自由裁剪图片，支持多种证件照尺寸，纯前端处理保护隐私</div>
-        <span class="tool-tag">🖼️ 图片工具</span>
-      </a>
+        <a href="tools/markdown-editor/index.html" class="tool-card" data-category="文档工具" data-keywords="Markdown 编辑器 预览 导出">
+          <div class="tool-icon">📝</div>
+          <div class="tool-name">Markdown编辑器</div>
+          <div class="tool-desc">实时预览，支持导出HTML和PDF，纯前端处理</div>
+          <span class="tool-tag">📄 文档工具</span>
+        </a>
 
-      <!-- 密码生成器 -->
-      <a href="tools/password-generator/index.html" class="tool-card">
-        <div class="tool-icon">🔐</div>
-        <div class="tool-name">密码生成器</div>
-        <div class="tool-desc">生成高强度随机密码，支持自定义规则和强度评估</div>
-        <span class="tool-tag">🔑 安全工具</span>
-      </a>
+        <a href="tools/image-compressor/index.html" class="tool-card" data-category="图像工具" data-keywords="图片 压缩 JPG PNG 减小体积">
+          <div class="tool-icon">🗜️</div>
+          <div class="tool-name">图片压缩工具</div>
+          <div class="tool-desc">在线压缩JPG、PNG图片，降低文件大小，保护隐私</div>
+          <span class="tool-tag">🖼️ 图片工具</span>
+        </a>
 
-      <!-- 日期计算器 -->
-      <a href="tools/date-calculator/index.html" class="tool-card">
-        <div class="tool-icon">📅</div>
-        <div class="tool-name">日期计算器</div>
-        <div class="tool-desc">日期差计算、日期加减、工作日计算，多种日期工具</div>
-        <span class="tool-tag">📆 计算工具</span>
-      </a>
+        <a href="tools/image-cropper/index.html" class="tool-card" data-category="图像工具" data-keywords="图片 裁剪 证件照 尺寸">
+          <div class="tool-icon">✂️</div>
+          <div class="tool-name">图片裁剪工具</div>
+          <div class="tool-desc">自由裁剪图片，支持多种证件照尺寸，纯前端处理保护隐私</div>
+          <span class="tool-tag">🖼️ 图片工具</span>
+        </a>
 
-      <!-- 汇率计算器 -->
-      <a href="tools/currency-converter/index.html" class="tool-card">
-        <div class="tool-icon">💱</div>
-        <div class="tool-name">汇率计算器</div>
-        <div class="tool-desc">实时汇率查询和货币转换，支持多种货币</div>
-        <span class="tool-tag">💰 金融工具</span>
-      </a>
+        <a href="tools/password-generator/index.html" class="tool-card" data-category="编码解码" data-keywords="密码 随机 生成 安全 强度">
+          <div class="tool-icon">🔐</div>
+          <div class="tool-name">密码生成器</div>
+          <div class="tool-desc">生成高强度随机密码，支持自定义规则和强度评估</div>
+          <span class="tool-tag">🔑 安全工具</span>
+        </a>
 
-      <!-- 工作工具箱 -->
-      <a href="tools/work-tools/index.html" class="tool-card">
-        <div class="tool-icon">💼</div>
-        <div class="tool-name">工作工具箱</div>
-        <div class="tool-desc">日常工作专用：FID列表对比等，持续添加中</div>
-        <span class="tool-tag"><span class="tool-emoji">⭐</span> 办公专用</span>
-      </a>
+        <a href="tools/date-calculator/index.html" class="tool-card" data-category="日期时间" data-keywords="日期 计算 天数 差值 加减">
+          <div class="tool-icon">📅</div>
+          <div class="tool-name">日期计算器</div>
+          <div class="tool-desc">日期差计算、日期加减、工作日计算，多种日期工具</div>
+          <span class="tool-tag">📆 计算工具</span>
+        </a>
 
-      <!-- 证件照背景更换 -->
-      <a href="tools/photo-background-changer/index.html" class="tool-card">
-        <div class="tool-icon">🎨</div>
-        <div class="tool-name">证件照背景更换</div>
-        <div class="tool-desc">在线更换证件照背景，支持蓝底、白底、红底，纯前端处理保护隐私</div>
-        <span class="tool-tag">🖼️ 图片工具</span>
-      </a>
+        <a href="tools/currency-converter/index.html" class="tool-card" data-category="金融工具" data-keywords="汇率 货币 转换 美元 欧元">
+          <div class="tool-icon">💱</div>
+          <div class="tool-name">汇率计算器</div>
+          <div class="tool-desc">实时汇率查询和货币转换，支持多种货币</div>
+          <span class="tool-tag">💰 金融工具</span>
+        </a>
 
-      <!-- 英文大小写转换 -->
-      <a href="tools/case-converter/index.html" class="tool-card">
-        <div class="tool-icon">🔤</div>
-        <div class="tool-name">英文大小写转换</div>
-        <div class="tool-desc">全大写、小写、首字母、翻转、交替大小写等8种格式一键转换</div>
-        <span class="tool-tag">📝 文本工具</span>
-      </a>
+        <a href="tools/work-tools/index.html" class="tool-card" data-category="办公工具" data-keywords="工作 FID 对比 列表 办公">
+          <div class="tool-icon">💼</div>
+          <div class="tool-name">工作工具箱</div>
+          <div class="tool-desc">日常工作专用：FID列表对比等，持续添加中</div>
+          <span class="tool-tag"><span class="tool-emoji">⭐</span> 办公专用</span>
+        </a>
 
-      <!-- 文本去重分隔 -->
-      <a href="tools/text-dedup/index.html" class="tool-card">
-        <div class="tool-icon">🔁</div>
-        <div class="tool-name">文本去重分隔工具</div>
-        <div class="tool-desc">按行/逗号/自定义分隔去重、排序、统计，支持多种分隔方式</div>
-        <span class="tool-tag">📝 文本工具</span>
-      </a>
+        <a href="tools/photo-background-changer/index.html" class="tool-card" data-category="图像工具" data-keywords="证件照 背景 更换 蓝底 白底 红底">
+          <div class="tool-icon">🎨</div>
+          <div class="tool-name">证件照背景更换</div>
+          <div class="tool-desc">在线更换证件照背景，支持蓝底、白底、红底，纯前端处理保护隐私</div>
+          <span class="tool-tag">🖼️ 图片工具</span>
+        </a>
 
-      <!-- 文本替换 -->
-      <a href="tools/text-replace/index.html" class="tool-card">
-        <div class="tool-icon">🔄</div>
-        <div class="tool-name">文本替换工具</div>
-        <div class="tool-desc">批量查找替换，支持正则表达式，实时高亮预览</div>
-        <span class="tool-tag">📝 文本工具</span>
-      </a>
+        <a href="tools/case-converter/index.html" class="tool-card" data-category="文本工具" data-keywords="英文 大小写 转换 uppercase lowercase 首字母">
+          <div class="tool-icon">🔤</div>
+          <div class="tool-name">英文大小写转换</div>
+          <div class="tool-desc">全大写、小写、首字母、翻转、交替大小写等8种格式一键转换</div>
+          <span class="tool-tag">📝 文本工具</span>
+        </a>
 
-      <!-- 正则表达式测试 -->
-      <a href="tools/regex-tester/index.html" class="tool-card">
-        <div class="tool-icon">🔍</div>
-        <div class="tool-name">正则表达式测试</div>
-        <div class="tool-desc">实时匹配高亮，分组展示，常用正则模板一键调用</div>
-        <span class="tool-tag">👨‍💻 开发者工具</span>
-      </a>
+        <a href="tools/text-dedup/index.html" class="tool-card" data-category="文本工具" data-keywords="文本 去重 排序 分隔 统计 去除重复">
+          <div class="tool-icon">🔁</div>
+          <div class="tool-name">文本去重分隔工具</div>
+          <div class="tool-desc">按行/逗号/自定义分隔去重、排序、统计，支持多种分隔方式</div>
+          <span class="tool-tag">📝 文本工具</span>
+        </a>
 
-      <!-- CSS格式化 -->
-      <a href="tools/css-formatter/index.html" class="tool-card">
-        <div class="tool-icon">🎨</div>
-        <div class="tool-name">CSS格式化/压缩</div>
-        <div class="tool-desc">CSS代码美化、压缩，支持缩进设置</div>
-        <span class="tool-tag">👨‍💻 开发者工具</span>
-      </a>
+        <a href="tools/text-replace/index.html" class="tool-card" data-category="文本工具" data-keywords="文本 替换 查找 正则 批量">
+          <div class="tool-icon">🔄</div>
+          <div class="tool-name">文本替换工具</div>
+          <div class="tool-desc">批量查找替换，支持正则表达式，实时高亮预览</div>
+          <span class="tool-tag">📝 文本工具</span>
+        </a>
 
-      <!-- SQL格式化 -->
-      <a href="tools/sql-formatter/index.html" class="tool-card">
-        <div class="tool-icon">🗄️</div>
-        <div class="tool-name">SQL格式化/压缩</div>
-        <div class="tool-desc">SQL语句美化、压缩，关键字大写，子查询缩进</div>
-        <span class="tool-tag">👨‍💻 开发者工具</span>
-      </a>
+        <a href="tools/regex-tester/index.html" class="tool-card" data-category="开发者工具" data-keywords="正则 表达式 regex 测试 匹配 高亮">
+          <div class="tool-icon">🔍</div>
+          <div class="tool-name">正则表达式测试</div>
+          <div class="tool-desc">实时匹配高亮，分组展示，常用正则模板一键调用</div>
+          <span class="tool-tag">👨‍💻 开发者工具</span>
+        </a>
 
-      <!-- MD5/SHA哈希 -->
-      <a href="tools/hash-tool/index.html" class="tool-card">
-        <div class="tool-icon">🔒</div>
-        <div class="tool-name">MD5/SHA哈希工具</div>
-        <div class="tool-desc">MD5、SHA-1、SHA-256、SHA-512 一键计算</div>
-        <span class="tool-tag">🔑 编码解码</span>
-      </a>
+        <a href="tools/css-formatter/index.html" class="tool-card" data-category="开发者工具" data-keywords="CSS 格式化 压缩 美化">
+          <div class="tool-icon">🎨</div>
+          <div class="tool-name">CSS格式化/压缩</div>
+          <div class="tool-desc">CSS代码美化、压缩，支持缩进设置</div>
+          <span class="tool-tag">👨‍💻 开发者工具</span>
+        </a>
 
-      <!-- URL编码解码 -->
-      <a href="tools/url-codec/index.html" class="tool-card">
-        <div class="tool-icon">🌐</div>
-        <div class="tool-name">URL编码解码</div>
-        <div class="tool-desc">URL编解码，encodeURI vs encodeURIComponent 对比</div>
-        <span class="tool-tag">🔑 编码解码</span>
-      </a>
+        <a href="tools/sql-formatter/index.html" class="tool-card" data-category="开发者工具" data-keywords="SQL 格式化 压缩 美化 查询">
+          <div class="tool-icon">🗄️</div>
+          <div class="tool-name">SQL格式化/压缩</div>
+          <div class="tool-desc">SQL语句美化、压缩，关键字大写，子查询缩进</div>
+          <span class="tool-tag">👨‍💻 开发者工具</span>
+        </a>
 
-      <!-- 时间戳转换 -->
-      <a href="tools/timestamp/index.html" class="tool-card">
-        <div class="tool-icon">⏱️</div>
-        <div class="tool-name">时间戳转换工具</div>
-        <div class="tool-desc">Unix时间戳与日期互转，实时显示当前时间戳</div>
-        <span class="tool-tag">📆 日期时间</span>
-      </a>
+        <a href="tools/hash-tool/index.html" class="tool-card" data-category="编码解码" data-keywords="MD5 SHA 哈希 加密 hash 校验">
+          <div class="tool-icon">🔒</div>
+          <div class="tool-name">MD5/SHA哈希工具</div>
+          <div class="tool-desc">MD5、SHA-1、SHA-256、SHA-512 一键计算</div>
+          <span class="tool-tag">🔑 编码解码</span>
+        </a>
 
-      <!-- 进制转换器 -->
-      <a href="tools/base-converter/index.html" class="tool-card">
-        <div class="tool-icon">🔢</div>
-        <div class="tool-name">进制转换器</div>
-        <div class="tool-desc">2/8/10/16等任意进制互转，实时转换</div>
-        <span class="tool-tag">📐 换算工具</span>
-      </a>
+        <a href="tools/url-codec/index.html" class="tool-card" data-category="编码解码" data-keywords="URL 编码 解码 encodeURIComponent">
+          <div class="tool-icon">🌐</div>
+          <div class="tool-name">URL编码解码</div>
+          <div class="tool-desc">URL编解码，encodeURI vs encodeURIComponent 对比</div>
+          <span class="tool-tag">🔑 编码解码</span>
+        </a>
 
-      <!-- 字节单位换算 -->
-      <a href="tools/byte-converter/index.html" class="tool-card">
-        <div class="tool-icon">💾</div>
-        <div class="tool-name">字节单位换算器</div>
-        <div class="tool-desc">B/KB/MB/GB/TB 互转，同时显示比特值</div>
-        <span class="tool-tag">📐 换算工具</span>
-      </a>
+        <a href="tools/timestamp/index.html" class="tool-card" data-category="日期时间" data-keywords="时间戳 timestamp unix 日期 转换">
+          <div class="tool-icon">⏱️</div>
+          <div class="tool-name">时间戳转换工具</div>
+          <div class="tool-desc">Unix时间戳与日期互转，实时显示当前时间戳</div>
+          <span class="tool-tag">📆 日期时间</span>
+        </a>
 
-      <!-- 人民币大写 -->
-      <a href="tools/rmb-converter/index.html" class="tool-card">
-        <div class="tool-icon">💰</div>
-        <div class="tool-name">人民币大写转换器</div>
-        <div class="tool-desc">数字金额转中文大写，支持万亿级别</div>
-        <span class="tool-tag">💰 金融工具</span>
-      </a>
+        <a href="tools/base-converter/index.html" class="tool-card" data-category="换算工具" data-keywords="进制 二进制 八进制 十六进制 转换 hex binary">
+          <div class="tool-icon">🔢</div>
+          <div class="tool-name">进制转换器</div>
+          <div class="tool-desc">2/8/10/16等任意进制互转，实时转换</div>
+          <span class="tool-tag">📐 换算工具</span>
+        </a>
+
+        <a href="tools/byte-converter/index.html" class="tool-card" data-category="换算工具" data-keywords="字节 KB MB GB TB 换算 存储">
+          <div class="tool-icon">💾</div>
+          <div class="tool-name">字节单位换算器</div>
+          <div class="tool-desc">B/KB/MB/GB/TB 互转，同时显示比特值</div>
+          <span class="tool-tag">📐 换算工具</span>
+        </a>
+
+        <a href="tools/rmb-converter/index.html" class="tool-card" data-category="金融工具" data-keywords="人民币 大写 金额 中文 财务">
+          <div class="tool-icon">💰</div>
+          <div class="tool-name">人民币大写转换器</div>
+          <div class="tool-desc">数字金额转中文大写，支持万亿级别</div>
+          <span class="tool-tag">💰 金融工具</span>
+        </a>
+      </div>
+
+      <div class="no-results" id="noResults">
+        <div class="no-results-icon">🔍</div>
+        <p>没有找到匹配的工具</p>
+        <p style="font-size: 13px; margin-top: 4px;">试试其他关键词？</p>
+      </div>
     </div>
   </div>
-  </div>
 
-  <!-- 页脚 -->
   <footer class="footer">
     <div class="footer-container">
       <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
@@ -241,5 +334,93 @@
   </footer>
 
   <script src="assets/js/common.js"></script>
+  <script>
+    (function() {
+      const searchInput = document.getElementById('searchInput');
+      const searchClear = document.getElementById('searchClear');
+      const categoryBar = document.getElementById('categoryBar');
+      const toolsGrid = document.getElementById('toolsGrid');
+      const toolCount = document.getElementById('toolCount');
+      const noResults = document.getElementById('noResults');
+      const cards = [...document.querySelectorAll('.tool-card')];
+
+      // Build category list from data attributes
+      const categoryMap = {};
+      cards.forEach(card => {
+        const cat = card.dataset.category || '其他';
+        if (!categoryMap[cat]) categoryMap[cat] = 0;
+        categoryMap[cat]++;
+      });
+
+      // Render category buttons
+      const total = cards.length;
+      let catsHTML = `<button class="category-btn active" data-cat="all">全部<span class="cat-count">${total}</span></button>`;
+      for (const [cat, count] of Object.entries(categoryMap)) {
+        catsHTML += `<button class="category-btn" data-cat="${cat}">${cat}<span class="cat-count">${count}</span></button>`;
+      }
+      categoryBar.innerHTML = catsHTML;
+
+      let activeCategory = 'all';
+
+      function filter() {
+        const query = searchInput.value.trim().toLowerCase();
+        let visible = 0;
+
+        cards.forEach(card => {
+          const name = card.querySelector('.tool-name').textContent.toLowerCase();
+          const desc = card.querySelector('.tool-desc').textContent.toLowerCase();
+          const keywords = (card.dataset.keywords || '').toLowerCase();
+          const cat = card.dataset.category || '';
+
+          const matchSearch = !query || name.includes(query) || desc.includes(query) || keywords.includes(query);
+          const matchCategory = activeCategory === 'all' || cat === activeCategory;
+
+          if (matchSearch && matchCategory) {
+            card.classList.remove('hidden');
+            visible++;
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+
+        toolCount.textContent = `显示 ${visible} / ${total} 个工具`;
+        noResults.classList.toggle('visible', visible === 0);
+        searchClear.classList.toggle('visible', query.length > 0);
+      }
+
+      // Search
+      searchInput.addEventListener('input', filter);
+      searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        filter();
+        searchInput.focus();
+      });
+
+      // Category click
+      categoryBar.addEventListener('click', (e) => {
+        const btn = e.target.closest('.category-btn');
+        if (!btn) return;
+        categoryBar.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCategory = btn.dataset.cat;
+        filter();
+      });
+
+      // Keyboard shortcut: / to focus search
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement !== searchInput) {
+          e.preventDefault();
+          searchInput.focus();
+        }
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+          searchInput.value = '';
+          searchInput.blur();
+          filter();
+        }
+      });
+
+      filter();
+    })();
+  </script>
 </body>
 </html>
