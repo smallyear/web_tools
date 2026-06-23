@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>特殊符号大全 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.breadcrumb { font-size: 14px; color: var(--text-secondary, #666); margin-bottom: 12px; }
+.breadcrumb a { color: var(--primary, #4a90d9); text-decoration: none; }
+.tool-header { margin-bottom: 20px; }
+.tool-header h1 { font-size: 1.6em; margin: 0 0 6px; }
+.tool-header p { color: var(--text-secondary, #666); margin: 0; }
+.card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.search-wrap { position: relative; }
+.search-wrap input { width: 100%; padding: 10px 10px 10px 36px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+.search-wrap input:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+.category { margin-bottom: 20px; }
+.category h3 { font-size: 1em; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border, #e0e0e0); }
+.char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; }
+.char-item { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 20px; cursor: pointer; transition: all .15s; background: var(--card-bg, #fff); user-select: all; }
+.char-item:hover { background: #e8f0fe; border-color: var(--primary, #4a90d9); transform: scale(1.1); }
+.char-item:active { transform: scale(0.95); }
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
+.toast.show { opacity: 1; }
+footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+</style>
+</head>
+<body>
+<nav style="background:var(--primary,#4a90d9);color:#fff;padding:12px 16px;">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:600;">← 返回工具箱</a>
+</nav>
+<div class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> / 特殊符号大全</div>
+  <div class="tool-header">
+    <h1>✦ 特殊符号大全</h1>
+    <p>点击任意符号即可复制到剪贴板</p>
+  </div>
+
+  <div class="card">
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="搜索符号..." autocomplete="off">
+    </div>
+  </div>
+
+  <div id="charContainer"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>© 2025 在线工具箱 · 特殊符号大全</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+const symbolData = {
+  '数学符号': ['±','×','÷','≠','≈','≤','≥','∞','∑','∏','√','∫','∂','∇','∈','∉','⊂','⊃','∪','∩','∅','∝','∠','⊥','∥','∧','∨','¬','∀','∃','∴','∵','≡','≅','∼','⊕','⊗','‰','‱','ℂ','ℕ','ℚ','ℝ','ℤ','½','⅓','⅔','¼','¾','⅛','⅜','⅝','⅞'],
+  '箭头': ['←','→','↑','↓','↔','↕','⇐','⇒','⇑','⇓','⇔','⇕','⟵','⟶','⟷','⟸','⟹','⟺','↩','↪','↻','↺','↻','⇈','⇊','⇄','⇅','⇵','⇝','⇜','↝','↜','▸','◂','▴','▾','►','◄','▲','▼','△','▽','▷','◁','▻','◅','➤','➜','➤','➥','➦','➧','➨'],
+  '货币符号': ['¥','€','£','$','₩','₹','₽','₫','฿','¢','₣','₤','₧','₨','₯','₠','₣','₢','₥','₦','₧','₨','₩','₪','₫','₭','₮','₯','₰','₱','₲','₳','₴','₵','₶','₷','₸','₺','₻','₼','₽','₾','₿'],
+  '括号': ['（）','〔〕','【】','〖〗','｛｝','〈〉','《》','「」','『』','﹙﹚','﹛﹜','﹝﹞','⁽⁾','₍₎','❨❩','❪❫','❴❵','❬❭','❮❯','❰❱','❲❳','⟨⟩','⟪⟫','⟬⟭','⟮⟯','⌈⌉','⌊⌋','⌌⌍','⌎⌏','⌜⌝','⌞⌟','〈〉'],
+  '希腊字母': ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω','Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ','Φ','Χ','Ψ','Ω'],
+  '中文标点': ['，','。','？','！','：','；','、','…','——','～','·','「」','『』','〈〉','《》','【】','〖〗','〔〕','（）','﹏','﹑','﹐','﹒','﹔','﹕','﹗','﹖','﹘','︱','︳','︴'],
+  '制表符': ['┌','┐','└','┘','├','┤','┬','┴','┼','─','│','╔','╗','╚','╝','╠','╣','╦','╩','╬','═','║','╒','╕','╘','╛','╞','╡','╤','╧','╪','╫','╭','╮','╰','╯','╱','╲','╳'],
+  '序号': ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳','❶','❷','❸','❹','❺','❻','❼','❽','❾','❿','㈠','㈡','㈢','㈣','㈤','㈥','㈦','㈧','㈨','㈩','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ','Ⅺ','Ⅻ','㊀','㊁','㊂','㊃','㊄','㊅','㊆','㊇','㊈','㊉','⑴','⑵','⑶','⑷','⑸','⑹','⑺','⑻','⑼','⑽','⒈','⒉','⒊','⒋','⒌','⒍','⒎','⒏','⒐','⒑'],
+  '网络符号': ['☆','★','♡','♥','♢','♦','♣','♠','♤','♧','☀','☁','☂','☃','☄','☉','☼','☽','☾','♨','♩','♪','♫','♬','♭','♮','♯','✓','✗','✘','✔','✖','✗','✘','❣','❤','❥','❦','❧','✉','☏','✁','✂','✃','✄','✆','✎','✏','✐','✑','✒','⚾','⛳','⚽','⚡','⚑','⚐','⚕','⚖','⚙','⚛','⚜','⚝','⚞','⚟','⚠','⚡','⚥','⚦','⚧','⚨','⚩','⚪','⚫','⚬','⚭','⚮','⚯','⚰','⚱','⚲','⚳','⚴','⚵','⚶','⚷','⚸','⚹','❛','❜','❝','❝','❞','❟','❝','❞'],
+  '货币&数字': ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹','₀','₁','₂','₃','₄','₅','₆','₇','₈','₉','⁺','⁻','⁼','⁽','⁾','ⁿ','ⁱ','₀','₁','₂','₃','₄','₅','₆','₇','₈','₉','₊','₋','₌']
+};
+
+const container = document.getElementById('charContainer');
+const searchInput = document.getElementById('search');
+const toast = document.getElementById('toast');
+
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 1200);
+}
+
+function copyChar(ch) {
+  if (typeof copyToClipboard === 'function') copyToClipboard(ch);
+  else navigator.clipboard.writeText(ch);
+  showToast('已复制：' + ch);
+}
+
+function render(filter) {
+  container.innerHTML = '';
+  const f = (filter || '').toLowerCase();
+  Object.entries(symbolData).forEach(([cat, chars]) => {
+    const filtered = f ? chars.filter(c => c.includes(f) || cat.includes(f)) : chars;
+    if (filtered.length === 0) return;
+    const div = document.createElement('div');
+    div.className = 'category';
+    div.innerHTML = `<h3>${cat}（${filtered.length}）</h3>`;
+    const grid = document.createElement('div');
+    grid.className = 'char-grid';
+    filtered.forEach(ch => {
+      const item = document.createElement('div');
+      item.className = 'char-item';
+      item.textContent = ch;
+      item.title = '点击复制';
+      item.onclick = () => copyChar(ch);
+      grid.appendChild(item);
+    });
+    div.appendChild(grid);
+    container.appendChild(div);
+  });
+}
+
+searchInput.addEventListener('input', () => render(searchInput.value));
+render('');
+</script>
+</body>
+</html>

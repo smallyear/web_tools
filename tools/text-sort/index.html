@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文本反转排序工具 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.breadcrumb { font-size: 14px; color: var(--text-secondary, #666); margin-bottom: 12px; }
+.breadcrumb a { color: var(--primary, #4a90d9); text-decoration: none; }
+.tool-header { margin-bottom: 20px; }
+.tool-header h1 { font-size: 1.6em; margin: 0 0 6px; }
+.tool-header p { color: var(--text-secondary, #666); margin: 0; }
+.card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card h3 { margin: 0 0 14px; font-size: 1.05em; }
+textarea { width: 100%; min-height: 120px; padding: 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 14px; resize: vertical; font-family: inherit; box-sizing: border-box; }
+textarea:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.output-box { background: var(--bg, #f5f5f5); border: 1px solid var(--border, #e0e0e0); border-radius: 6px; padding: 12px; min-height: 120px; white-space: pre-wrap; word-break: break-all; font-size: 14px; line-height: 1.6; }
+.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; background: var(--primary, #4a90d9); color: #fff; transition: background .2s; }
+.btn:hover { background: var(--primary-dark, #357abd); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-success { background: var(--success, #28a745); }
+.btn-success:hover { background: #218838; }
+.btn-secondary { background: #6c757d; }
+.btn-secondary:hover { background: #5a6268; }
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+</style>
+</head>
+<body>
+<nav style="background:var(--primary,#4a90d9);color:#fff;padding:12px 16px;">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:600;">← 返回工具箱</a>
+</nav>
+<div class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> / 文本反转排序工具</div>
+  <div class="tool-header">
+    <h1>🔄 文本反转排序工具</h1>
+    <p>对文本进行反转、排序等多种操作</p>
+  </div>
+
+  <div class="card">
+    <h3>输入文本</h3>
+    <textarea id="input" placeholder="请输入文本，每行一个条目...&#10;例如：&#10;苹果&#10;香蕉&#10;橘子"></textarea>
+  </div>
+
+  <div class="card">
+    <h3>操作选项</h3>
+    <div class="btn-group">
+      <button class="btn" onclick="doSort('reverse-lines')">反转行序</button>
+      <button class="btn" onclick="doSort('reverse-chars')">反转字符</button>
+      <button class="btn" onclick="doSort('alpha')">按字母排序</button>
+      <button class="btn" onclick="doSort('alpha-desc')">按字母倒序</button>
+      <button class="btn" onclick="doSort('length')">按长度排序</button>
+      <button class="btn" onclick="doSort('numeric')">按数字排序</button>
+      <button class="btn btn-secondary" onclick="doSort('shuffle')">随机打乱</button>
+      <button class="btn btn-secondary" onclick="doSort('dedup')">去除重复行</button>
+      <button class="btn btn-secondary" onclick="doSort('trim')">去除空白行</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>输出结果</h3>
+    <div class="output-box" id="output">操作结果将在此处显示...</div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-success btn-sm" onclick="copyResult()">📋 复制结果</button>
+    </div>
+  </div>
+</div>
+
+<footer>© 2025 在线工具箱 · 文本反转排序工具</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+
+function doSort(action) {
+  const text = input.value;
+  if (!text.trim()) { output.textContent = '请先输入文本'; return; }
+  let lines = text.split('\n');
+  let result;
+  switch (action) {
+    case 'reverse-lines': result = lines.reverse(); break;
+    case 'reverse-chars': result = lines.map(l => [...l].reverse().join('')); break;
+    case 'alpha': result = [...lines].sort((a, b) => a.localeCompare(b, 'zh')); break;
+    case 'alpha-desc': result = [...lines].sort((a, b) => b.localeCompare(a, 'zh')); break;
+    case 'length': result = [...lines].sort((a, b) => a.length - b.length); break;
+    case 'numeric':
+      result = [...lines].sort((a, b) => {
+        const na = parseFloat(a), nb = parseFloat(b);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return a.localeCompare(b, 'zh');
+      });
+      break;
+    case 'shuffle':
+      result = [...lines];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      break;
+    case 'dedup': result = [...new Set(lines)]; break;
+    case 'trim': result = lines.filter(l => l.trim() !== ''); break;
+    default: result = lines;
+  }
+  output.textContent = result.join('\n');
+}
+
+function copyResult() {
+  const text = output.textContent;
+  if (text && text !== '操作结果将在此处显示...') {
+    if (typeof copyToClipboard === 'function') copyToClipboard(text);
+    else { navigator.clipboard.writeText(text); alert('已复制到剪贴板'); }
+  }
+}
+</script>
+</body>
+</html>

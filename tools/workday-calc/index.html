@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工作日计算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .calc-section { margin-bottom: 32px; }
+    .calc-section h3 { font-size: 18px; margin-bottom: 16px; color: var(--primary-dark); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+    .result-item { background: var(--bg); padding: 16px; border-radius: 8px; text-align: center; }
+    .result-item .label { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+    .result-item .value { font-size: 28px; font-weight: 700; color: var(--primary-dark); }
+    .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .checkbox-label input { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>工作日计算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">📅 工作日计算器</h1>
+        <p style="color: var(--text-secondary);">计算两个日期之间的工作日天数，支持排除周末和自定义节假日</p>
+      </div>
+
+      <!-- 日期区间计算 -->
+      <div class="card">
+        <div class="card-title">📊 日期区间计算</div>
+        <div class="calc-section">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">开始日期</label>
+              <input type="date" id="startDate" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">结束日期</label>
+              <input type="date" id="endDate" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="excludeWeekends" checked>
+              排除周末（周六、周日）
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">节假日列表（每行一个，格式 YYYY-MM-DD，可选）</label>
+            <textarea id="holidays" class="form-input" rows="4" placeholder="2024-01-01&#10;2024-02-10&#10;2024-02-11"></textarea>
+          </div>
+
+          <button class="btn btn-primary" onclick="calculateDays()">计算天数</button>
+        </div>
+
+        <div id="resultSection" style="display: none;">
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="label">总天数</div>
+              <div class="value" id="totalDays">0</div>
+            </div>
+            <div class="result-item">
+              <div class="label">工作日</div>
+              <div class="value" id="workDays" style="color: var(--success);">0</div>
+            </div>
+            <div class="result-item">
+              <div class="label">周末天数</div>
+              <div class="value" id="weekendDays" style="color: var(--warning);">0</div>
+            </div>
+            <div class="result-item">
+              <div class="label">节假日</div>
+              <div class="value" id="holidayDays" style="color: var(--error);">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工作日累加 -->
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-title">➕ 工作日累加计算</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">起始日期</label>
+            <input type="date" id="addStartDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">工作日天数</label>
+            <input type="number" id="addDays" class="form-input" min="1" value="10">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="addExcludeWeekends" checked>
+            排除周末
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">节假日列表（每行一个，格式 YYYY-MM-DD，可选）</label>
+          <textarea id="addHolidays" class="form-input" rows="3" placeholder="2024-01-01"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addWorkDays()">计算目标日期</button>
+        <div id="addResult" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg); border-radius: 8px;">
+          <p style="font-size: 16px;">目标日期：<strong id="targetDate" style="color: var(--primary-dark); font-size: 20px;"></strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    // 初始化日期
+    const today = new Date();
+    document.getElementById('startDate').value = formatDate(today);
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    document.getElementById('endDate').value = formatDate(nextMonth);
+    document.getElementById('addStartDate').value = formatDate(today);
+
+    function parseHolidays(text) {
+      const holidays = new Set();
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+      for (const line of lines) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(line)) {
+          holidays.add(line);
+        }
+      }
+      return holidays;
+    }
+
+    function formatDateStr(d) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function calculateDays() {
+      const start = new Date(document.getElementById('startDate').value);
+      const end = new Date(document.getElementById('endDate').value);
+      const excludeWeekends = document.getElementById('excludeWeekends').checked;
+      const holidays = parseHolidays(document.getElementById('holidays').value);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        showMessage('error', '请选择有效的日期');
+        return;
+      }
+      if (start > end) {
+        showMessage('error', '开始日期不能晚于结束日期');
+        return;
+      }
+
+      let totalDays = 0, workDays = 0, weekendDays = 0, holidayDays = 0;
+      const current = new Date(start);
+
+      while (current <= end) {
+        totalDays++;
+        const dayOfWeek = current.getDay();
+        const dateStr = formatDateStr(current);
+        const isWeekend = excludeWeekends && (dayOfWeek === 0 || dayOfWeek === 6);
+        const isHoliday = holidays.has(dateStr);
+
+        if (isWeekend) weekendDays++;
+        if (isHoliday) holidayDays++;
+        if (!isWeekend && !isHoliday) workDays++;
+
+        current.setDate(current.getDate() + 1);
+      }
+
+      document.getElementById('totalDays').textContent = totalDays;
+      document.getElementById('workDays').textContent = workDays;
+      document.getElementById('weekendDays').textContent = weekendDays;
+      document.getElementById('holidayDays').textContent = holidayDays;
+      document.getElementById('resultSection').style.display = 'block';
+    }
+
+    function addWorkDays() {
+      const start = new Date(document.getElementById('addStartDate').value);
+      let days = parseInt(document.getElementById('addDays').value);
+      const excludeWeekends = document.getElementById('addExcludeWeekends').checked;
+      const holidays = parseHolidays(document.getElementById('addHolidays').value);
+
+      if (isNaN(start.getTime())) { showMessage('error', '请选择有效的起始日期'); return; }
+      if (isNaN(days) || days < 1) { showMessage('error', '请输入有效的工作日天数'); return; }
+
+      const current = new Date(start);
+      let added = 0;
+
+      while (added < days) {
+        current.setDate(current.getDate() + 1);
+        const dayOfWeek = current.getDay();
+        const dateStr = formatDateStr(current);
+        const isWeekend = excludeWeekends && (dayOfWeek === 0 || dayOfWeek === 6);
+        const isHoliday = holidays.has(dateStr);
+        if (!isWeekend && !isHoliday) added++;
+      }
+
+      document.getElementById('targetDate').textContent = formatDateStr(current) + ' (' + ['日','一','二','三','四','五','六'][current.getDay()] + ')';
+      document.getElementById('addResult').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

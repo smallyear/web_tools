@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>重量单位换算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 16px; align-items: end; margin-bottom: 24px; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 150px; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .result-card { background: var(--bg); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .result-card .label { color: var(--text-secondary); font-size: 14px; }
+    .result-card .value { font-weight: 600; font-size: 16px; color: var(--primary-dark); }
+    .copy-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; opacity: 0.6; transition: opacity 0.2s; }
+    .copy-btn:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>重量单位换算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">⚖️ 重量单位换算器</h1>
+        <p style="color: var(--text-secondary);">快速换算各种重量单位，包含中国市制单位（斤、两）</p>
+      </div>
+
+      <div class="card">
+        <div class="input-row">
+          <div class="form-group">
+            <label class="form-label">数值</label>
+            <input type="number" id="inputValue" class="form-input" value="1" oninput="convert()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">单位</label>
+            <select id="inputUnit" class="form-select" onchange="convert()">
+              <option value="kg">千克 (kg)</option>
+              <option value="g">克 (g)</option>
+              <option value="mg">毫克 (mg)</option>
+              <option value="t">吨 (t)</option>
+              <option value="lb">磅 (lb)</option>
+              <option value="oz">盎司 (oz)</option>
+              <option value="jin">斤</option>
+              <option value="liang">两</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="result-grid" id="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    // 以千克为基准的换算系数
+    const units = {
+      kg: { name: '千克', symbol: 'kg', factor: 1 },
+      g: { name: '克', symbol: 'g', factor: 0.001 },
+      mg: { name: '毫克', symbol: 'mg', factor: 0.000001 },
+      t: { name: '吨', symbol: 't', factor: 1000 },
+      lb: { name: '磅', symbol: 'lb', factor: 0.45359237 },
+      oz: { name: '盎司', symbol: 'oz', factor: 0.028349523 },
+      jin: { name: '斤', symbol: '斤', factor: 0.5 },
+      liang: { name: '两', symbol: '两', factor: 0.05 }
+    };
+
+    function formatNum(n) {
+      if (Math.abs(n) < 0.000001 && n !== 0) return n.toExponential(6);
+      if (Math.abs(n) >= 1e10) return n.toExponential(6);
+      return parseFloat(n.toPrecision(10)).toString();
+    }
+
+    function convert() {
+      const val = parseFloat(document.getElementById('inputValue').value);
+      const fromUnit = document.getElementById('inputUnit').value;
+      if (isNaN(val)) { document.getElementById('results').innerHTML = ''; return; }
+
+      const kg = val * units[fromUnit].factor;
+      const results = Object.entries(units)
+        .filter(([k]) => k !== fromUnit)
+        .map(([key, u]) => {
+          const result = kg / u.factor;
+          return `
+            <div class="result-card">
+              <div>
+                <div class="label">${u.name} (${u.symbol})</div>
+                <div class="value">${formatNum(result)}</div>
+              </div>
+              <button class="copy-btn" onclick="copyToClipboard('${formatNum(result)}');showMessage('success','已复制')">📋</button>
+            </div>`;
+        }).join('');
+      document.getElementById('results').innerHTML = results;
+    }
+
+    convert();
+  </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在线秒表/计时器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .tabs { display: flex; gap: 0; margin-bottom: 24px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; background: white; font-weight: 500; transition: all 0.2s; }
+    .tab.active { background: var(--primary); color: white; }
+    .display { font-size: 64px; font-family: 'Courier New', monospace; font-weight: 700; text-align: center; padding: 32px; background: #1a1a2e; color: #00ff88; border-radius: 12px; margin-bottom: 24px; letter-spacing: 4px; }
+    @media (max-width: 600px) { .display { font-size: 36px; padding: 20px; } }
+    .controls { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .btn-ctrl { width: 80px; height: 80px; border-radius: 50%; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
+    .btn-ctrl:active { transform: scale(0.95); }
+    .btn-start { background: #4CAF50; color: white; }
+    .btn-pause { background: #FF9800; color: white; }
+    .btn-reset { background: #9E9E9E; color: white; }
+    .btn-lap { background: var(--primary); color: white; }
+    .lap-list { max-height: 300px; overflow-y: auto; }
+    .lap-item { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); font-family: 'Courier New', monospace; }
+    .lap-item:nth-child(odd) { background: #f9f9f9; }
+    .timer-input { display: flex; justify-content: center; gap: 16px; align-items: center; margin-bottom: 24px; }
+    .timer-input input { width: 100px; text-align: center; font-size: 24px; padding: 12px; border: 2px solid var(--border); border-radius: 8px; }
+    .timer-input span { font-size: 24px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>在线秒表/计时器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">⏱️ 在线秒表/计时器</h1>
+        <p style="color: var(--text-secondary);">精确到毫秒的秒表计时和倒计时功能</p>
+      </div>
+
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('stopwatch')">⏱️ 秒表</div>
+          <div class="tab" onclick="switchTab('timer')">⏰ 倒计时</div>
+        </div>
+
+        <!-- 秒表 -->
+        <div id="stopwatchPanel">
+          <div class="display" id="swDisplay">00:00:00.000</div>
+          <div class="controls">
+            <button class="btn-ctrl btn-start" id="swStartBtn" onclick="swToggle()">开始</button>
+            <button class="btn-ctrl btn-lap" onclick="swLap()" id="swLapBtn" disabled>计次</button>
+            <button class="btn-ctrl btn-reset" onclick="swReset()">重置</button>
+          </div>
+          <div class="lap-list" id="lapList"></div>
+        </div>
+
+        <!-- 倒计时 -->
+        <div id="timerPanel" style="display: none;">
+          <div class="display" id="tmDisplay">00:00:00</div>
+          <div class="timer-input" id="timerInput">
+            <input type="number" id="tmMin" value="5" min="0" max="999" placeholder="分">
+            <span>:</span>
+            <input type="number" id="tmSec" value="0" min="0" max="59" placeholder="秒">
+          </div>
+          <div class="controls">
+            <button class="btn-ctrl btn-start" id="tmStartBtn" onclick="tmToggle()">开始</button>
+            <button class="btn-ctrl btn-reset" onclick="tmReset()">重置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    // Tab switching
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'stopwatch' && i === 0) || (tab === 'timer' && i === 1));
+      });
+      document.getElementById('stopwatchPanel').style.display = tab === 'stopwatch' ? 'block' : 'none';
+      document.getElementById('timerPanel').style.display = tab === 'timer' ? 'block' : 'none';
+    }
+
+    // Stopwatch
+    let swRunning = false, swStartTime = 0, swElapsed = 0, swInterval = null, swLaps = [], swLastLap = 0;
+
+    function formatMs(ms) {
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      const s = Math.floor((ms % 60000) / 1000);
+      const ml = ms % 1000;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ml).padStart(3,'0')}`;
+    }
+
+    function swUpdate() {
+      swElapsed = Date.now() - swStartTime;
+      document.getElementById('swDisplay').textContent = formatMs(swElapsed);
+    }
+
+    function swToggle() {
+      if (swRunning) {
+        clearInterval(swInterval);
+        swRunning = false;
+        document.getElementById('swStartBtn').textContent = '继续';
+        document.getElementById('swStartBtn').className = 'btn-ctrl btn-start';
+        document.getElementById('swLapBtn').disabled = true;
+      } else {
+        swStartTime = Date.now() - swElapsed;
+        swInterval = setInterval(swUpdate, 10);
+        swRunning = true;
+        document.getElementById('swStartBtn').textContent = '暂停';
+        document.getElementById('swStartBtn').className = 'btn-ctrl btn-pause';
+        document.getElementById('swLapBtn').disabled = false;
+      }
+    }
+
+    function swLap() {
+      if (!swRunning) return;
+      const splitTime = swElapsed - swLastLap;
+      swLaps.push({ lap: swLaps.length + 1, total: swElapsed, split: splitTime });
+      swLastLap = swElapsed;
+      renderLaps();
+    }
+
+    function renderLaps() {
+      const list = document.getElementById('lapList');
+      list.innerHTML = swLaps.slice().reverse().map(l => `
+        <div class="lap-item">
+          <span>第 ${l.lap} 次</span>
+          <span>分段 ${formatMs(l.split)}</span>
+          <span>总计 ${formatMs(l.total)}</span>
+        </div>
+      `).join('');
+    }
+
+    function swReset() {
+      clearInterval(swInterval);
+      swRunning = false;
+      swElapsed = 0;
+      swLaps = [];
+      swLastLap = 0;
+      document.getElementById('swDisplay').textContent = '00:00:00.000';
+      document.getElementById('swStartBtn').textContent = '开始';
+      document.getElementById('swStartBtn').className = 'btn-ctrl btn-start';
+      document.getElementById('swLapBtn').disabled = true;
+      document.getElementById('lapList').innerHTML = '';
+    }
+
+    // Countdown Timer
+    let tmRunning = false, tmRemaining = 0, tmInterval = null, tmTotalMs = 0;
+
+    function formatSec(ms) {
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      const s = Math.ceil((ms % 60000) / 1000);
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function tmUpdate() {
+      const elapsed = Date.now() - tmStartTime;
+      tmRemaining = tmTotalMs - elapsed;
+      if (tmRemaining <= 0) {
+        tmRemaining = 0;
+        clearInterval(tmInterval);
+        tmRunning = false;
+        document.getElementById('tmDisplay').textContent = '00:00:00';
+        document.getElementById('tmStartBtn').textContent = '开始';
+        document.getElementById('tmStartBtn').className = 'btn-ctrl btn-start';
+        showMessage('success', '⏰ 倒计时结束！');
+        try { new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGllcw==').play(); } catch(e) {}
+        return;
+      }
+      document.getElementById('tmDisplay').textContent = formatSec(tmRemaining);
+    }
+
+    function tmToggle() {
+      if (tmRunning) {
+        clearInterval(tmInterval);
+        tmRunning = false;
+        document.getElementById('tmStartBtn').textContent = '继续';
+        document.getElementById('tmStartBtn').className = 'btn-ctrl btn-start';
+        document.getElementById('timerInput').style.display = 'none';
+      } else {
+        if (tmRemaining <= 0) {
+          const min = parseInt(document.getElementById('tmMin').value) || 0;
+          const sec = parseInt(document.getElementById('tmSec').value) || 0;
+          tmTotalMs = (min * 60 + sec) * 1000;
+          if (tmTotalMs <= 0) { showMessage('error', '请设置时间'); return; }
+          tmRemaining = tmTotalMs;
+        } else {
+          tmTotalMs = tmRemaining;
+        }
+        tmStartTime = Date.now();
+        tmInterval = setInterval(tmUpdate, 100);
+        tmRunning = true;
+        document.getElementById('tmStartBtn').textContent = '暂停';
+        document.getElementById('tmStartBtn').className = 'btn-ctrl btn-pause';
+        document.getElementById('timerInput').style.display = 'none';
+      }
+    }
+
+    function tmReset() {
+      clearInterval(tmInterval);
+      tmRunning = false;
+      tmRemaining = 0;
+      document.getElementById('tmDisplay').textContent = '00:00:00';
+      document.getElementById('tmStartBtn').textContent = '开始';
+      document.getElementById('tmStartBtn').className = 'btn-ctrl btn-start';
+      document.getElementById('timerInput').style.display = 'flex';
+    }
+  </script>
+</body>
+</html>

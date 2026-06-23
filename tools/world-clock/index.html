@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>世界时间转换器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .clock-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .clock-card { background: linear-gradient(135deg, #1a237e, #283593); color: white; border-radius: 12px; padding: 20px; text-align: center; position: relative; overflow: hidden; }
+    .clock-card::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); }
+    .clock-city { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .clock-tz { font-size: 12px; opacity: 0.7; margin-bottom: 12px; }
+    .clock-time { font-size: 32px; font-weight: 700; font-family: 'Courier New', monospace; margin-bottom: 4px; }
+    .clock-date { font-size: 13px; opacity: 0.8; }
+    .clock-dst { position: absolute; top: 8px; right: 12px; font-size: 10px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; }
+    .add-tz-section { margin-top: 24px; }
+    .tz-select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    #customClocks { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>世界时间转换器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">🌍 世界时间转换器</h1>
+        <p style="color: var(--text-secondary);">实时显示全球主要城市时间，支持DST夏令时自动识别</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🕐 主要城市时间</div>
+        <div class="clock-grid" id="mainClocks"></div>
+      </div>
+
+      <div class="card add-tz-section">
+        <div class="card-title">➕ 添加更多时区</div>
+        <div class="form-group">
+          <select id="tzSelect" class="tz-select" onchange="addCustomTz()">
+            <option value="">选择时区...</option>
+          </select>
+        </div>
+        <div class="clock-grid" id="customClocks"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const mainTimezones = [
+      { city: '北京', tz: 'Asia/Shanghai', flag: '🇨🇳' },
+      { city: '东京', tz: 'Asia/Tokyo', flag: '🇯🇵' },
+      { city: '纽约', tz: 'America/New_York', flag: '🇺🇸' },
+      { city: '伦敦', tz: 'Europe/London', flag: '🇬🇧' },
+      { city: '巴黎', tz: 'Europe/Paris', flag: '🇫🇷' },
+      { city: '悉尼', tz: 'Australia/Sydney', flag: '🇦🇺' },
+      { city: '洛杉矶', tz: 'America/Los_Angeles', flag: '🇺🇸' }
+    ];
+
+    const allTimezones = [
+      'Africa/Cairo','Africa/Johannesburg','Africa/Lagos','America/Anchorage','America/Argentina/Buenos_Aires',
+      'America/Chicago','America/Denver','America/Halifax','America/Mexico_City','America/New_York',
+      'America/Los_Angeles','America/Sao_Paulo','America/Toronto','America/Vancouver',
+      'Asia/Bangkok','Asia/Dubai','Asia/Hong_Kong','Asia/India/Kolkata','Asia/Jakarta','Asia/Karachi',
+      'Asia/Seoul','Asia/Shanghai','Asia/Singapore','Asia/Taipei','Asia/Tehran','Asia/Tokyo',
+      'Atlantic/Reykjavik','Australia/Adelaide','Australia/Brisbane','Australia/Melbourne','Australia/Perth','Australia/Sydney',
+      'Europe/Amsterdam','Europe/Athens','Europe/Berlin','Europe/Dublin','Europe/Istanbul',
+      'Europe/London','Europe/Madrid','Europe/Moscow','Europe/Paris','Europe/Rome',
+      'Pacific/Auckland','Pacific/Fiji','Pacific/Honolulu','Pacific/Tongatapu'
+    ];
+
+    const addedTz = new Set();
+
+    function formatTime(tz) {
+      const now = new Date();
+      const opts = { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      return new Intl.DateTimeFormat('zh-CN', opts).format(now);
+    }
+
+    function formatDate(tz) {
+      const now = new Date();
+      const opts = { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' };
+      return new Intl.DateTimeFormat('zh-CN', opts).format(now);
+    }
+
+    function getOffset(tz) {
+      const now = new Date();
+      const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
+      const tzStr = now.toLocaleString('en-US', { timeZone: tz });
+      const diff = (new Date(tzStr) - new Date(utcStr)) / 3600000;
+      const sign = diff >= 0 ? '+' : '';
+      return `UTC${sign}${diff}`;
+    }
+
+    function isDST(tz) {
+      const now = new Date();
+      const jan = new Date(now.getFullYear(), 0, 1);
+      const jul = new Date(now.getFullYear(), 6, 1);
+      const janOff = parseFloat(jan.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).match(/[+-]\d+/)?.[0] || 0);
+      const julOff = parseFloat(jul.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).match(/[+-]\d+/)?.[0] || 0);
+      return janOff !== julOff;
+    }
+
+    function renderClocks() {
+      const container = document.getElementById('mainClocks');
+      container.innerHTML = mainTimezones.map(z => `
+        <div class="clock-card">
+          ${isDST(z.tz) ? '<div class="clock-dst">DST</div>' : ''}
+          <div class="clock-city">${z.flag} ${z.city}</div>
+          <div class="clock-tz">${getOffset(z.tz)}</div>
+          <div class="clock-time" data-tz="${z.tz}">${formatTime(z.tz)}</div>
+          <div class="clock-date">${formatDate(z.tz)}</div>
+        </div>
+      `).join('');
+    }
+
+    function updateTimes() {
+      document.querySelectorAll('.clock-time').forEach(el => {
+        const tz = el.getAttribute('data-tz');
+        if (tz) el.textContent = formatTime(tz);
+      });
+    }
+
+    // 填充时区选择
+    const select = document.getElementById('tzSelect');
+    allTimezones.sort().forEach(tz => {
+      if (!mainTimezones.find(m => m.tz === tz)) {
+        const opt = document.createElement('option');
+        opt.value = tz;
+        opt.textContent = tz.replace(/_/g, ' ');
+        select.appendChild(opt);
+      }
+    });
+
+    function addCustomTz() {
+      const tz = select.value;
+      if (!tz || addedTz.has(tz)) return;
+      addedTz.add(tz);
+      const container = document.getElementById('customClocks');
+      const card = document.createElement('div');
+      card.className = 'clock-card';
+      card.style.background = 'linear-gradient(135deg, #00695c, #00897b)';
+      card.setAttribute('data-custom', tz);
+      container.appendChild(card);
+      updateCustomCard(card, tz);
+    }
+
+    function updateCustomCard(card, tz) {
+      card.innerHTML = `
+        <div class="clock-city">${tz.replace(/_/g, ' ').split('/').pop()}</div>
+        <div class="clock-tz">${getOffset(tz)}</div>
+        <div class="clock-time" data-tz="${tz}">${formatTime(tz)}</div>
+        <div class="clock-date">${formatDate(tz)}</div>
+      `;
+    }
+
+    renderClocks();
+    setInterval(updateTimes, 1000);
+  </script>
+</body>
+</html>

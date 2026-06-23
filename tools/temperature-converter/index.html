@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>温度单位换算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 16px; align-items: end; margin-bottom: 24px; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 150px; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+    .result-card { background: var(--bg); border-radius: 12px; padding: 24px; text-align: center; }
+    .result-card .label { color: var(--text-secondary); font-size: 14px; margin-bottom: 8px; }
+    .result-card .value { font-weight: 700; font-size: 28px; color: var(--primary-dark); margin-bottom: 8px; }
+    .formula { font-size: 12px; color: var(--text-secondary); background: white; padding: 8px 12px; border-radius: 6px; display: inline-block; }
+    .temp-icon { font-size: 48px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>温度单位换算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">🌡️ 温度单位换算器</h1>
+        <p style="color: var(--text-secondary);">摄氏度、华氏度、开尔文之间的快速换算，附带换算公式</p>
+      </div>
+
+      <div class="card">
+        <div class="input-row">
+          <div class="form-group">
+            <label class="form-label">温度值</label>
+            <input type="number" id="inputValue" class="form-input" value="100" step="any" oninput="convert()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">单位</label>
+            <select id="inputUnit" class="form-select" onchange="convert()">
+              <option value="C">摄氏度 (°C)</option>
+              <option value="F">华氏度 (°F)</option>
+              <option value="K">开尔文 (K)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="result-grid" id="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    function celsiusToFahrenheit(c) { return c * 9/5 + 32; }
+    function celsiusToKelvin(c) { return c + 273.15; }
+    function fahrenheitToCelsius(f) { return (f - 32) * 5/9; }
+    function kelvinToCelsius(k) { return k - 273.15; }
+
+    function getIcon(val, unit) {
+      let c = val;
+      if (unit === 'F') c = fahrenheitToCelsius(val);
+      if (unit === 'K') c = kelvinToCelsius(val);
+      if (c < 0) return '🥶';
+      if (c < 15) return '❄️';
+      if (c < 25) return '😊';
+      if (c < 35) return '☀️';
+      return '🔥';
+    }
+
+    function convert() {
+      const val = parseFloat(document.getElementById('inputValue').value);
+      const fromUnit = document.getElementById('inputUnit').value;
+      if (isNaN(val)) { document.getElementById('results').innerHTML = ''; return; }
+
+      let c, f, k;
+      if (fromUnit === 'C') { c = val; f = celsiusToFahrenheit(val); k = celsiusToKelvin(val); }
+      else if (fromUnit === 'F') { c = fahrenheitToCelsius(val); f = val; k = celsiusToKelvin(c); }
+      else { c = kelvinToCelsius(val); f = celsiusToFahrenheit(c); k = val; }
+
+      const icon = getIcon(val, fromUnit);
+
+      const cards = [
+        { label: '摄氏度', value: c, symbol: '°C', formula: fromUnit === 'F' ? '°C = (°F - 32) × 5/9' : fromUnit === 'K' ? '°C = K - 273.15' : null },
+        { label: '华氏度', value: f, symbol: '°F', formula: fromUnit === 'C' ? '°F = °C × 9/5 + 32' : fromUnit === 'K' ? '°F = (K - 273.15) × 9/5 + 32' : null },
+        { label: '开尔文', value: k, symbol: 'K', formula: fromUnit === 'C' ? 'K = °C + 273.15' : fromUnit === 'F' ? 'K = (°F - 32) × 5/9 + 273.15' : null }
+      ].filter(card => {
+        if (fromUnit === 'C' && card.symbol === '°C') return false;
+        if (fromUnit === 'F' && card.symbol === '°F') return false;
+        if (fromUnit === 'K' && card.symbol === 'K') return false;
+        return true;
+      });
+
+      document.getElementById('results').innerHTML = `
+        <div class="result-card" style="grid-column: 1 / -1; background: linear-gradient(135deg, #E3F2FD, #BBDEFB);">
+          <div class="temp-icon">${icon}</div>
+          <div class="value" style="font-size: 36px;">${parseFloat(val.toFixed(4))} ${fromUnit === 'C' ? '°C' : fromUnit === 'F' ? '°F' : 'K'}</div>
+        </div>
+        ${cards.map(card => `
+          <div class="result-card">
+            <div class="label">${card.label}</div>
+            <div class="value">${parseFloat(card.value.toFixed(4))} ${card.symbol}</div>
+            ${card.formula ? `<div class="formula">📐 ${card.formula}</div>` : ''}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    convert();
+  </script>
+</body>
+</html>

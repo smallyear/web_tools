@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文本增加序号工具 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.breadcrumb { font-size: 14px; color: var(--text-secondary, #666); margin-bottom: 12px; }
+.breadcrumb a { color: var(--primary, #4a90d9); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.tool-header { margin-bottom: 20px; }
+.tool-header h1 { font-size: 1.6em; margin: 0 0 6px; }
+.tool-header p { color: var(--text-secondary, #666); margin: 0; }
+.card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card h3 { margin: 0 0 14px; font-size: 1.05em; }
+label { display: block; font-size: 14px; margin-bottom: 4px; color: var(--text-secondary, #666); }
+textarea { width: 100%; min-height: 120px; padding: 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 14px; resize: vertical; font-family: inherit; box-sizing: border-box; }
+textarea:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.options-grid .opt { display: flex; flex-direction: column; }
+.options-grid input, .options-grid select { padding: 8px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 14px; }
+.options-grid input:focus, .options-grid select:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.output-box { background: var(--bg, #f5f5f5); border: 1px solid var(--border, #e0e0e0); border-radius: 6px; padding: 12px; min-height: 120px; white-space: pre-wrap; word-break: break-all; font-size: 14px; line-height: 1.6; }
+.btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; background: var(--primary, #4a90d9); color: #fff; transition: background .2s; }
+.btn:hover { background: var(--primary-dark, #357abd); }
+.btn-sm { padding: 5px 12px; font-size: 13px; }
+.btn-success { background: var(--success, #28a745); }
+.btn-success:hover { background: #218838; }
+.actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+@media (max-width: 600px) { .options-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<nav style="background:var(--primary,#4a90d9);color:#fff;padding:12px 16px;">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:600;">← 返回工具箱</a>
+</nav>
+<div class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> / 文本增加序号工具</div>
+  <div class="tool-header">
+    <h1>📝 文本增加序号工具</h1>
+    <p>为每行文本添加自定义序号，支持多种格式和选项</p>
+  </div>
+
+  <div class="card">
+    <h3>输入文本</h3>
+    <textarea id="input" placeholder="请输入文本，每行一个条目...&#10;例如：&#10;苹果&#10;香蕉&#10;橘子"></textarea>
+  </div>
+
+  <div class="card">
+    <h3>序号设置</h3>
+    <div class="options-grid">
+      <div class="opt">
+        <label>起始编号</label>
+        <input type="number" id="startNum" value="1" min="0">
+      </div>
+      <div class="opt">
+        <label>序号格式</label>
+        <select id="format">
+          <option value="dot">1. 2. 3.</option>
+          <option value="paren">1) 2) 3)</option>
+          <option value="paren2">(1) (2) (3)</option>
+          <option value="hash">#1 #2 #3</option>
+          <option value="bracket">[1] [2] [3]</option>
+          <option value="plain">1 2 3</option>
+        </select>
+      </div>
+      <div class="opt">
+        <label>分隔符</label>
+        <input type="text" id="separator" value=" " placeholder="序号与文本之间的分隔符">
+      </div>
+      <div class="opt">
+        <label>补零位数</label>
+        <input type="number" id="padZero" value="0" min="0" max="10">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>输出结果</h3>
+    <div class="output-box" id="output">预览将在此处显示...</div>
+    <div class="actions">
+      <button class="btn btn-success btn-sm" onclick="copyResult()">📋 复制结果</button>
+    </div>
+  </div>
+</div>
+
+<footer>© 2025 在线工具箱 · 文本增加序号工具</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+const startNum = document.getElementById('startNum');
+const format = document.getElementById('format');
+const separator = document.getElementById('separator');
+const padZero = document.getElementById('padZero');
+
+function formatNumber(n, fmt, pad) {
+  let s = pad > 0 ? String(n).padStart(pad, '0') : String(n);
+  switch (fmt) {
+    case 'dot': return s + '.';
+    case 'paren': return s + ')';
+    case 'paren2': return '(' + s + ')';
+    case 'hash': return '#' + s;
+    case 'bracket': return '[' + s + ']';
+    case 'plain': return s;
+    default: return s + '.';
+  }
+}
+
+function process() {
+  const text = input.value;
+  if (!text.trim()) { output.textContent = '预览将在此处显示...'; return; }
+  const lines = text.split('\n');
+  const start = parseInt(startNum.value) || 1;
+  const fmt = format.value;
+  const sep = separator.value;
+  const pad = parseInt(padZero.value) || 0;
+  const result = lines.map((line, i) => formatNumber(start + i, fmt, pad) + sep + line).join('\n');
+  output.textContent = result;
+}
+
+function copyResult() {
+  const text = output.textContent;
+  if (text && text !== '预览将在此处显示...') {
+    if (typeof copyToClipboard === 'function') copyToClipboard(text);
+    else { navigator.clipboard.writeText(text); alert('已复制到剪贴板'); }
+  }
+}
+
+[input, startNum, format, separator, padZero].forEach(el => {
+  el.addEventListener('input', process);
+});
+</script>
+</body>
+</html>

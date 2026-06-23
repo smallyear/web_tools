@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人所得税计算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .tax-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 24px; }
+    .tax-card { border-radius: 12px; padding: 20px; text-align: center; }
+    .tax-card .label { font-size: 13px; margin-bottom: 8px; opacity: 0.9; }
+    .tax-card .value { font-size: 28px; font-weight: 700; }
+    .tax-card.after-tax { background: linear-gradient(135deg, #4CAF50, #66BB6A); color: white; }
+    .tax-card.tax-amount { background: linear-gradient(135deg, #F44336, #EF5350); color: white; }
+    .tax-card.taxable { background: linear-gradient(135deg, #FF9800, #FFA726); color: white; }
+    .tax-card.rate { background: linear-gradient(135deg, #9C27B0, #AB47BC); color: white; }
+    .bracket-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .bracket-table th, .bracket-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .bracket-table th { background: var(--bg); font-weight: 600; color: var(--text); }
+    .bracket-table tr.active { background: #E3F2FD; font-weight: 600; }
+    .annual-section { margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border); }
+    .annual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .annual-item { background: var(--bg); padding: 16px; border-radius: 8px; text-align: center; }
+    .annual-item .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+    .annual-item .value { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>个人所得税计算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">💰 个人所得税计算器</h1>
+        <p style="color: var(--text-secondary);">根据2024年最新个税税率表计算个人所得税，支持五险一金和专项附加扣除</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📝 输入信息</div>
+        <div class="form-group">
+          <label class="form-label">月收入（税前）/ 元</label>
+          <input type="number" id="income" class="form-input" value="15000" min="0" oninput="calculate()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">五险一金（个人缴纳部分）/ 元</label>
+          <input type="number" id="insurance" class="form-input" value="2000" min="0" oninput="calculate()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">专项附加扣除 / 元</label>
+          <input type="number" id="deduction" class="form-input" value="0" min="0" oninput="calculate()">
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+            包括：子女教育、继续教育、住房贷款利息、住房租金、赡养老人、3岁以下婴幼儿照护等
+          </div>
+        </div>
+      </div>
+
+      <div id="resultSection" style="display: none;">
+        <!-- 月度结果 -->
+        <div class="tax-summary" id="taxSummary"></div>
+
+        <!-- 税率表 -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-title">📊 适用税率</div>
+          <div style="overflow-x: auto;">
+            <table class="bracket-table" id="bracketTable">
+              <thead>
+                <tr>
+                  <th>级数</th>
+                  <th>应纳税所得额（月）</th>
+                  <th>税率</th>
+                  <th>速算扣除数</th>
+                  <th>应纳税额</th>
+                </tr>
+              </thead>
+              <tbody id="bracketBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 年度汇总 -->
+        <div class="card">
+          <div class="card-title">📅 年度汇总</div>
+          <div class="annual-grid" id="annualGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const THRESHOLD = 5000; // 起征点
+    const brackets = [
+      { min: 0, max: 3000, rate: 0.03, quick: 0 },
+      { min: 3000, max: 12000, rate: 0.10, quick: 210 },
+      { min: 12000, max: 25000, rate: 0.20, quick: 1410 },
+      { min: 25000, max: 35000, rate: 0.25, quick: 2660 },
+      { min: 35000, max: 55000, rate: 0.30, quick: 4410 },
+      { min: 55000, max: 80000, rate: 0.35, quick: 7160 },
+      { min: 80000, max: Infinity, rate: 0.45, quick: 15160 }
+    ];
+
+    function calculate() {
+      const income = parseFloat(document.getElementById('income').value) || 0;
+      const insurance = parseFloat(document.getElementById('insurance').value) || 0;
+      const deduction = parseFloat(document.getElementById('deduction').value) || 0;
+
+      const taxableIncome = Math.max(0, income - THRESHOLD - insurance - deduction);
+      let taxAmount = 0;
+      let bracketIndex = -1;
+
+      if (taxableIncome > 0) {
+        for (let i = 0; i < brackets.length; i++) {
+          if (taxableIncome > brackets[i].min) {
+            bracketIndex = i;
+            taxAmount = taxableIncome * brackets[i].rate - brackets[i].quick;
+          }
+        }
+      }
+
+      taxAmount = Math.max(0, taxAmount);
+      const afterTax = income - insurance - taxAmount;
+      const effectiveRate = income > 0 ? (taxAmount / income * 100) : 0;
+
+      // 月度结果
+      document.getElementById('taxSummary').innerHTML = `
+        <div class="tax-card after-tax">
+          <div class="label">税后收入</div>
+          <div class="value">¥${afterTax.toFixed(2)}</div>
+        </div>
+        <div class="tax-card tax-amount">
+          <div class="label">应缴个税</div>
+          <div class="value">¥${taxAmount.toFixed(2)}</div>
+        </div>
+        <div class="tax-card taxable">
+          <div class="label">应纳税所得额</div>
+          <div class="value">¥${taxableIncome.toFixed(2)}</div>
+        </div>
+        <div class="tax-card rate">
+          <div class="label">实际税率</div>
+          <div class="value">${effectiveRate.toFixed(2)}%</div>
+        </div>
+      `;
+
+      // 税率表
+      document.getElementById('bracketBody').innerHTML = brackets.map((b, i) => {
+        const isActive = i === bracketIndex;
+        const maxStr = b.max === Infinity ? '不限' : b.max.toLocaleString();
+        const bracketTax = isActive ? (taxableIncome * b.rate - b.quick) : 0;
+        return `
+          <tr class="${isActive ? 'active' : ''}">
+            <td>${i + 1}</td>
+            <td>${b.min.toLocaleString()} - ${maxStr} 元</td>
+            <td>${(b.rate * 100)}%</td>
+            <td>${b.quick}</td>
+            <td>${isActive ? '¥' + bracketTax.toFixed(2) : '-'}</td>
+          </tr>`;
+      }).join('');
+
+      // 年度汇总
+      const annualIncome = income * 12;
+      const annualInsurance = insurance * 12;
+      const annualDeduction = deduction * 12;
+      const annualTaxableIncome = taxableIncome * 12;
+      const annualTax = taxAmount * 12;
+      const annualAfterTax = afterTax * 12;
+
+      document.getElementById('annualGrid').innerHTML = `
+        <div class="annual-item">
+          <div class="label">年收入（税前）</div>
+          <div class="value">¥${annualIncome.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="annual-item">
+          <div class="label">年五险一金</div>
+          <div class="value">¥${annualInsurance.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="annual-item">
+          <div class="label">年专项附加扣除</div>
+          <div class="value">¥${annualDeduction.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="annual-item">
+          <div class="label">年应纳税所得额</div>
+          <div class="value">¥${annualTaxableIncome.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="annual-item">
+          <div class="label">年应缴个税</div>
+          <div class="value" style="color: var(--error);">¥${annualTax.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="annual-item">
+          <div class="label">年税后收入</div>
+          <div class="value" style="color: var(--success);">¥${annualAfterTax.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+        </div>
+      `;
+
+      document.getElementById('resultSection').style.display = 'block';
+    }
+
+    calculate();
+  </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>列表求和计算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+    .stat-card { background: var(--bg); border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: var(--primary-dark); }
+    .stat-card.highlight { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); }
+    .warning-box { background: #FFF3E0; border: 1px solid #FFB74D; border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 14px; color: #E65100; }
+    textarea { font-family: 'Courier New', monospace; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>列表求和计算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">🔢 列表求和计算器</h1>
+        <p style="color: var(--text-secondary);">输入数字列表，自动计算总和、平均值、中位数、标准差等统计信息</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 输入数据</div>
+        <div class="form-group">
+          <label class="form-label">数字列表（每行一个数字，或用逗号/空格分隔）</label>
+          <textarea id="numInput" class="form-input" rows="10" placeholder="10&#10;20&#10;30&#10;40&#10;50&#10;&#10;或者：10, 20, 30, 40, 50" oninput="calculate()"></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="calculate()">计算</button>
+          <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+          <button class="btn btn-secondary" onclick="loadSample()">加载示例</button>
+        </div>
+
+        <div id="resultsSection" style="display: none;">
+          <div class="stats-grid" id="statsGrid"></div>
+          <div id="warningBox" style="display: none;" class="warning-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    function loadSample() {
+      document.getElementById('numInput').value = '85\n92\n78\n95\n88\n76\n91\n83\n87\n90\n72\n96';
+      calculate();
+    }
+
+    function clearAll() {
+      document.getElementById('numInput').value = '';
+      document.getElementById('resultsSection').style.display = 'none';
+    }
+
+    function calculate() {
+      const text = document.getElementById('numInput').value.trim();
+      if (!text) { document.getElementById('resultsSection').style.display = 'none'; return; }
+
+      const lines = text.split(/[\n,，\s]+/).map(s => s.trim()).filter(s => s);
+      const numbers = [];
+      const nonNumeric = [];
+
+      for (const line of lines) {
+        const n = parseFloat(line);
+        if (!isNaN(n) && isFinite(n)) {
+          numbers.push(n);
+        } else {
+          nonNumeric.push(line);
+        }
+      }
+
+      if (numbers.length === 0) {
+        showMessage('error', '未检测到有效数字');
+        document.getElementById('resultsSection').style.display = 'none';
+        return;
+      }
+
+      const count = numbers.length;
+      const sum = numbers.reduce((a, b) => a + b, 0);
+      const avg = sum / count;
+      const min = Math.min(...numbers);
+      const max = Math.max(...numbers);
+      const sorted = [...numbers].sort((a, b) => a - b);
+      const median = count % 2 === 0
+        ? (sorted[count/2 - 1] + sorted[count/2]) / 2
+        : sorted[Math.floor(count/2)];
+      const variance = numbers.reduce((s, n) => s + Math.pow(n - avg, 2), 0) / count;
+      const stdDev = Math.sqrt(variance);
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card highlight">
+          <div class="label">总和 (Sum)</div>
+          <div class="value">${formatNum(sum)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">个数 (Count)</div>
+          <div class="value">${count}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">平均值 (Average)</div>
+          <div class="value">${formatNum(avg)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">最小值 (Min)</div>
+          <div class="value">${formatNum(min)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">最大值 (Max)</div>
+          <div class="value">${formatNum(max)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">中位数 (Median)</div>
+          <div class="value">${formatNum(median)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">标准差 (Std Dev)</div>
+          <div class="value">${formatNum(stdDev)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">方差 (Variance)</div>
+          <div class="value">${formatNum(variance)}</div>
+        </div>
+      `;
+
+      if (nonNumeric.length > 0) {
+        document.getElementById('warningBox').style.display = 'block';
+        document.getElementById('warningBox').innerHTML = `⚠️ 检测到 ${nonNumeric.length} 个非数字项：${nonNumeric.slice(0, 10).map(n => `<code>${n}</code>`).join(', ')}${nonNumeric.length > 10 ? '...' : ''}`;
+      } else {
+        document.getElementById('warningBox').style.display = 'none';
+      }
+
+      document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    function formatNum(n) {
+      if (Number.isInteger(n)) return n.toLocaleString();
+      return parseFloat(n.toFixed(6)).toString();
+    }
+  </script>
+</body>
+</html>

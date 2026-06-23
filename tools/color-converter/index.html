@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>颜色值转换工具 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.breadcrumb { font-size: 14px; color: var(--text-secondary, #666); margin-bottom: 12px; }
+.breadcrumb a { color: var(--primary, #4a90d9); text-decoration: none; }
+.tool-header { margin-bottom: 20px; }
+.tool-header h1 { font-size: 1.6em; margin: 0 0 6px; }
+.tool-header p { color: var(--text-secondary, #666); margin: 0; }
+.card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card h3 { margin: 0 0 14px; font-size: 1.05em; }
+.input-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.color-picker-wrap { display: flex; align-items: center; gap: 10px; }
+input[type="color"] { width: 60px; height: 40px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; cursor: pointer; padding: 2px; }
+input[type="text"] { padding: 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 14px; font-family: 'SF Mono','Menlo',monospace; width: 160px; }
+input[type="text"]:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.alpha-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.alpha-row label { font-size: 14px; color: var(--text-secondary, #666); }
+input[type="range"] { flex: 1; max-width: 200px; }
+.swatch { width: 100%; height: 80px; border-radius: 8px; margin: 16px 0; border: 1px solid var(--border, #e0e0e0); }
+.result-list { list-style: none; padding: 0; margin: 0; }
+.result-list li { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; margin-bottom: 8px; background: var(--bg, #f5f5f5); cursor: pointer; transition: background .15s; }
+.result-list li:hover { background: #e8f0fe; }
+.result-list li .name { font-size: 13px; color: var(--text-secondary, #666); min-width: 100px; }
+.result-list li .value { font-family: 'SF Mono','Menlo',monospace; font-size: 14px; flex: 1; margin: 0 12px; word-break: break-all; }
+.result-list li .copy-hint { font-size: 12px; color: var(--primary, #4a90d9); white-space: nowrap; }
+footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+</style>
+</head>
+<body>
+<nav style="background:var(--primary,#4a90d9);color:#fff;padding:12px 16px;">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:600;">← 返回工具箱</a>
+</nav>
+<div class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> / 颜色值转换工具</div>
+  <div class="tool-header">
+    <h1>🎨 颜色值转换工具</h1>
+    <p>在 HEX、RGB、HSL 等颜色格式之间互相转换</p>
+  </div>
+
+  <div class="card">
+    <h3>输入颜色</h3>
+    <div class="input-row">
+      <div class="color-picker-wrap">
+        <input type="color" id="picker" value="#4a90d9">
+        <input type="text" id="hexInput" value="#4a90d9" maxlength="7" placeholder="#000000">
+      </div>
+    </div>
+    <div class="alpha-row">
+      <label>透明度 (Alpha):</label>
+      <input type="range" id="alphaRange" min="0" max="100" value="100">
+      <span id="alphaVal">100%</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>颜色预览</h3>
+    <div class="swatch" id="swatch"></div>
+  </div>
+
+  <div class="card">
+    <h3>转换结果 <span style="font-size:13px;color:var(--text-secondary,#666);font-weight:normal;">（点击可复制）</span></h3>
+    <ul class="result-list" id="results"></ul>
+  </div>
+</div>
+
+<footer>© 2025 在线工具箱 · 颜色值转换工具</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+const picker = document.getElementById('picker');
+const hexInput = document.getElementById('hexInput');
+const alphaRange = document.getElementById('alphaRange');
+const alphaVal = document.getElementById('alphaVal');
+const swatch = document.getElementById('swatch');
+const results = document.getElementById('results');
+
+function hexToRgb(hex) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function update() {
+  const hex = hexInput.value;
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  picker.value = hex;
+  const { r, g, b } = hexToRgb(hex);
+  const { h, s, l } = rgbToHsl(r, g, b);
+  const a = parseInt(alphaRange.value) / 100;
+  alphaVal.textContent = Math.round(a * 100) + '%';
+
+  swatch.style.background = `rgba(${r},${g},${b},${a})`;
+
+  const items = [
+    { name: 'HEX', value: hex.toUpperCase() },
+    { name: 'HEX (小写)', value: hex.toLowerCase() },
+    { name: 'RGB', value: `rgb(${r}, ${g}, ${b})` },
+    { name: 'RGBA', value: `rgba(${r}, ${g}, ${b}, ${a})` },
+    { name: 'HSL', value: `hsl(${h}, ${s}%, ${l}%)` },
+    { name: 'HSLA', value: `hsla(${h}, ${s}%, ${l}%, ${a})` },
+    { name: 'CSS变量', value: `--color: ${hex};` },
+    { name: '十进制', value: `${r * 65536 + g * 256 + b}` },
+  ];
+
+  results.innerHTML = '';
+  items.forEach(item => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="name">${item.name}</span><span class="value">${item.value}</span><span class="copy-hint">📋 复制</span>`;
+    li.onclick = () => {
+      if (typeof copyToClipboard === 'function') copyToClipboard(item.value);
+      else navigator.clipboard.writeText(item.value);
+      li.querySelector('.copy-hint').textContent = '✅ 已复制';
+      setTimeout(() => { li.querySelector('.copy-hint').textContent = '📋 复制'; }, 1500);
+    };
+    results.appendChild(li);
+  });
+}
+
+picker.addEventListener('input', () => { hexInput.value = picker.value; update(); });
+hexInput.addEventListener('input', update);
+alphaRange.addEventListener('input', update);
+update();
+</script>
+</body>
+</html>

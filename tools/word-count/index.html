@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>字数统计工具 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.breadcrumb { font-size: 14px; color: var(--text-secondary, #666); margin-bottom: 12px; }
+.breadcrumb a { color: var(--primary, #4a90d9); text-decoration: none; }
+.tool-header { margin-bottom: 20px; }
+.tool-header h1 { font-size: 1.6em; margin: 0 0 6px; }
+.tool-header p { color: var(--text-secondary, #666); margin: 0; }
+.card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card h3 { margin: 0 0 14px; font-size: 1.05em; }
+textarea { width: 100%; min-height: 180px; padding: 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; font-size: 14px; resize: vertical; font-family: inherit; box-sizing: border-box; }
+textarea:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.stat-item { background: var(--bg, #f5f5f5); border-radius: 8px; padding: 14px; text-align: center; }
+.stat-item .num { font-size: 1.8em; font-weight: 700; color: var(--primary, #4a90d9); }
+.stat-item .label { font-size: 13px; color: var(--text-secondary, #666); margin-top: 4px; }
+.reading-time { margin-top: 14px; padding: 12px 16px; background: #e8f4fd; border-radius: 8px; font-size: 14px; color: #1a73e8; }
+footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+</style>
+</head>
+<body>
+<nav style="background:var(--primary,#4a90d9);color:#fff;padding:12px 16px;">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:600;">← 返回工具箱</a>
+</nav>
+<div class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> / 字数统计工具</div>
+  <div class="tool-header">
+    <h1>📊 字数统计工具</h1>
+    <p>实时统计文本的字数、字符数、行数等信息</p>
+  </div>
+
+  <div class="card">
+    <h3>输入文本</h3>
+    <textarea id="input" placeholder="在此输入或粘贴文本，统计结果将实时更新..."></textarea>
+  </div>
+
+  <div class="card">
+    <h3>统计结果</h3>
+    <div class="stats-grid">
+      <div class="stat-item"><div class="num" id="totalChars">0</div><div class="label">总字符数</div></div>
+      <div class="stat-item"><div class="num" id="noSpaces">0</div><div class="label">不含空格</div></div>
+      <div class="stat-item"><div class="num" id="chineseChars">0</div><div class="label">中文字符</div></div>
+      <div class="stat-item"><div class="num" id="enWords">0</div><div class="label">英文单词</div></div>
+      <div class="stat-item"><div class="num" id="lines">0</div><div class="label">行数</div></div>
+      <div class="stat-item"><div class="num" id="paragraphs">0</div><div class="label">段落数</div></div>
+      <div class="stat-item"><div class="num" id="bytes">0</div><div class="label">字节数</div></div>
+      <div class="stat-item"><div class="num" id="sentences">0</div><div class="label">句子数</div></div>
+    </div>
+    <div class="reading-time" id="readingTime">⏱ 预计阅读时间：-</div>
+  </div>
+</div>
+
+<footer>© 2025 在线工具箱 · 字数统计工具</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+const input = document.getElementById('input');
+
+function count() {
+  const text = input.value;
+  const totalChars = text.length;
+  const noSpaces = text.replace(/\s/g, '').length;
+  const chineseChars = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
+  const enWords = text.trim() ? (text.trim().split(/\s+/).filter(w => /[a-zA-Z]/.test(w)).length) : 0;
+  const lines = text ? text.split('\n').length : 0;
+  const paragraphs = text.trim() ? text.trim().split(/\n\s*\n/).length : 0;
+  const bytes = new Blob([text]).size;
+  const sentences = text.trim() ? (text.match(/[.!?\u3002\uff01\uff1f]+/g) || []).length : 0;
+
+  document.getElementById('totalChars').textContent = totalChars;
+  document.getElementById('noSpaces').textContent = noSpaces;
+  document.getElementById('chineseChars').textContent = chineseChars;
+  document.getElementById('enWords').textContent = enWords;
+  document.getElementById('lines').textContent = lines;
+  document.getElementById('paragraphs').textContent = paragraphs;
+  document.getElementById('bytes').textContent = bytes;
+  document.getElementById('sentences').textContent = sentences;
+
+  // Reading time estimate
+  const cnTime = chineseChars / 300;
+  const enTime = enWords / 200;
+  const totalMinutes = cnTime + enTime;
+  let timeStr;
+  if (totalMinutes < 0.05) timeStr = '少于 1 秒';
+  else if (totalMinutes < 1) timeStr = `约 ${Math.ceil(totalMinutes * 60)} 秒`;
+  else timeStr = `约 ${Math.ceil(totalMinutes)} 分钟`;
+  document.getElementById('readingTime').textContent = `⏱ 预计阅读时间：${timeStr}（中文约300字/分钟，英文约200词/分钟）`;
+}
+
+input.addEventListener('input', count);
+</script>
+</body>
+</html>
