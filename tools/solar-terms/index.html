@@ -146,7 +146,7 @@ for(let i=0;i<24;i++){
 const d=new Date(dates[i]);
 const next=i<23?new Date(dates[i+1]):new Date(y+1,1,4);
 if(today>=d&&today<next){
-currentTerm={year:y,index:i,date:dates[i]};
+currentTerm={year:y,index:i,date:dates[i],endDate:dates[i+1]||(y+1)+'-02-04'};
 break;
 }
 }
@@ -167,9 +167,9 @@ const ct=findCurrentTerm();
 const currentInfo=document.getElementById('currentInfo');
 if(ct&&ct.year===year){
 const t=TERMS[ct.index];
-currentInfo.innerHTML=`📍 今日节气：${t.emoji} ${t.name}（${formatDate(ct.date)}）`;
+currentInfo.innerHTML=`📍 当前节气：${t.emoji} ${t.name}（${formatDate(ct.date)} ~ ${formatDate(ct.endDate)}）`;
 }else if(ct){
-currentInfo.innerHTML=`📍 当前节气：${TERMS[ct.index].emoji} ${TERMS[ct.index].name}（${ct.year}年${formatDate(ct.date)}）`;
+currentInfo.innerHTML=`📍 当前节气：${TERMS[ct.index].emoji} ${TERMS[ct.index].name}（${ct.year}年${formatDate(ct.date)} ~ ${formatDate(ct.endDate)}）`;
 }
 
 let html='';
