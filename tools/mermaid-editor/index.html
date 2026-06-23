@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mermaid图表编辑器 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.breadcrumb{margin-bottom:16px;font-size:14px;color:#666}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:20px;margin-bottom:20px}
+.card h2{margin:0 0 16px;font-size:18px;color:#333}
+.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar select,.toolbar button{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:14px;cursor:pointer;background:#fff}
+.toolbar select:focus,.toolbar button:focus{outline:none;border-color:#4a90d9}
+.toolbar button{background:#4a90d9;color:#fff;border-color:#4a90d9}
+.toolbar button:hover{background:#357abd}
+.toolbar button.secondary{background:#6c757d;border-color:#6c757d}
+.toolbar button.secondary:hover{background:#5a6268}
+.editor-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.editor-panel textarea{width:100%;min-height:400px;border:1px solid #ddd;border-radius:6px;padding:12px;font-family:'Fira Code',Consolas,monospace;font-size:14px;resize:vertical;line-height:1.6}
+.editor-panel textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 3px rgba(74,144,217,.15)}
+.preview-panel{border:1px solid #ddd;border-radius:6px;padding:16px;min-height:400px;overflow:auto;background:#fafafa}
+.preview-panel svg{max-width:100%}
+.error-box{background:#fff3f3;border:1px solid #f5c6cb;color:#721c24;padding:10px 14px;border-radius:6px;margin-top:10px;font-size:13px;display:none}
+@media(max-width:768px){.editor-wrap{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:stretch}}
+footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="breadcrumb"><a href="../../index.html">首页</a> &gt; Mermaid图表编辑器</div>
+<div class="card">
+<h2>Mermaid图表编辑器</h2>
+<div class="toolbar">
+<label>示例模板：</label>
+<select id="exampleSelect">
+<option value="flowchart">流程图</option>
+<option value="sequence">时序图</option>
+<option value="class">类图</option>
+<option value="pie">饼图</option>
+<option value="gantt">甘特图</option>
+</select>
+<button onclick="loadExample()">加载示例</button>
+<button onclick="renderMermaid()">▶ 渲染</button>
+<button onclick="downloadSVG()" class="secondary">⬇ 下载SVG</button>
+<button onclick="copySVG()" class="secondary">📋 复制SVG</button>
+</div>
+<div class="editor-wrap">
+<div class="editor-panel">
+<textarea id="mermaidCode" placeholder="在此输入Mermaid代码..."></textarea>
+<div id="errorBox" class="error-box"></div>
+</div>
+<div class="preview-panel" id="preview"></div>
+</div>
+</div>
+<footer>© 2026 在线工具箱</footer>
+</div>
+<script src="../../assets/js/common.js"></script>
+<script>
+function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
+const examples={
+flowchart:`flowchart TD
+    A[开始] --> B{条件判断}
+    B -->|是| C[执行操作A]
+    B -->|否| D[执行操作B]
+    C --> E[结束]
+    D --> E`,
+sequence:`sequenceDiagram
+    participant 用户
+    participant 浏览器
+    participant 服务器
+    participant 数据库
+    用户->>浏览器: 输入信息
+    浏览器->>服务器: 发送请求
+    服务器->>数据库: 查询数据
+    数据库-->>服务器: 返回结果
+    服务器-->>浏览器: 响应数据
+    浏览器-->>用户: 显示结果`,
+class:`classDiagram
+    class Animal {
+        +String name
+        +int age
+        +makeSound()
+    }
+    class Dog {
+        +fetch()
+    }
+    class Cat {
+        +purr()
+    }
+    Animal <|-- Dog
+    Animal <|-- Cat`,
+pie:`pie title 浏览器市场份额
+    "Chrome" : 65
+    "Safari" : 18
+    "Firefox" : 8
+    "Edge" : 5
+    "其他" : 4`,
+gantt:`gantt
+    title 项目开发计划
+    dateFormat  YYYY-MM-DD
+    section 需求阶段
+    需求调研    :a1, 2026-01-01, 10d
+    需求评审    :after a1, 5d
+    section 开发阶段
+    前端开发    :2026-01-20, 20d
+    后端开发    :2026-01-20, 25d
+    section 测试阶段
+    集成测试    :2026-02-15, 10d
+    上线部署    :2026-02-25, 5d`
+};
+mermaid.initialize({startOnLoad:false,theme:'default',securityLevel:'loose'});
+function loadExample(){document.getElementById('mermaidCode').value=examples[document.getElementById('exampleSelect').value];renderMermaid();}
+async function renderMermaid(){
+const code=document.getElementById('mermaidCode').value.trim();
+const preview=document.getElementById('preview');
+const errorBox=document.getElementById('errorBox');
+errorBox.style.display='none';preview.innerHTML='';
+if(!code)return;
+try{
+const {svg}=await mermaid.render('mermaidGraph',code);
+preview.innerHTML=svg;
+}catch(e){
+errorBox.textContent='语法错误：'+(e.message||e);errorBox.style.display='block';
+}
+}
+function getSVG(){return document.getElementById('preview').innerHTML;}
+function downloadSVG(){
+const svg=getSVG();if(!svg){alert('请先渲染图表');return;}
+const blob=new Blob([svg],{type:'image/svg+xml'});const a=document.createElement('a');
+a.href=URL.createObjectURL(blob);a.download='mermaid-chart.svg';a.click();URL.revokeObjectURL(a.href);
+}
+function copySVG(){
+const svg=getSVG();if(!svg){alert('请先渲染图表');return;}
+navigator.clipboard.writeText(svg).then(()=>alert('SVG代码已复制到剪贴板'));
+}
+document.getElementById('mermaidCode').addEventListener('input',debounce(renderMermaid,500));
+loadExample();
+</script>
+</body>
+</html>

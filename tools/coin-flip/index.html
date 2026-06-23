@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抛硬币 / 掷骰子 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+/* ===== Tabs ===== */
+.tabs { display: flex; gap: 0; margin-bottom: 24px; }
+.tab-btn {
+  flex: 1; padding: 12px 0; border: none; background: var(--bg);
+  font-size: 16px; font-weight: 600; cursor: pointer;
+  color: var(--text-secondary); transition: all .2s;
+  border-bottom: 3px solid transparent;
+}
+.tab-btn.active { color: var(--primary); background: #fff; border-bottom-color: var(--primary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ===== Coin ===== */
+.coin-stage { perspective: 800px; display: flex; justify-content: center; align-items: center; min-height: 220px; }
+.coin {
+  width: 140px; height: 140px; position: relative;
+  transform-style: preserve-3d; transition: transform .05s;
+}
+.coin .face {
+  position: absolute; inset: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 56px; font-weight: 700; backface-visibility: hidden;
+  border: 6px solid #c9a84c; box-shadow: inset 0 0 20px rgba(0,0,0,.15), 0 4px 16px rgba(0,0,0,.2);
+}
+.coin .heads { background: linear-gradient(135deg, #ffe066, #f5c518); color: #8a6d0b; z-index:2; }
+.coin .tails { background: linear-gradient(135deg, #ffd6e0, #f5a3b5); color: #8b2040; transform: rotateY(180deg); }
+@keyframes coinFlip {
+  0%   { transform: rotateY(0); }
+  50%  { transform: rotateY(1800deg) scale(1.15); }
+  100% { transform: rotateY(3600deg); }
+}
+.coin.flipping { animation: coinFlip 1.2s cubic-bezier(.4,0,.2,1) forwards; }
+.coin-result-heads .coin { transform: rotateY(0deg); }
+.coin-result-tails .coin { transform: rotateY(1800deg); }
+
+.coin-stats { display: flex; gap: 24px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.coin-stat { text-align: center; }
+.coin-stat .num { font-size: 28px; font-weight: 700; color: var(--primary-dark); }
+.coin-stat .lbl { font-size: 13px; color: var(--text-secondary); }
+
+/* ===== Dice ===== */
+.dice-area { display: flex; justify-content: center; align-items: center; gap: 24px; flex-wrap: wrap; min-height: 200px; }
+.die {
+  width: 100px; height: 100px; background: #fff; border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18); position: relative;
+  display: grid; grid-template-rows: repeat(3,1fr); grid-template-columns: repeat(3,1fr);
+  padding: 14px; gap: 4px; transition: transform .1s;
+}
+@keyframes diceShake {
+  0%   { transform: rotate(0) scale(1); }
+  20%  { transform: rotate(30deg) scale(1.05); }
+  40%  { transform: rotate(-25deg) scale(.95); }
+  60%  { transform: rotate(20deg) scale(1.05); }
+  80%  { transform: rotate(-15deg) scale(.98); }
+  100% { transform: rotate(0) scale(1); }
+}
+.die.rolling { animation: diceShake .8s ease-in-out; }
+.dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #222; align-self: center; justify-self: center;
+  display: none;
+}
+/* dice face layouts */
+.die[data-val="1"] .dot:nth-child(5) { display:block; }
+.die[data-val="2"] .dot:nth-child(1) { display:block; }
+.die[data-val="2"] .dot:nth-child(9) { display:block; }
+.die[data-val="3"] .dot:nth-child(1) { display:block; }
+.die[data-val="3"] .dot:nth-child(5) { display:block; }
+.die[data-val="3"] .dot:nth-child(9) { display:block; }
+.die[data-val="4"] .dot:nth-child(1) { display:block; }
+.die[data-val="4"] .dot:nth-child(3) { display:block; }
+.die[data-val="4"] .dot:nth-child(7) { display:block; }
+.die[data-val="4"] .dot:nth-child(9) { display:block; }
+.die[data-val="5"] .dot:nth-child(1) { display:block; }
+.die[data-val="5"] .dot:nth-child(3) { display:block; }
+.die[data-val="5"] .dot:nth-child(5) { display:block; }
+.die[data-val="5"] .dot:nth-child(7) { display:block; }
+.die[data-val="5"] .dot:nth-child(9) { display:block; }
+.die[data-val="6"] .dot:nth-child(1) { display:block; }
+.die[data-val="6"] .dot:nth-child(3) { display:block; }
+.die[data-val="6"] .dot:nth-child(4) { display:block; }
+.die[data-val="6"] .dot:nth-child(6) { display:block; }
+.die[data-val="6"] .dot:nth-child(7) { display:block; }
+.die[data-val="6"] .dot:nth-child(9) { display:block; }
+
+.dice-total { text-align: center; margin-top: 16px; font-size: 20px; font-weight: 600; color: var(--primary-dark); }
+
+.dice-count-row { display: flex; gap: 12px; align-items: center; justify-content: center; margin: 16px 0; flex-wrap: wrap; }
+.dice-count-row label { font-weight: 500; }
+
+/* ===== Common ===== */
+.action-row { text-align: center; margin: 20px 0; }
+.action-row .btn { min-width: 140px; }
+.history-section { margin-top: 28px; }
+.history-section h3 { font-size: 16px; color: var(--text-secondary); margin-bottom: 10px; }
+.history-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 120px; overflow-y: auto; }
+.history-item {
+  background: var(--bg); padding: 6px 14px; border-radius: 20px;
+  font-size: 13px; color: var(--text);
+}
+
+@media (max-width: 480px) {
+  .coin { width: 110px; height: 110px; }
+  .coin .face { font-size: 42px; }
+  .die { width: 80px; height: 80px; padding: 10px; }
+  .dot { width: 14px; height: 14px; }
+}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+    <div class="navbar-links">
+      <a href="../../index.html" class="navbar-link">首页</a>
+    </div>
+  </div>
+</nav>
+
+<div class="main-wrapper">
+  <div class="container">
+    <div style="margin-bottom:20px;font-size:14px;color:var(--text-secondary);">
+      <a href="../../index.html" style="color:var(--primary);text-decoration:none;">首页</a>
+      <span style="margin:0 8px;">›</span>
+      <span>抛硬币 / 掷骰子</span>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <h1 style="font-size:28px;color:var(--primary-dark);margin-bottom:8px;">🎲 抛硬币 / 掷骰子</h1>
+      <p style="color:var(--text-secondary);">模拟抛硬币和掷骰子，支持多骰子和历史记录</p>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="coin">🪙 抛硬币</button>
+        <button class="tab-btn" data-tab="dice">🎲 掷骰子</button>
+      </div>
+
+      <!-- Coin Tab -->
+      <div class="tab-panel active" id="tab-coin">
+        <div class="coin-stage">
+          <div id="coinWrap" class="coin-result-heads">
+            <div class="coin" id="coin">
+              <div class="face heads">正</div>
+              <div class="face tails">反</div>
+            </div>
+          </div>
+        </div>
+        <div class="coin-stats">
+          <div class="coin-stat"><div class="num" id="cTotal">0</div><div class="lbl">总次数</div></div>
+          <div class="coin-stat"><div class="num" id="cHeads">0</div><div class="lbl">正面 👆</div></div>
+          <div class="coin-stat"><div class="num" id="cTails">0</div><div class="lbl">反面 👇</div></div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="flipBtn">🪙 抛硬币</button>
+          <button class="btn btn-secondary" id="coinReset">重置统计</button>
+        </div>
+        <div class="history-section">
+          <h3>📋 最近记录</h3>
+          <div class="history-list" id="coinHistory"></div>
+        </div>
+      </div>
+
+      <!-- Dice Tab -->
+      <div class="tab-panel" id="tab-dice">
+        <div class="dice-count-row">
+          <label>骰子数量：</label>
+          <select id="diceCount" class="form-select" style="width:auto;">
+            <option value="1">1 个</option>
+            <option value="2">2 个</option>
+            <option value="3">3 个</option>
+            <option value="4">4 个</option>
+            <option value="5">5 个</option>
+          </select>
+        </div>
+        <div class="dice-area" id="diceArea"></div>
+        <div class="dice-total" id="diceTotal"></div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="rollBtn">🎲 掷骰子</button>
+        </div>
+        <div class="history-section">
+          <h3>📋 最近记录</h3>
+          <div class="history-list" id="diceHistory"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-container">
+    <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+  </div>
+</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+(function(){
+  /* ===== Tabs ===== */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ===== Coin ===== */
+  const coin = document.getElementById('coin');
+  const coinWrap = document.getElementById('coinWrap');
+  const flipBtn = document.getElementById('flipBtn');
+  const coinResetBtn = document.getElementById('coinReset');
+  const coinHistory = document.getElementById('coinHistory');
+  let cTotal = 0, cHeads = 0, cTails = 0, coinFlipping = false;
+  let coinResults = [];
+
+  function updateCoinStats(){
+    document.getElementById('cTotal').textContent = cTotal;
+    document.getElementById('cHeads').textContent = cHeads;
+    document.getElementById('cTails').textContent = cTails;
+  }
+
+  flipBtn.addEventListener('click', function(){
+    if(coinFlipping) return;
+    coinFlipping = true;
+    coin.classList.add('flipping');
+    flipBtn.disabled = true;
+
+    const isHeads = Math.random() < 0.5;
+
+    setTimeout(function(){
+      coin.classList.remove('flipping');
+      coinWrap.className = isHeads ? 'coin-result-heads' : 'coin-result-tails';
+
+      cTotal++;
+      if(isHeads) cHeads++; else cTails++;
+      updateCoinStats();
+
+      coinResults.unshift(isHeads ? '正面 👆' : '反面 👇');
+      if(coinResults.length > 20) coinResults.pop();
+      coinHistory.innerHTML = coinResults.map(r => '<span class="history-item">' + r + '</span>').join('');
+
+      flipBtn.disabled = false;
+      coinFlipping = false;
+    }, 1200);
+  });
+
+  coinResetBtn.addEventListener('click', function(){
+    cTotal = 0; cHeads = 0; cTails = 0;
+    coinResults = [];
+    updateCoinStats();
+    coinHistory.innerHTML = '';
+    coinWrap.className = 'coin-result-heads';
+  });
+
+  /* ===== Dice ===== */
+  const diceArea = document.getElementById('diceArea');
+  const diceCountEl = document.getElementById('diceCount');
+  const rollBtn = document.getElementById('rollBtn');
+  const diceHistoryEl = document.getElementById('diceHistory');
+  let diceRolling = false;
+  let diceResults = [];
+
+  function buildDice(n){
+    diceArea.innerHTML = '';
+    for(let i = 0; i < n; i++){
+      const die = document.createElement('div');
+      die.className = 'die';
+      die.setAttribute('data-val', '1');
+      for(let j = 0; j < 9; j++){
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        die.appendChild(dot);
+      }
+      diceArea.appendChild(die);
+    }
+  }
+
+  diceCountEl.addEventListener('change', function(){ buildDice(+this.value); });
+  buildDice(1);
+
+  rollBtn.addEventListener('click', function(){
+    if(diceRolling) return;
+    diceRolling = true;
+    rollBtn.disabled = true;
+
+    const dice = diceArea.querySelectorAll('.die');
+    const vals = [];
+
+    dice.forEach(function(d){
+      d.classList.add('rolling');
+      const v = Math.floor(Math.random() * 6) + 1;
+      vals.push(v);
+    });
+
+    setTimeout(function(){
+      dice.forEach(function(d, i){
+        d.classList.remove('rolling');
+        d.setAttribute('data-val', vals[i]);
+      });
+      const total = vals.reduce((a,b) => a+b, 0);
+      document.getElementById('diceTotal').textContent =
+        vals.length > 1 ? '点数：' + vals.join(' + ') + ' = ' + total : '点数：' + total;
+
+      diceResults.unshift(vals.join(',') + (vals.length > 1 ? ' (共'+total+'点)' : ''));
+      if(diceResults.length > 20) diceResults.pop();
+      diceHistoryEl.innerHTML = diceResults.map(r => '<span class="history-item">' + r + '</span>').join('');
+
+      rollBtn.disabled = false;
+      diceRolling = false;
+    }, 800);
+  });
+})();
+</script>
+</body>
+</html>

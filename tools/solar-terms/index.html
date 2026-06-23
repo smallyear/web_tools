@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二十四节气查询 - 网页工具集</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#333;line-height:1.6}
+.navbar{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 0;position:sticky;top:0;z-index:100}
+.navbar .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+.navbar .logo{font-size:1.3rem;font-weight:700;color:#1a73e8;text-decoration:none}
+.breadcrumb{max-width:1200px;margin:0 auto;padding:12px 20px;font-size:.9rem;color:#666}
+.breadcrumb a{color:#1a73e8;text-decoration:none}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.header{background:#fff;border-radius:12px;padding:30px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:24px;text-align:center}
+.header h1{font-size:1.8rem;margin-bottom:8px}
+.header p{color:#666;margin-bottom:20px}
+.year-selector{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.year-btn{padding:8px 16px;border:2px solid #e0e0e0;background:#fff;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+.year-btn:hover,.year-btn.active{border-color:#1a73e8;background:#e8f0fe;color:#1a73e8}
+.current-info{background:#e8f5e9;border-radius:8px;padding:12px;display:inline-block;font-size:1rem;color:#2e7d32}
+.section-title{font-size:1.3rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.season-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-bottom:24px}
+.season-card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden}
+.season-header{padding:16px 20px;color:#fff;font-weight:700;font-size:1.1rem}
+.season-header.spring{background:linear-gradient(135deg,#4CAF50,#81C784)}
+.season-header.summer{background:linear-gradient(135deg,#f44336,#ef5350)}
+.season-header.autumn{background:linear-gradient(135deg,#FF9800,#FFB74D)}
+.season-header.winter{background:linear-gradient(135deg,#2196F3,#64B5F6)}
+.term-list{padding:8px 0}
+.term-item{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid #f5f5f5;transition:background .2s}
+.term-item:last-child{border-bottom:none}
+.term-item:hover{background:#f8f9fa}
+.term-item.current{background:#e8f5e9;font-weight:600}
+.term-name{font-size:.95rem;display:flex;align-items:center;gap:6px}
+.term-name .emoji{font-size:1.1rem}
+.term-date{font-size:.85rem;color:#666;white-space:nowrap}
+.term-desc{font-size:.8rem;color:#999;padding:0 20px 8px}
+.table-container{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow-x:auto;margin-bottom:24px}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th{background:#f8f9fa;padding:12px 16px;text-align:left;font-size:.9rem;color:#555;border-bottom:2px solid #e0e0e0;position:sticky;top:0}
+td{padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:.9rem}
+tr:hover{background:#f8f9fa}
+tr.highlight{background:#e8f5e9;font-weight:600}
+.season-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.75rem;color:#fff}
+.season-badge.spring{background:#4CAF50}
+.season-badge.summer{background:#f44336}
+.season-badge.autumn{background:#FF9800}
+.season-badge.winter{background:#2196F3}
+.footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
+@media(max-width:600px){
+.season-grid{grid-template-columns:1fr}
+.year-btn{padding:6px 10px;font-size:.8rem}
+}
+</style>
+</head>
+<body>
+<nav class="navbar">
+<div class="container">
+<a href="../../index.html" class="logo">🛠️ 网页工具集</a>
+</div>
+</nav>
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> / 二十四节气查询
+</div>
+<div class="container">
+<div class="header">
+<h1>🌸 二十四节气查询</h1>
+<p>查询2020-2030年二十四节气的精确日期</p>
+<div class="year-selector" id="yearSelector"></div>
+<div class="current-info" id="currentInfo"></div>
+</div>
+<div id="contentArea"></div>
+</div>
+<div class="footer">网页工具集 &copy; 2026 | 纯前端实现，无需安装</div>
+<script src="../../assets/js/common.js"></script>
+<script>
+const TERMS=[
+{name:"立春",desc:"春季开始，万物复苏",season:"spring",emoji:"🌱"},
+{name:"雨水",desc:"降雨开始，雨量渐增",season:"spring",emoji:"🌧️"},
+{name:"惊蛰",desc:"春雷乍动，惊醒蛰虫",season:"spring",emoji:"⚡"},
+{name:"春分",desc:"昼夜平分，春季中点",season:"spring",emoji:"⚖️"},
+{name:"清明",desc:"天气清澈明朗，春耕播种",season:"spring",emoji:"🍃"},
+{name:"谷雨",desc:"雨生百谷，春季最后节气",season:"spring",emoji:"🌾"},
+{name:"立夏",desc:"夏季开始，万物生长",season:"summer",emoji:"☀️"},
+{name:"小满",desc:"麦类等夏熟作物籽粒饱满",season:"summer",emoji:"🌾"},
+{name:"芒种",desc:"有芒作物成熟，抢收播种",season:"summer",emoji:"👨‍🌾"},
+{name:"夏至",desc:"白昼最长，炎热将至",season:"summer",emoji:"🔥"},
+{name:"小暑",desc:"天气开始炎热",season:"summer",emoji:"🌡️"},
+{name:"大暑",desc:"一年中最热时期",season:"summer",emoji:"🥵"},
+{name:"立秋",desc:"秋季开始，暑去凉来",season:"autumn",emoji:"🍂"},
+{name:"处暑",desc:"暑气终止，天气渐凉",season:"autumn",emoji:"🌬️"},
+{name:"白露",desc:"天气转凉，露凝而白",season:"autumn",emoji:"💧"},
+{name:"秋分",desc:"昼夜平分，秋季中点",season:"autumn",emoji:"⚖️"},
+{name:"寒露",desc:"露水已寒，将要结冰",season:"autumn",emoji:"🥶"},
+{name:"霜降",desc:"天气渐冷，开始降霜",season:"autumn",emoji:"❄️"},
+{name:"立冬",desc:"冬季开始，万物收藏",season:"winter",emoji:"🧣"},
+{name:"小雪",desc:"开始降雪，雪量不大",season:"winter",emoji:"🌨️"},
+{name:"大雪",desc:"降雪增多，范围渐广",season:"winter",emoji:"⛄"},
+{name:"冬至",desc:"白昼最短，寒冬来临",season:"winter",emoji:"🎄"},
+{name:"小寒",desc:"天气渐寒，尚未最冷",season:"winter",emoji:"🥶"},
+{name:"大寒",desc:"一年中最冷时期",season:"winter",emoji:"❄️"}
+];
+
+// Solar term dates 2020-2030 (approximate dates based on astronomical calculations)
+const DATES={
+2020:["2020-02-04","2020-02-19","2020-03-05","2020-03-20","2020-04-04","2020-04-19","2020-05-05","2020-05-20","2020-06-05","2020-06-21","2020-07-06","2020-07-22","2020-08-07","2020-08-22","2020-09-07","2020-09-22","2020-10-08","2020-10-23","2020-11-07","2020-11-22","2020-12-07","2020-12-21","2021-01-05","2021-01-20"],
+2021:["2021-02-03","2021-02-18","2021-03-05","2021-03-20","2021-04-04","2021-04-20","2021-05-05","2021-05-21","2021-06-05","2021-06-21","2021-07-07","2021-07-22","2021-08-07","2021-08-23","2021-09-07","2021-09-23","2021-10-08","2021-10-23","2021-11-07","2021-11-22","2021-12-07","2021-12-21","2022-01-05","2022-01-20"],
+2022:["2022-02-04","2022-02-19","2022-03-05","2022-03-20","2022-04-05","2022-04-20","2022-05-05","2022-05-21","2022-06-06","2022-06-21","2022-07-07","2022-07-23","2022-08-07","2022-08-23","2022-09-07","2022-09-23","2022-10-08","2022-10-23","2022-11-07","2022-11-22","2022-12-07","2022-12-22","2023-01-05","2023-01-20"],
+2023:["2023-02-04","2023-02-19","2023-03-06","2023-03-21","2023-04-05","2023-04-20","2023-05-06","2023-05-21","2023-06-06","2023-06-21","2023-07-07","2023-07-23","2023-08-08","2023-08-23","2023-09-08","2023-09-23","2023-10-08","2023-10-24","2023-11-08","2023-11-22","2023-12-07","2023-12-22","2024-01-06","2024-01-20"],
+2024:["2024-02-04","2024-02-19","2024-03-05","2024-03-20","2024-04-04","2024-04-19","2024-05-05","2024-05-20","2024-06-05","2024-06-21","2024-07-06","2024-07-22","2024-08-07","2024-08-22","2024-09-07","2024-09-22","2024-10-08","2024-10-23","2024-11-07","2024-11-22","2024-12-06","2024-12-21","2025-01-05","2025-01-20"],
+2025:["2025-02-03","2025-02-18","2025-03-05","2025-03-20","2025-04-04","2025-04-20","2025-05-05","2025-05-21","2025-06-05","2025-06-21","2025-07-07","2025-07-22","2025-08-07","2025-08-23","2025-09-07","2025-09-23","2025-10-08","2025-10-23","2025-11-07","2025-11-22","2025-12-07","2025-12-21","2026-01-05","2026-01-20"],
+2026:["2026-02-04","2026-02-18","2026-03-05","2026-03-20","2026-04-05","2026-04-20","2026-05-05","2026-05-21","2026-06-05","2026-06-21","2026-07-07","2026-07-22","2026-08-07","2026-08-23","2026-09-07","2026-09-23","2026-10-08","2026-10-23","2026-11-07","2026-11-22","2026-12-07","2026-12-22","2027-01-05","2027-01-20"],
+2027:["2027-02-04","2027-02-19","2027-03-06","2027-03-21","2027-04-05","2027-04-20","2027-05-06","2027-05-21","2027-06-05","2027-06-21","2027-07-07","2027-07-23","2027-08-07","2027-08-23","2027-09-07","2027-09-23","2027-10-08","2027-10-23","2027-11-07","2027-11-22","2027-12-07","2027-12-22","2028-01-06","2028-01-20"],
+2028:["2028-02-04","2028-02-19","2028-03-05","2028-03-20","2028-04-04","2028-04-19","2028-05-05","2028-05-20","2028-06-05","2028-06-21","2028-07-06","2028-07-22","2028-08-07","2028-08-22","2028-09-07","2028-09-22","2028-10-08","2028-10-23","2028-11-07","2028-11-22","2028-12-06","2028-12-21","2029-01-05","2029-01-20"],
+2029:["2029-02-03","2029-02-18","2029-03-05","2029-03-20","2029-04-04","2029-04-20","2029-05-05","2029-05-21","2029-06-05","2029-06-21","2029-07-07","2029-07-22","2029-08-07","2029-08-22","2029-09-07","2029-09-22","2029-10-08","2029-10-23","2029-11-07","2029-11-22","2029-12-07","2029-12-21","2030-01-05","2030-01-20"],
+2030:["2030-02-04","2030-02-18","2030-03-05","2030-03-20","2030-04-05","2030-04-20","2030-05-05","2030-05-21","2030-06-05","2030-06-21","2030-07-07","2030-07-22","2030-08-07","2030-08-23","2030-09-07","2030-09-23","2030-10-08","2030-10-23","2030-11-07","2030-11-22","2030-12-07","2030-12-22","2031-01-05","2031-01-20"]
+};
+
+let currentYear=new Date().getFullYear();
+if(currentYear<2020)currentYear=2020;
+if(currentYear>2030)currentYear=2030;
+
+const today=new Date();
+today.setHours(0,0,0,0);
+
+// Build year selector
+const yearSel=document.getElementById('yearSelector');
+for(let y=2020;y<=2030;y++){
+const btn=document.createElement('button');
+btn.className='year-btn'+(y===currentYear?' active':'');
+btn.textContent=y+'年';
+btn.onclick=()=>selectYear(y);
+yearSel.appendChild(btn);
+}
+
+// Find current solar term
+function findCurrentTerm(){
+let currentTerm=null;
+for(let y=2020;y<=2030;y++){
+const dates=DATES[y];
+if(!dates)continue;
+for(let i=0;i<24;i++){
+const d=new Date(dates[i]);
+const next=i<23?new Date(dates[i+1]):new Date(y+1,1,4);
+if(today>=d&&today<next){
+currentTerm={year:y,index:i,date:dates[i]};
+break;
+}
+}
+if(currentTerm)break;
+}
+return currentTerm;
+}
+
+function formatDate(str){
+const d=new Date(str);
+return`${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function renderYear(year){
+const dates=DATES[year];
+if(!dates)return;
+const ct=findCurrentTerm();
+const currentInfo=document.getElementById('currentInfo');
+if(ct&&ct.year===year){
+const t=TERMS[ct.index];
+currentInfo.innerHTML=`📍 今日节气：${t.emoji} ${t.name}（${formatDate(ct.date)}）`;
+}else if(ct){
+currentInfo.innerHTML=`📍 当前节气：${TERMS[ct.index].emoji} ${TERMS[ct.index].name}（${ct.year}年${formatDate(ct.date)}）`;
+}
+
+let html='';
+
+// Season cards
+const seasons=[
+{key:"spring",name:"🌸 春季（立春-谷雨）",range:[0,5]},
+{key:"summer",name:"☀️ 夏季（立夏-大暑）",range:[6,11]},
+{key:"autumn",name:"🍂 秋季（立秋-霜降）",range:[12,17]},
+{key:"winter",name:"❄️ 冬季（立冬-大寒）",range:[18,23]}
+];
+
+html+='<div class="section-title">📅 四季节气卡片</div>';
+html+='<div class="season-grid">';
+seasons.forEach(s=>{
+html+=`<div class="season-card"><div class="season-header ${s.key}">${s.name}</div><div class="term-list">`;
+for(let i=s.range[0];i<=s.range[1];i++){
+const t=TERMS[i];const d=dates[i];
+const isCurrent=ct&&ct.year===year&&ct.index===i;
+html+=`<div class="term-item${isCurrent?' current':''}"><span class="term-name"><span class="emoji">${t.emoji}</span>${t.name}</span><span class="term-date">${formatDate(d)}</span></div>`;
+}
+html+='</div></div>';
+});
+html+='</div>';
+
+// Full table
+html+='<div class="section-title">📊 完整节气表</div>';
+html+='<div class="table-container"><table><thead><tr><th>序号</th><th>节气</th><th>日期</th><th>季节</th><th>描述</th></tr></thead><tbody>';
+const seasonLabels={spring:"春",summer:"夏",autumn:"秋",winter:"冬"};
+TERMS.forEach((t,i)=>{
+const d=dates[i];
+const isCurrent=ct&&ct.year===year&&ct.index===i;
+html+=`<tr class="${isCurrent?'highlight':''}"><td>${i+1}</td><td>${t.emoji} ${t.name}</td><td>${formatDate(d)}</td><td><span class="season-badge ${t.season}">${seasonLabels[t.season]}</span></td><td>${t.desc}</td></tr>`;
+});
+html+='</tbody></table></div>';
+
+document.getElementById('contentArea').innerHTML=html;
+}
+
+function selectYear(y){
+currentYear=y;
+document.querySelectorAll('.year-btn').forEach(b=>b.classList.remove('active'));
+document.querySelectorAll('.year-btn')[y-2020].classList.add('active');
+renderYear(y);
+}
+
+renderYear(currentYear);
+</script>
+</body>
+</html>

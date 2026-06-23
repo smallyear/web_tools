@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反应速度测试 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container{max-width:700px;margin:0 auto;padding:15px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.card h3{margin:0 0 16px;color:#333;font-size:1.1rem}
+.btn{display:inline-block;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;font-size:16px;transition:all .2s}
+.btn-primary{background:#4f46e5;color:#fff}.btn-primary:hover{background:#4338ca}
+#testArea{width:100%;min-height:300px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background .2s;font-size:2rem;font-weight:bold;color:#fff;margin-bottom:16px}
+.waiting{background:#ef4444!important}.ready{background:#10b981!important}.idle{background:#6b7280!important}.foul{background:#f59e0b!important}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.stat-box{background:#f9fafb;border-radius:8px;padding:16px;text-align:center}
+.stat-box .val{font-size:1.5rem;font-weight:700;color:#4f46e5}
+.stat-box .lbl{font-size:12px;color:#6b7280;margin-top:4px}
+.history-list{max-height:200px;overflow-y:auto;margin-top:12px}
+.history-item{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:14px}
+.history-item .time{font-weight:600;color:#4f46e5}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;color:#fff;margin-left:8px}
+.badge-fast{background:#10b981}.badge-good{background:#3b82f6}.badge-normal{background:#f59e0b}.badge-slow{background:#ef4444}
+.round-info{font-size:14px;color:#6b7280;margin-bottom:12px;text-align:center}
+</style>
+</head>
+<body>
+<nav style="background:#4f46e5;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:bold;font-size:1.1rem">🛠️ 在线工具箱</a>
+  <span style="opacity:.7">/</span>
+  <span style="opacity:.9;font-size:.9rem">反应速度测试</span>
+</nav>
+<div class="container">
+  <div style="margin:16px 0;font-size:13px;color:#6b7280">
+    <a href="../../index.html" style="color:#4f46e5;text-decoration:none">首页</a> / 反应速度测试
+  </div>
+
+  <div class="card">
+    <div class="round-info" id="roundInfo">点击下方区域开始测试</div>
+    <div id="testArea" class="idle" onclick="handleClick()">
+      <span id="areaText">🎯 开始测试</span>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="val" id="lastTime">-</div><div class="lbl">上次反应</div></div>
+      <div class="stat-box"><div class="val" id="bestTime">-</div><div class="lbl">最快</div></div>
+      <div class="stat-box"><div class="val" id="avgTime">-</div><div class="lbl">平均(5轮)</div></div>
+      <div class="stat-box"><div class="val" id="totalRounds">0</div><div class="lbl">总轮数</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📊 测试历史</h3>
+    <div class="history-list" id="historyList"><p style="text-align:center;color:#9ca3af;padding:20px">暂无记录</p></div>
+  </div>
+</div>
+
+<footer style="text-align:center;padding:24px;color:#9ca3af;font-size:13px;border-top:1px solid #e5e7eb;margin-top:40px">
+  © 2026 在线工具箱 | 纯前端工具，数据不上传
+</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+let state='idle'; // idle, waiting, ready, foul
+let timer=null,startTime=0,results=[];
+
+function handleClick(){
+  if(state==='idle'){startTest();}
+  else if(state==='waiting'){foul();}
+  else if(state==='ready'){record();}
+  else if(state==='foul'){startTest();}
+}
+
+function startTest(){
+  state='waiting';
+  const area=document.getElementById('testArea');
+  const text=document.getElementById('areaText');
+  area.className='waiting';
+  text.textContent='等待...';
+  document.getElementById('roundInfo').textContent=`第 ${results.length+1} / 5 轮`;
+  const delay=2000+Math.random()*4000;
+  timer=setTimeout(()=>{
+    state='ready';
+    area.className='ready';
+    text.textContent='点击!';
+    startTime=performance.now();
+  },delay);
+}
+
+function foul(){
+  state='foul';
+  clearTimeout(timer);
+  const area=document.getElementById('testArea');
+  area.className='foul';
+  document.getElementById('areaText').textContent='太早了! 犯规 ⚠️';
+  document.getElementById('roundInfo').textContent='点击重新开始';
+  results=[];
+  updateStats();
+}
+
+function record(){
+  const elapsed=Math.round(performance.now()-startTime);
+  results.push(elapsed);
+  state='idle';
+  const area=document.getElementById('areaTest')||document.getElementById('testArea');
+  document.getElementById('testArea').className='idle';
+  document.getElementById('areaText').textContent=`${elapsed}ms ${getRating(elapsed)}\n点击继续`;
+  document.getElementById('roundInfo').textContent=results.length>=5?'5轮完成! 点击重新开始':`第 ${results.length}/5 轮完成`;
+  if(results.length>=5)results=[];
+  updateStats();
+  addHistory(elapsed);
+}
+
+function getRating(ms){
+  if(ms<200)return'⚡ 极快';
+  if(ms<300)return'🚀 很快';
+  if(ms<400)return'👍 正常';
+  return'🐢 较慢';
+}
+function getBadgeClass(ms){
+  if(ms<200)return'badge-fast';
+  if(ms<300)return'badge-good';
+  if(ms<400)return'badge-normal';
+  return'badge-slow';
+}
+
+function updateStats(){
+  document.getElementById('totalRounds').textContent=results.length;
+  if(!results.length){document.getElementById('lastTime').textContent='-';document.getElementById('bestTime').textContent='-';document.getElementById('avgTime').textContent='-';return;}
+  document.getElementById('lastTime').textContent=results[results.length-1]+'ms';
+  document.getElementById('bestTime').textContent=Math.min(...results)+'ms';
+  const last5=results.slice(-5);
+  document.getElementById('avgTime').textContent=Math.round(last5.reduce((a,b)=>a+b,0)/last5.length)+'ms';
+}
+
+let historyAll=[];
+function addHistory(ms){
+  historyAll.unshift(ms);
+  const list=document.getElementById('historyList');
+  if(historyAll.length===1)list.innerHTML='';
+  const div=document.createElement('div');
+  div.className='history-item';
+  div.innerHTML=`<span>#${historyAll.length} ${new Date().toLocaleTimeString()}</span><span><span class="time">${ms}ms</span><span class="badge ${getBadgeClass(ms)}">${getRating(ms).replace(/[⚡🚀👍🐢] /,'')}</span></span>`;
+  list.prepend(div);
+}
+</script>
+</body>
+</html>

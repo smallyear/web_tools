@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAML格式化/压缩 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:900px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.input-area{width:100%;min-height:220px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;resize:vertical;box-sizing:border-box}
+.output-area{width:100%;min-height:220px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;background:#f9f9f9;white-space:pre-wrap;word-break:break-all;overflow:auto;box-sizing:border-box}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;align-items:center}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+select{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">YAML格式化/压缩</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>YAML格式化/压缩</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">📄 YAML格式化/压缩</h2>
+<p style="color:#666;font-size:14px">格式化YAML使其易读，或压缩YAML去除多余空白</p>
+
+<label style="margin-bottom:8px">输入YAML：</label>
+<textarea id="inputYaml" class="input-area" placeholder="请粘贴YAML内容...&#10;例如:&#10;name: test&#10;items:&#10;  - one&#10;  - two"></textarea>
+
+<div class="btn-group">
+<button class="btn btn-primary" onclick="beautifyYaml()">✨ 格式化</button>
+<button class="btn btn-outline" onclick="minifyYaml()">📦 压缩</button>
+<div style="display:flex;align-items:center;gap:6px;margin-left:10px">
+<label>缩进：</label>
+<select id="indentSize">
+<option value="2">2空格</option>
+<option value="4">4空格</option>
+</select>
+</div>
+<button class="btn btn-success" onclick="copyOutput()" style="margin-left:auto">📋 复制结果</button>
+</div>
+
+<label style="margin-bottom:8px">输出结果：</label>
+<div id="outputArea" class="output-area">结果将显示在这里...</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+
+function copyOutput(){var text=document.getElementById('outputArea').textContent;if(!text||text==='结果将显示在这里...')return;navigator.clipboard.writeText(text).then(function(){showToast('已复制到剪贴板')}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板')})}
+
+function parseYamlLines(text) {
+  // Split into logical lines, preserving multi-line block scalars
+  var lines = text.split('\n');
+  var result = [];
+  var i = 0;
+  while (i < lines.length) {
+    var line = lines[i];
+    // Detect block scalar indicators (| or >) with optional chomping (-) and optional indentation indicator
+    var blockMatch = line.match(/^(\s*)([\w._-]+(?:\[.*?\])?:(?:\s*#.*)?)\s*[|>][-+]?\s*\d*\s*(#.*)?$/);
+    if (blockMatch) {
+      var keyLine = line;
+      var baseIndent = blockMatch[1].length;
+      result.push(keyLine);
+      i++;
+      // Collect block scalar lines
+      while (i < lines.length) {
+        var nextLine = lines[i];
+        var trimmed = nextLine.replace(/\s*$/, '');
+        if (trimmed === '') {
+          result.push(nextLine);
+          i++;
+          continue;
+        }
+        var nextIndent = nextLine.search(/\S/);
+        if (nextIndent > baseIndent) {
+          result.push(nextLine);
+          i++;
+        } else {
+          break;
+        }
+      }
+    } else {
+      result.push(line);
+      i++;
+    }
+  }
+  return result;
+}
+
+function beautifyYaml() {
+  var input = document.getElementById('inputYaml').value.trim();
+  if (!input) { showToast('请先输入YAML内容'); return; }
+  var indentSize = parseInt(document.getElementById('indentSize').value);
+  
+  var lines = parseYamlLines(input);
+  var output = [];
+  var indentLevel = 0;
+  
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var trimmed = line.replace(/\s+$/, '');
+    var leadingSpaces = line.search(/\S/);
+    if (leadingSpaces === -1) {
+      output.push('');
+      continue;
+    }
+    
+    // Comment-only lines
+    if (trimmed.match(/^\s*#/)) {
+      output.push(trimmed);
+      continue;
+    }
+    
+    // Detect list items
+    var listMatch = trimmed.match(/^(\s*)-\s+(.+)$/);
+    var keyMatch = trimmed.match(/^(\s*)([\w._-]+(?:\[.*?\])?):\s*(.*)$/);
+    
+    if (keyMatch) {
+      var key = keyMatch[2];
+      var value = keyMatch[3].trim();
+      var comment = '';
+      var commentIdx = value.indexOf('#');
+      // Be careful: # inside quotes is not a comment
+      if (commentIdx > -1 && !isInsideQuotes(value, commentIdx)) {
+        comment = ' ' + value.substring(commentIdx);
+        value = value.substring(0, commentIdx).trim();
+      }
+      if (value === '' || value === '|' || value === '>' || value.match(/^[|>][-+]?\d*$/)) {
+        indentLevel = Math.round(leadingSpaces / 2);
+        output.push(repeatStr(' ', indentLevel * indentSize) + key + ':' + (value ? ' ' + value : '') + comment);
+      } else {
+        output.push(repeatStr(' ', indentLevel * indentSize) + key + ': ' + value + comment);
+      }
+    } else if (listMatch) {
+      var content = listMatch[2];
+      // Check if it's a key-value pair
+      var kvMatch = content.match(/^([\w._-]+):\s*(.*)$/);
+      if (kvMatch) {
+        indentLevel = Math.round(leadingSpaces / 2);
+        output.push(repeatStr(' ', indentLevel * indentSize) + '- ' + kvMatch[1] + ': ' + kvMatch[2]);
+      } else {
+        indentLevel = Math.round(leadingSpaces / 2);
+        output.push(repeatStr(' ', indentLevel * indentSize) + '- ' + content);
+      }
+    } else {
+      // Continuation or other content
+      indentLevel = Math.max(0, Math.round(leadingSpaces / 2));
+      output.push(repeatStr(' ', indentLevel * indentSize) + trimmed.trimStart());
+    }
+  }
+  
+  // Clean up multiple blank lines
+  var cleaned = output.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  document.getElementById('outputArea').textContent = cleaned;
+  showToast('格式化完成');
+}
+
+function isInsideQuotes(str, idx) {
+  var inSingle = false, inDouble = false;
+  for (var i = 0; i < idx; i++) {
+    if (str[i] === "'" && !inDouble) inSingle = !inSingle;
+    if (str[i] === '"' && !inSingle) inDouble = !inDouble;
+  }
+  return inSingle || inDouble;
+}
+
+function repeatStr(ch, n) {
+  var s = '';
+  for (var i = 0; i < n; i++) s += ch;
+  return s;
+}
+
+function minifyYaml() {
+  var input = document.getElementById('inputYaml').value.trim();
+  if (!input) { showToast('请先输入YAML内容'); return; }
+  
+  var lines = input.split('\n');
+  var output = [];
+  var prevBlank = false;
+  
+  for (var i = 0; i < lines.length; i++) {
+    var trimmed = lines[i].replace(/\s+$/, '');
+    if (trimmed.trim() === '') {
+      if (!prevBlank) {
+        prevBlank = true;
+        output.push('');
+      }
+      continue;
+    }
+    prevBlank = false;
+    output.push(trimmed);
+  }
+  
+  // Remove leading/trailing blanks and collapse to minimal form
+  var result = output.join('\n').trim();
+  // Remove blank lines
+  result = result.replace(/\n\s*\n/g, '\n');
+  document.getElementById('outputArea').textContent = result;
+  showToast('压缩完成');
+}
+</script>
+</body>
+</html>

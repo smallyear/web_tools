@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>角度换算器 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.container{max-width:800px;margin:0 auto;padding:20px}
+.breadcrumb{margin-bottom:16px;font-size:14px;color:#666}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.card h2{margin:0 0 20px;font-size:18px;color:#333}
+.input-group{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.input-group input{flex:1;min-width:200px;padding:10px 14px;border:1px solid #ddd;border-radius:6px;font-size:16px}
+.input-group input:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 3px rgba(74,144,217,.15)}
+.input-group select{padding:10px 14px;border:1px solid #ddd;border-radius:6px;font-size:16px;background:#fff}
+.result-list{display:flex;flex-direction:column;gap:10px}
+.result-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f8f9fa;border-radius:6px;border:1px solid #eee}
+.result-item .label{font-size:14px;color:#666;min-width:120px}
+.result-item .value{flex:1;font-size:16px;font-weight:600;color:#333;font-family:monospace;margin:0 12px;word-break:break-all}
+.result-item button{padding:6px 12px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;white-space:nowrap}
+.result-item button:hover{background:#e9ecef}
+footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="breadcrumb"><a href="../../index.html">首页</a> &gt; 角度换算器</div>
+<div class="card">
+<h2>角度换算器</h2>
+<div class="input-group">
+<input type="number" id="angleInput" placeholder="输入数值" oninput="convert()" step="any">
+<select id="angleUnit" onchange="convert()">
+<option value="deg">度 (°)</option>
+<option value="rad">弧度 (rad)</option>
+<option value="gon">梯度 (gon)</option>
+<option value="rev">圈 (revolution)</option>
+<option value="amin">角分 (′)</option>
+<option value="asec">角秒 (″)</option>
+</select>
+</div>
+<div class="result-list" id="results"></div>
+</div>
+<footer>© 2026 在线工具箱</footer>
+</div>
+<script src="../../assets/js/common.js"></script>
+<script>
+const units=[
+{key:'deg',name:'度',symbol:'°'},
+{key:'rad',name:'弧度',symbol:'rad'},
+{key:'gon',name:'梯度',symbol:'gon'},
+{key:'rev',name:'圈',symbol:'revolution'},
+{key:'amin',name:'角分',symbol:'′'},
+{key:'asec',name:'角秒',symbol:'″'}
+];
+// all factors relative to degree
+const toDeg={deg:1,rad:180/Math.PI,gon:0.9,rev:360,amin:1/60,asec:1/3600};
+function convert(){
+const val=parseFloat(document.getElementById('angleInput').value);
+const from=document.getElementById('angleUnit').value;
+const container=document.getElementById('results');
+if(isNaN(val)){container.innerHTML='';return;}
+const deg=val*toDeg[from];
+container.innerHTML=units.map(u=>{
+const result=deg/toDeg[u];
+const formatted=Number(result.toPrecision(12));
+return `<div class="result-item"><span class="label">${u.name} (${u.symbol})</span><span class="value">${formatted}</span><button onclick="copyVal(this,'${formatted}')">复制</button></div>`;
+}).join('');
+}
+function copyVal(btn,val){navigator.clipboard.writeText(val).then(()=>{btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500);});}
+convert();
+</script>
+</body>
+</html>

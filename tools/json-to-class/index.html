@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON生成实体类 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:960px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.input-area{width:100%;min-height:220px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;resize:vertical;box-sizing:border-box}
+.output-area{width:100%;min-height:260px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;background:#f9f9f9;white-space:pre-wrap;word-break:break-all;overflow:auto;box-sizing:border-box}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;align-items:center}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+select,input[type="text"]{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.options-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.options-row label{white-space:nowrap}
+.options-row input[type="text"]{width:180px}
+.checkbox-label{font-size:14px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">JSON生成实体类</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>JSON生成实体类</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">🏗️ JSON生成实体类</h2>
+<p style="color:#666;font-size:14px">将JSON数据转换为Java/C#/Go/TypeScript/Python/Rust的类/结构体定义</p>
+
+<label style="margin-bottom:8px">输入JSON：</label>
+<textarea id="inputJson" class="input-area" placeholder='请粘贴JSON内容...&#10;例如:&#10;{&#10;  "name": "张三",&#10;  "age": 25,&#10;  "address": { "city": "北京" }&#10;}'></textarea>
+
+<div class="options-row">
+<label>目标语言：
+<select id="langSelect">
+<option value="java">Java</option>
+<option value="csharp">C#</option>
+<option value="go">Go</option>
+<option value="typescript">TypeScript</option>
+<option value="python">Python</option>
+<option value="rust">Rust</option>
+</select>
+</label>
+<label>类名：<input type="text" id="className" value="RootObject" placeholder="RootObject"></label>
+</div>
+<div class="options-row">
+<label class="checkbox-label"><input type="checkbox" id="useProperties"> 使用属性(Properties)</label>
+<label class="checkbox-label"><input type="checkbox" id="nullableTypes"> 可空类型(Nullable)</label>
+</div>
+
+<div class="btn-group">
+<button class="btn btn-primary" onclick="generate()">🔨 生成代码</button>
+<button class="btn btn-success" onclick="copyOutput()" style="margin-left:auto">📋 复制结果</button>
+</div>
+
+<label style="margin-bottom:8px">生成结果：</label>
+<div id="outputArea" class="output-area">结果将显示在这里...</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+
+function copyOutput(){var text=document.getElementById('outputArea').textContent;if(!text||text==='结果将显示在这里...')return;navigator.clipboard.writeText(text).then(function(){showToast('已复制到剪贴板')}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板')})}
+
+function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+function snakeToPascal(s){return s.split(/[-_ ]+/).map(function(w){return capitalize(w)}).join('')}
+function toCamelCase(s){var p=snakeToPascal(s);return p.charAt(0).toLowerCase()+p.slice(1)}
+function sanitizeName(s){return s.replace(/[^a-zA-Z0-9_]/g,'_').replace(/^(\d)/,'_$1')}
+
+function inferType(val){
+  if(val===null||val===undefined) return 'null';
+  if(Array.isArray(val)){
+    if(val.length===0) return 'array<object>';
+    return 'array<'+inferType(val[0])+'>';
+  }
+  var t=typeof val;
+  if(t==='string'){
+    // Check date
+    if(/^\d{4}-\d{2}-\d{2}(T|\s)/.test(val)) return 'date';
+    return 'string';
+  }
+  if(t==='number') return Number.isInteger(val)?'int':'double';
+  if(t==='boolean') return 'boolean';
+  if(t==='object') return 'object';
+  return 'string';
+}
+
+function generate(){
+  var input=document.getElementById('inputJson').value.trim();
+  if(!input){showToast('请先输入JSON');return}
+  var obj;
+  try{obj=JSON.parse(input)}catch(e){showToast('JSON格式错误: '+e.message);return}
+  var lang=document.getElementById('langSelect').value;
+  var rootName=sanitizeName(document.getElementById('className').value||'RootObject');
+  var useProp=document.getElementById('useProperties').checked;
+  var nullable=document.getElementById('nullableTypes').checked;
+  
+  var classes=[];
+  var code=genClass(rootName,obj,lang,useProp,nullable,classes);
+  
+  // For non-OOP languages, just output the main definitions
+  if(lang==='go'||lang==='rust'){
+    // structs collected, output all
+    var all='';
+    for(var i=0;i<classes.length;i++){
+      all+=classes[i]+'\n\n';
+    }
+    document.getElementById('outputArea').textContent=all.trim();
+  } else {
+    var all='';
+    for(var i=0;i<classes.length;i++){
+      all+=classes[i]+'\n\n';
+    }
+    document.getElementById('outputArea').textContent=all.trim();
+  }
+  showToast('生成完成');
+}
+
+function genClass(name,obj,lang,useProp,nullable,classes){
+  if(typeof obj!=='object'||obj===null||Array.isArray(obj)){
+    // Wrap in object
+    if(Array.isArray(obj)&&obj.length>0&&typeof obj[0]==='object'){
+      obj=obj[0];
+    } else {
+      obj={value:obj};
+    }
+  }
+  
+  var fields=Object.keys(obj);
+  var lines=[];
+  var childClasses=[];
+  
+  switch(lang){
+    case 'java':
+      lines.push('public class '+name+' {');
+      for(var i=0;i<fields.length;i++){
+        var f=fields[i];
+        var type=javaType(obj[f],nullable,f,childClasses,lang,useProp);
+        var pname=toCamelCase(sanitizeName(f));
+        if(useProp){
+          lines.push('    private '+type+' '+pname+';');
+        } else {
+          lines.push('    public '+type+' '+pname+';');
+        }
+      }
+      if(useProp){
+        lines.push('');
+        for(var i=0;i<fields.length;i++){
+          var f=fields[i];
+          var type=javaType(obj[f],nullable,f,childClasses,lang,useProp);
+          var pname=toCamelCase(sanitizeName(f));
+          var Pname=capitalize(pname);
+          lines.push('    public '+type+' get'+Pname+'() { return '+pname+'; }');
+          lines.push('    public void set'+Pname+'('+type+' '+pname+') { this.'+pname+' = '+pname+'; }');
+        }
+      }
+      lines.push('}');
+      break;
+    case 'csharp':
+      lines.push('public class '+name);
+      lines.push('{');
+      for(var i=0;i<fields.length;i++){
+        var f=fields[i];
+        var type=csharpType(obj[f],nullable,f,childClasses,lang,useProp);
+        var pname=snakeToPascal(sanitizeName(f));
+        if(useProp){
+          lines.push('    public '+type+' '+pname+' { get; set; }');
+        } else {
+          lines.push('    public '+type+' '+pname+';');
+        }
+      }
+      lines.push('}');
+      break;
+    case 'go':
+      lines.push('type '+name+' struct {');
+      for(var i=0;i<fields.length;i++){
+        var f=fields[i];
+        var type=goType(obj[f],nullable,f,childClasses,lang);
+        var pname=snakeToPascal(sanitizeName(f));
+        lines.push('    '+pname+' '+type+' `json:"'+f+'"');
+      }
+      lines.push('}');
+      break;
+    case 'typescript':
+      lines.push('interface '+name+' {');
+      for(var i=0;i<fields.length;i++){
+        var f=fields[i];
+        var type=tsType(obj[f],nullable,f,childClasses,lang);
+        var pname=sanitizeName(f);
+        lines.push('    '+pname+': '+type+';');
+      }
+      lines.push('}');
+      break;
+    case 'python':
+      lines.push('class '+name+':');
+      lines.push('    def __init__(self, data=None):');
+      lines.push('        data = data or {}');
+      for(var i=0;i<fields.length;i++){
+        var f=fields[i];
+        var pyT=pythonType(obj[f],nullable,f,childClasses,lang);
+        lines.push('        self.'+sanitizeName(f)+': '+pyT+' = data.get("'+f+'")');
+      }
+      break;
+    case 'rust':
+      lines.push('#[derive(Debug, Clone, Serialize, Deserialize)]');
+      lines.push('pub struct '+name+' {');
+      for(var i=0;i<fields.length;i++){
+        var f=fields[i];
+        var type=rustType(obj[f],nullable,f,childClasses,lang);
+        var pname=toCamelCase(sanitizeName(f));
+        lines.push('    #[serde(rename = "'+f+'")]');
+        lines.push('    pub '+pname+': '+type+',');
+      }
+      lines.push('}');
+      break;
+  }
+  
+  // Add child classes before parent
+  for(var c=0;c<childClasses.length;c++){
+    classes.push(childClasses[c]);
+  }
+  classes.push(lines.join('\n'));
+  return lines.join('\n');
+}
+
+function javaType(val,nullable,fieldName,children,lang,useProp){
+  var t=inferType(val);
+  if(t==='null') return nullable?'Object':'Object';
+  if(t==='int') return nullable?'Integer':'int';
+  if(t==='double') return nullable?'Double':'double';
+  if(t==='boolean') return nullable?'Boolean':'boolean';
+  if(t==='date') return 'String';
+  if(t==='string') return 'String';
+  if(t.startsWith('array<')){
+    var inner=t.substring(6,t.length-1);
+    if(inner==='object'&&val.length>0){
+      var childName=capitalize(sanitizeName(fieldName))+'Item';
+      genClass(childName,val[0],lang,useProp,nullable,children);
+      return 'List<'+childName+'>';
+    }
+    return 'List<'+javaSimpleType(inner,nullable)+'>';
+  }
+  if(t==='object'){
+    var childName=capitalize(sanitizeName(fieldName));
+    genClass(childName,val,lang,useProp,nullable,children);
+    return childName;
+  }
+  return 'Object';
+}
+
+function javaSimpleType(t,nullable){
+  if(t==='int') return nullable?'Integer':'int';
+  if(t==='double') return nullable?'Double':'double';
+  if(t==='boolean') return nullable?'Boolean':'boolean';
+  return 'String';
+}
+
+function csharpType(val,nullable,fieldName,children,lang,useProp){
+  var t=inferType(val);
+  if(t==='null') return 'object';
+  if(t==='int') return nullable?'int?':'int';
+  if(t==='double') return nullable?'double?':'double';
+  if(t==='boolean') return nullable?'bool?':'bool';
+  if(t==='date') return nullable?'DateTime?':'DateTime';
+  if(t==='string') return 'string';
+  if(t.startsWith('array<')){
+    var inner=t.substring(6,t.length-1);
+    if(inner==='object'&&val.length>0){
+      var childName=capitalize(sanitizeName(fieldName))+'Item';
+      genClass(childName,val[0],lang,useProp,nullable,children);
+      return 'List<'+childName+'>';
+    }
+    return 'List<'+csharpSimpleType(inner,nullable)+'>';
+  }
+  if(t==='object'){
+    var childName=capitalize(sanitizeName(fieldName));
+    genClass(childName,val,lang,useProp,nullable,children);
+    return childName;
+  }
+  return 'object';
+}
+
+function csharpSimpleType(t,nullable){
+  if(t==='int') return nullable?'int?':'int';
+  if(t==='double') return nullable?'double?':'double';
+  if(t==='boolean') return nullable?'bool?':'bool';
+  if(t==='date') return nullable?'DateTime?':'DateTime';
+  return 'string';
+}
+
+function goType(val,nullable,fieldName,children,lang){
+  var t=inferType(val);
+  if(t==='null') return 'interface{}';
+  if(t==='int') return 'int64';
+  if(t==='double') return 'float64';
+  if(t==='boolean') return 'bool';
+  if(t==='date'||t==='string') return 'string';
+  if(t.startsWith('array<')){
+    var inner=t.substring(6,t.length-1);
+    if(inner==='object'&&val.length>0){
+      var childName=capitalize(sanitizeName(fieldName))+'Item';
+      genClass(childName,val[0],lang,false,false,children);
+      return '[]'+childName;
+    }
+    return '[]'+goSimpleType(inner);
+  }
+  if(t==='object'){
+    var childName=capitalize(sanitizeName(fieldName));
+    genClass(childName,val,lang,false,false,children);
+    return childName;
+  }
+  return 'interface{}';
+}
+
+function goSimpleType(t){
+  if(t==='int') return 'int64';
+  if(t==='double') return 'float64';
+  if(t==='boolean') return 'bool';
+  return 'string';
+}
+
+function tsType(val,nullable,fieldName,children,lang){
+  var t=inferType(val);
+  if(t==='null') return 'any';
+  if(t==='int'||t==='double') return 'number';
+  if(t==='boolean') return 'boolean';
+  if(t==='date'||t==='string') return 'string';
+  if(t.startsWith('array<')){
+    var inner=t.substring(6,t.length-1);
+    if(inner==='object'&&val.length>0){
+      var childName=capitalize(sanitizeName(fieldName))+'Item';
+      genClass(childName,val[0],lang,false,false,children);
+      return childName+'[]';
+    }
+    return tsSimpleType(inner)+'[]';
+  }
+  if(t==='object'){
+    var childName=capitalize(sanitizeName(fieldName));
+    genClass(childName,val,lang,false,false,children);
+    return childName;
+  }
+  return 'any';
+}
+
+function tsSimpleType(t){
+  if(t==='int'||t==='double') return 'number';
+  if(t==='boolean') return 'boolean';
+  return 'string';
+}
+
+function pythonType(val,nullable,fieldName,children,lang){
+  var t=inferType(val);
+  if(t==='null') return 'Optional[Any]';
+  if(t==='int') return 'int';
+  if(t==='double') return 'float';
+  if(t==='boolean') return 'bool';
+  if(t==='date'||t==='string') return 'str';
+  if(t.startsWith('array<')){
+    var inner=t.substring(6,t.length-1);
+    if(inner==='object'&&val.length>0){
+      var childName=capitalize(sanitizeName(fieldName))+'Item';
+      genClass(childName,val[0],lang,false,false,children);
+      return 'List['+childName+']';
+    }
+    return 'List['+pythonSimpleType(inner)+']';
+  }
+  if(t==='object'){
+    var childName=capitalize(sanitizeName(fieldName));
+    genClass(childName,val,lang,false,false,children);
+    return childName;
+  }
+  return 'Any';
+}
+
+function pythonSimpleType(t){
+  if(t==='int') return 'int';
+  if(t==='double') return 'float';
+  if(t==='boolean') return 'bool';
+  return 'str';
+}
+
+function rustType(val,nullable,fieldName,children,lang){
+  var t=inferType(val);
+  if(t==='null') return 'Option<serde_json::Value>';
+  if(t==='int') return nullable?'Option<i64>':'i64';
+  if(t==='double') return nullable?'Option<f64>':'f64';
+  if(t==='boolean') return nullable?'Option<bool>':'bool';
+  if(t==='date'||t==='string') return nullable?'Option<String>':'String';
+  if(t.startsWith('array<')){
+    var inner=t.substring(6,t.length-1);
+    if(inner==='object'&&val.length>0){
+      var childName=capitalize(sanitizeName(fieldName))+'Item';
+      genClass(childName,val[0],lang,false,false,children);
+      return 'Vec<'+childName+'>';
+    }
+    return 'Vec<'+rustSimpleType(inner)+'>';
+  }
+  if(t==='object'){
+    var childName=capitalize(sanitizeName(fieldName));
+    genClass(childName,val,lang,false,false,children);
+    return nullable?'Option<'+childName+'>':childName;
+  }
+  return 'serde_json::Value';
+}
+
+function rustSimpleType(t){
+  if(t==='int') return 'i64';
+  if(t==='double') return 'f64';
+  if(t==='boolean') return 'bool';
+  return 'String';
+}
+</script>
+</body>
+</html>

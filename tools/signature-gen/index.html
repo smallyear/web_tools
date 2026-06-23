@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电子签名生成 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Satisfy&family=Pacifico&family=Caveat:wght@400;700&family=Sacramento&family=Alex+Brush&family=Homemade+Apple&display=swap');
+.container{max-width:900px;margin:0 auto;padding:15px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.card h3{margin:0 0 16px;color:#333;font-size:1.1rem}
+.btn{display:inline-block;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4f46e5;color:#fff}.btn-primary:hover{background:#4338ca}
+.btn-secondary{background:#e5e7eb;color:#333}.btn-secondary:hover{background:#d1d5db}
+.btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:6px 12px;font-size:12px}
+canvas#drawCanvas{border:2px solid #e5e7eb;border-radius:8px;cursor:crosshair;touch-action:none;display:block;width:100%;max-width:100%;background:#fff}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.controls label{font-size:13px;color:#555;display:flex;align-items:center;gap:4px}
+.controls input[type=color]{width:36px;height:28px;border:none;cursor:pointer;border-radius:4px}
+.controls input[type=range]{width:100px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb}
+.tab-bar button{padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;font-size:14px;color:#6b7280;transition:all .2s}
+.tab-bar button.active{color:#4f46e5;border-bottom-color:#4f46e5;font-weight:600}
+.tab-content{display:none}.tab-content.active{display:block}
+.font-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+.font-option{border:2px solid #e5e7eb;border-radius:8px;padding:16px;cursor:pointer;text-align:center;transition:all .2s}
+.font-option:hover,.font-option.selected{border-color:#4f46e5;background:#f5f3ff}
+.font-option .preview{font-size:24px;margin-bottom:4px;min-height:36px;color:#1e293b}
+.font-option .name{font-size:11px;color:#9ca3af}
+.text-input-group{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.text-input-group input{flex:1;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
+#textSignaturePreview{border:1px solid #e5e7eb;border-radius:8px;padding:20px;min-height:80px;display:flex;align-items:center;justify-content:center;background:#fff}
+.toggle{position:relative;display:inline-block;width:40px;height:22px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#cbd5e1;border-radius:22px;transition:.3s}
+.toggle .slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:#4f46e5}
+.toggle input:checked+.slider:before{transform:translateX(18px)}
+</style>
+</head>
+<body>
+<nav style="background:#4f46e5;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px">
+  <a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:bold;font-size:1.1rem">🛠️ 在线工具箱</a>
+  <span style="opacity:.7">/</span>
+  <span style="opacity:.9;font-size:.9rem">电子签名生成</span>
+</nav>
+<div class="container">
+  <div style="margin:16px 0;font-size:13px;color:#6b7280">
+    <a href="../../index.html" style="color:#4f46e5;text-decoration:none">首页</a> / 电子签名生成
+  </div>
+
+  <div class="card">
+    <div class="tab-bar">
+      <button class="active" onclick="switchTab('draw',this)">🖌️ 手写签名</button>
+      <button onclick="switchTab('text',this)">⌨️ 文字签名</button>
+    </div>
+
+    <div class="tab-content active" id="tab-draw">
+      <canvas id="drawCanvas" width="800" height="250"></canvas>
+      <div class="controls">
+        <label>🎨 颜色 <input type="color" id="penColor" value="#1e293b"></label>
+        <label>📏 粗细 <input type="range" id="penWidth" min="1" max="10" value="3"> <span id="penWidthVal">3</span>px</label>
+        <label>🔀 平滑 <label class="toggle"><input type="checkbox" id="smoothToggle" checked><span class="slider"></span></label></label>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" onclick="undo()">↩️ 撤销</button>
+        <button class="btn btn-secondary btn-sm" onclick="redo()">↪️ 重做</button>
+        <button class="btn btn-danger btn-sm" onclick="clearCanvas()">🗑️ 清除</button>
+        <button class="btn btn-success" onclick="downloadSignature()">💾 下载PNG</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-text">
+      <div class="text-input-group">
+        <input type="text" id="signName" placeholder="输入您的姓名" oninput="updateTextPreview()">
+        <input type="color" id="textColor" value="#1e293b" onchange="updateTextPreview()">
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px">选择字体样式：</p>
+      <div class="font-grid" id="fontGrid"></div>
+      <div id="textSignaturePreview" style="margin-top:16px"></div>
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="downloadTextSignature()">💾 下载PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center;padding:24px;color:#9ca3af;font-size:13px;border-top:1px solid #e5e7eb;margin-top:40px">
+  © 2026 在线工具箱 | 纯前端工具，数据不上传
+</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+// Tab switching
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-bar button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+// --- Drawing ---
+const canvas=document.getElementById('drawCanvas');
+const ctx=canvas.getContext('2d');
+let drawing=false,paths=[],currentPath=[],undoStack=[];
+
+function getPos(e){
+  const r=canvas.getBoundingClientRect();
+  const sx=canvas.width/r.width,sy=canvas.height/r.height;
+  const clientX=e.touches?e.touches[0].clientX:e.clientX;
+  const clientY=e.touches?e.touches[0].clientY:e.clientY;
+  return{x:(clientX-r.left)*sx,y:(clientY-r.top)*sy};
+}
+
+function startDraw(e){e.preventDefault();drawing=true;currentPath=[{x:getPos(e).x,y:getPos(e).y}];}
+function moveDraw(e){
+  if(!drawing)return;e.preventDefault();
+  const p=getPos(e);
+  if(document.getElementById('smoothToggle').checked&&currentPath.length>1){
+    const prev=currentPath[currentPath.length-1];
+    currentPath.push({x:(prev.x+p.x)/2,y:(prev.y+p.y)/2});
+  }
+  currentPath.push(p);
+  redraw();
+}
+function endDraw(e){
+  if(!drawing)return;e.preventDefault();drawing=false;
+  if(currentPath.length>1){paths.push({points:[...currentPath],color:document.getElementById('penColor').value,width:parseInt(document.getElementById('penWidth').value)});undoStack=[];}
+  currentPath=[];redraw();
+}
+
+canvas.addEventListener('mousedown',startDraw);canvas.addEventListener('mousemove',moveDraw);canvas.addEventListener('mouseup',endDraw);canvas.addEventListener('mouseleave',endDraw);
+canvas.addEventListener('touchstart',startDraw);canvas.addEventListener('touchmove',moveDraw);canvas.addEventListener('touchend',endDraw);
+
+document.getElementById('penWidth').addEventListener('input',e=>document.getElementById('penWidthVal').textContent=e.target.value);
+
+function drawPath(p){
+  ctx.beginPath();ctx.strokeStyle=p.color;ctx.lineWidth=p.width;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.moveTo(p.points[0].x,p.points[0].y);
+  for(let i=1;i<p.points.length;i++){ctx.lineTo(p.points[i].x,p.points[i].y);}
+  ctx.stroke();
+}
+
+function redraw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  paths.forEach(p=>drawPath(p));
+  if(currentPath.length>1)drawPath({points:currentPath,color:document.getElementById('penColor').value,width:parseInt(document.getElementById('penWidth').value)});
+}
+
+function undo(){if(paths.length){undoStack.push(paths.pop());redraw();}}
+function redo(){if(undoStack.length){paths.push(undoStack.pop());redraw();}}
+function clearCanvas(){paths=[];currentPath=[];undoStack=[];redraw();}
+
+function downloadSignature(){
+  const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;
+  const cx=c.getContext('2d');
+  cx.clearRect(0,0,c.width,c.height);
+  paths.forEach(p=>{cx.beginPath();cx.strokeStyle=p.color;cx.lineWidth=p.width;cx.lineCap='round';cx.lineJoin='round';cx.moveTo(p.points[0].x,p.points[0].y);for(let i=1;i<p.points.length;i++)cx.lineTo(p.points[i].x,p.points[i].y);cx.stroke();});
+  const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='signature.png';a.click();
+}
+
+// --- Text Signature ---
+const FONTS=[
+  {name:'Dancing Script',label:'优雅手写'},
+  {name:'Great Vibes',label:'华丽花体'},
+  {name:'Satisfy',label:'流畅签名'},
+  {name:'Pacifico',label:'休闲手写'},
+  {name:'Caveat',label:'自然笔记'},
+  {name:'Sacramento',label:'精致连笔'},
+  {name:'Alex Brush',label:'艺术花体'},
+  {name:'Homemade Apple',label:'手绘风格'},
+];
+let selectedFont='Dancing Script';
+
+function initFontGrid(){
+  const grid=document.getElementById('fontGrid');
+  FONTS.forEach(f=>{
+    const div=document.createElement('div');
+    div.className='font-option'+(f.name===selectedFont?' selected':'');
+    div.innerHTML=`<div class="preview" style="font-family:'${f.name}'">Your Name</div><div class="name">${f.label}</div>`;
+    div.onclick=()=>{
+      document.querySelectorAll('.font-option').forEach(o=>o.classList.remove('selected'));
+      div.classList.add('selected');selectedFont=f.name;updateTextPreview();
+    };
+    grid.appendChild(div);
+  });
+}
+
+function updateTextPreview(){
+  const name=document.getElementById('signName').value||'Your Name';
+  const color=document.getElementById('textColor').value;
+  const prev=document.getElementById('textSignaturePreview');
+  prev.innerHTML=`<span style="font-family:'${selectedFont}';font-size:48px;color:${color}">${name}</span>`;
+}
+
+function downloadTextSignature(){
+  const name=document.getElementById('signName').value;
+  if(!name)return alert('请输入姓名');
+  const color=document.getElementById('textColor').value;
+  const c=document.createElement('canvas');c.width=600;c.height=150;
+  const cx=c.getContext('2d');
+  cx.font=`48px '${selectedFont}'`;
+  cx.fillStyle=color;
+  cx.textBaseline='middle';
+  cx.fillText(name,20,75);
+  const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='text-signature.png';a.click();
+}
+
+initFontGrid();updateTextPreview();
+</script>
+</body>
+</html>

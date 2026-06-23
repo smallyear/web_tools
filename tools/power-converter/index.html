@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>功率换算器 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.input-row { display: flex; gap: 16px; align-items: end; margin-bottom: 24px; flex-wrap: wrap; }
+.input-row .form-group { flex: 1; min-width: 150px; }
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.result-card {
+  background: var(--bg); border-radius: 8px; padding: 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.result-card .info { flex: 1; min-width: 0; }
+.result-card .label { color: var(--text-secondary); font-size: 13px; }
+.result-card .value { font-weight: 600; font-size: 16px; color: var(--primary-dark); word-break: break-all; margin-top: 2px; }
+.copy-btn {
+  background: none; border: none; cursor: pointer; font-size: 18px;
+  padding: 4px 8px; opacity: .6; transition: opacity .2s; flex-shrink: 0;
+}
+.copy-btn:hover { opacity: 1; }
+.result-card.highlight { border: 2px solid var(--primary); background: #f0f7ff; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+    <div class="navbar-links">
+      <a href="../../index.html" class="navbar-link">首页</a>
+    </div>
+  </div>
+</nav>
+
+<div class="main-wrapper">
+  <div class="container">
+    <div style="margin-bottom:20px;font-size:14px;color:var(--text-secondary);">
+      <a href="../../index.html" style="color:var(--primary);text-decoration:none;">首页</a>
+      <span style="margin:0 8px;">›</span>
+      <span>功率换算器</span>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <h1 style="font-size:28px;color:var(--primary-dark);margin-bottom:8px;">⚡ 功率换算器</h1>
+      <p style="color:var(--text-secondary);">快速换算瓦、千瓦、马力、BTU/h 等功率单位，实时显示结果</p>
+    </div>
+
+    <div class="card">
+      <div class="input-row">
+        <div class="form-group">
+          <label class="form-label">数值</label>
+          <input type="number" id="inputValue" class="form-input" value="1" oninput="convert()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">单位</label>
+          <select id="inputUnit" class="form-select" onchange="convert()">
+            <option value="W">瓦 (W)</option>
+            <option value="kW">千瓦 (kW)</option>
+            <option value="hp">马力 (hp)</option>
+            <option value="PS">公制马力 (PS)</option>
+            <option value="BTU_h">英热单位每小时 (BTU/h)</option>
+            <option value="cal_s">卡路里每秒 (cal/s)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="result-grid" id="results"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-container">
+    <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+  </div>
+</footer>
+
+<script src="../../assets/js/common.js"></script>
+<script>
+// 以瓦(W)为基准的换算系数
+var units = {
+  W:     { name: '瓦',          symbol: 'W',     factor: 1 },
+  kW:    { name: '千瓦',        symbol: 'kW',    factor: 1000 },
+  hp:    { name: '马力',        symbol: 'hp',    factor: 745.699872 },
+  PS:    { name: '公制马力',    symbol: 'PS',    factor: 735.49875 },
+  BTU_h: { name: '英热单位/时', symbol: 'BTU/h', factor: 0.29307107 },
+  cal_s: { name: '卡路里/秒',   symbol: 'cal/s', factor: 4.184 }
+};
+
+function convert() {
+  var val = parseFloat(document.getElementById('inputValue').value);
+  var from = document.getElementById('inputUnit').value;
+  var grid = document.getElementById('results');
+
+  if (isNaN(val)) { grid.innerHTML = ''; return; }
+
+  var watts = val * units[from].factor;
+  var html = '';
+
+  for (var key in units) {
+    if (!units.hasOwnProperty(key)) continue;
+    var u = units[key];
+    var result = watts / u.factor;
+    var display = result === 0 ? '0' : (Math.abs(result) < 0.000001 || Math.abs(result) >= 1e12 ? result.toExponential(6) : parseFloat(result.toPrecision(10)).toString());
+    var isCurrent = key === from;
+    html += '<div class="result-card' + (isCurrent ? ' highlight' : '') + '">';
+    html += '  <div class="info">';
+    html += '    <div class="label">' + u.name + ' (' + u.symbol + ')</div>';
+    html += '    <div class="value">' + display + '</div>';
+    html += '  </div>';
+    html += '  <button class="copy-btn" onclick="copyVal(\'' + display + '\', this)" title="复制">📋</button>';
+    html += '</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+function copyVal(text, btn) {
+  copyToClipboard(text);
+  var orig = btn.textContent;
+  btn.textContent = '✅';
+  btn.style.opacity = '1';
+  setTimeout(function() { btn.textContent = orig; btn.style.opacity = ''; }, 1200);
+}
+
+convert();
+</script>
+</body>
+</html>

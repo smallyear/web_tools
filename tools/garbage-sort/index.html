@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>垃圾分类查询 - 网页工具集</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+:root{--recyclable:#2196F3;--hazardous:#f44336;--wet:#4CAF50;--dry:#607D8B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#333;line-height:1.6}
+.navbar{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 0;position:sticky;top:0;z-index:100}
+.navbar .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+.navbar .logo{font-size:1.3rem;font-weight:700;color:#1a73e8;text-decoration:none}
+.breadcrumb{max-width:1200px;margin:0 auto;padding:12px 20px;font-size:.9rem;color:#666}
+.breadcrumb a{color:#1a73e8;text-decoration:none}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.search-box{background:#fff;border-radius:12px;padding:30px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:24px;text-align:center}
+.search-box h1{font-size:1.8rem;margin-bottom:8px}
+.search-box p{color:#666;margin-bottom:20px}
+.search-wrap{display:flex;max-width:600px;margin:0 auto;gap:8px}
+.search-wrap input{flex:1;padding:12px 16px;border:2px solid #e0e0e0;border-radius:8px;font-size:1rem;outline:none;transition:border .3s}
+.search-wrap input:focus{border-color:#1a73e8}
+.search-wrap button{padding:12px 24px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;white-space:nowrap;transition:background .3s}
+.search-wrap button:hover{background:#1557b0}
+.result-area{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:24px;display:none}
+.result-area.show{display:block}
+.result-item{text-align:center;padding:20px}
+.result-item .category-icon{font-size:3rem;margin-bottom:8px}
+.result-item .category-name{font-size:1.5rem;font-weight:700;margin-bottom:4px}
+.result-item .item-name{font-size:1.1rem;color:#666}
+.categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-bottom:24px}
+.cat-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.06);border-left:5px solid;transition:transform .2s}
+.cat-card:hover{transform:translateY(-2px)}
+.cat-card.recycle{border-color:var(--recyclable)}
+.cat-card.hazardous{border-color:var(--hazardous)}
+.cat-card.wet{border-color:var(--wet)}
+.cat-card.dry{border-color:var(--dry)}
+.cat-card h3{font-size:1.2rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cat-card .color-dot{width:14px;height:14px;border-radius:50%;display:inline-block}
+.cat-card.recycle .color-dot{background:var(--recyclable)}
+.cat-card.hazardous .color-dot{background:var(--hazardous)}
+.cat-card.wet .color-dot{background:var(--wet)}
+.cat-card.dry .color-dot{background:var(--dry)}
+.cat-card p{color:#666;font-size:.9rem;margin-bottom:12px}
+.cat-card .examples{display:flex;flex-wrap:wrap;gap:6px}
+.cat-card .tag{background:#f5f5f5;padding:3px 10px;border-radius:20px;font-size:.8rem;color:#555}
+.quiz-area{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:24px}
+.quiz-area h2{margin-bottom:16px}
+.quiz-question{font-size:1.2rem;margin-bottom:16px;min-height:2em}
+.quiz-options{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.quiz-opt{padding:14px;border:2px solid #e0e0e0;border-radius:8px;cursor:pointer;text-align:center;font-size:1rem;transition:all .2s;background:#fff}
+.quiz-opt:hover{border-color:#1a73e8;background:#f0f6ff}
+.quiz-opt.correct{border-color:#4CAF50;background:#e8f5e9}
+.quiz-opt.wrong{border-color:#f44336;background:#ffebee}
+.quiz-score{text-align:center;color:#666;font-size:.9rem}
+.footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
+@media(max-width:600px){
+.search-wrap{flex-direction:column}
+.quiz-options{grid-template-columns:1fr}
+.categories{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<nav class="navbar">
+<div class="container">
+<a href="../../index.html" class="logo">🛠️ 网页工具集</a>
+</div>
+</nav>
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> / 垃圾分类查询
+</div>
+<div class="container">
+<div class="search-box">
+<h1>♻️ 垃圾分类查询</h1>
+<p>输入垃圾名称，快速查询所属分类</p>
+<div class="search-wrap">
+<input type="text" id="searchInput" placeholder="请输入垃圾名称，如：电池、苹果核、塑料瓶..." autocomplete="off">
+<button onclick="doSearch()">🔍 查询</button>
+</div>
+</div>
+<div class="result-area" id="resultArea">
+<div class="result-item" id="resultContent"></div>
+</div>
+<div class="categories">
+<div class="cat-card recycle">
+<h3><span class="color-dot"></span>可回收物 ♻️</h3>
+<p>指适宜回收利用和资源化利用的生活废弃物，如废纸、塑料、玻璃、金属和织物等。</p>
+<div class="examples">
+<span class="tag">报纸</span><span class="tag">塑料瓶</span><span class="tag">易拉罐</span><span class="tag">旧衣服</span><span class="tag">玻璃瓶</span>
+</div>
+</div>
+<div class="cat-card hazardous">
+<h3><span class="color-dot"></span>有害垃圾 🔴</h3>
+<p>指对人体健康或自然环境造成直接或潜在危害的废弃物，需要特殊安全处理。</p>
+<div class="examples">
+<span class="tag">电池</span><span class="tag">灯泡</span><span class="tag">油漆</span><span class="tag">药品</span><span class="tag">水银温度计</span>
+</div>
+</div>
+<div class="cat-card wet">
+<h3><span class="color-dot"></span>湿垃圾（厨余垃圾）🟢</h3>
+<p>指日常生活中产生的容易腐烂的生物质废弃物，主要来自厨房和餐桌。</p>
+<div class="examples">
+<span class="tag">剩饭</span><span class="tag">果皮</span><span class="tag">菜叶</span><span class="tag">茶叶渣</span><span class="tag">蛋壳</span>
+</div>
+</div>
+<div class="cat-card dry">
+<h3><span class="color-dot"></span>干垃圾 ⚫</h3>
+<p>指除可回收物、有害垃圾、湿垃圾以外的其他生活废弃物，一般采取填埋或焚烧处理。</p>
+<div class="examples">
+<span class="tag">餐巾纸</span><span class="tag">烟蒂</span><span class="tag">陶瓷</span><span class="tag">一次性筷子</span><span class="tag">脏污塑料袋</span>
+</div>
+</div>
+</div>
+<div class="quiz-area">
+<h2>🎮 垃圾分类小测验</h2>
+<p style="color:#666;margin-bottom:16px">测试一下你的垃圾分类知识吧！</p>
+<button onclick="startQuiz()" style="padding:10px 24px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;margin-bottom:16px">🎲 开始测验</button>
+<div id="quizBody" style="display:none">
+<div class="quiz-question" id="quizQ"></div>
+<div class="quiz-options" id="quizOpts"></div>
+<div class="quiz-score" id="quizScore"></div>
+</div>
+</div>
+</div>
+<div class="footer">网页工具集 &copy; 2026 | 纯前端实现，无需安装</div>
+<script src="../../assets/js/common.js"></script>
+<script>
+const DB={
+"可回收物":{icon:"♻️",color:"#2196F3",items:["报纸","纸板箱","打印纸","广告传单","旧书","杂志","信封","牛奶盒","利乐包装","塑料瓶","塑料桶","塑料玩具","塑料衣架","塑料盆","塑料杯","塑料勺","塑料膜","保鲜膜","玻璃瓶","玻璃杯","玻璃窗","镜子","酒瓶","易拉罐","铁钉","铁丝","铝罐","铜线","不锈钢锅","金属罐头","旧衣服","床单","毛巾","布娃娃","毛绒玩具","棉被","书包","皮包","皮鞋","运动鞋","拖鞋","雨伞","手机","电脑","电视","冰箱","洗衣机","电风扇","吹风机","电饭煲","微波炉","烤箱","吸尘器","熨斗","打印机","键盘","鼠标","U盘","充电宝","数据线","耳机","电瓶车","自行车","轮胎","木材","木板","木筷","竹篮","纸袋","纸盒","纸杯","纸巾盒","外卖盒(干净)","食品包装盒(干净)","泡沫箱","气泡膜","编织袋","购物袋(干净)","瓶盖","纽扣","钥匙","硬币","电池(充电)","充电器","电路板","光盘","磁带","唱片","书本","练习册","笔记本","贺卡","台历","日历","手提袋","购物袋"]},
+"有害垃圾":{icon:"🔴",color:"#f44336",items:["电池","纽扣电池","充电电池","蓄电池","锂电池","5号电池","7号电池","灯泡","节能灯","LED灯","日光灯管","荧光灯","油漆","涂料","染料","油漆桶","稀释剂","指甲油","卸甲水","过期药品","药片","胶囊","口服液","药膏","创可贴(带血)","水银温度计","水银血压计","杀虫剂","杀虫喷雾","灭蚊片","老鼠药","农药","除草剂","消毒液(过期)","消毒水","X光片","相片底片","废胶卷","打印机墨盒","硒鼓","碳粉盒","打火机","火柴","蓄电池","纽扣","化妆品(过期)","香水(过期)","发胶(过期)","染发剂","漂白剂"],"湿垃圾":["剩饭","剩菜","面条","米饭","面包","馒头","饺子皮","包子","花卷","蛋糕","饼干","薯片","巧克力","糖果","苹果","香蕉","橘子","西瓜","葡萄","草莓","芒果","桃子","梨","柠檬","柚子","樱桃","菠萝","猕猴桃","火龙果","荔枝","龙眼","橙子","哈密瓜","白菜","菠菜","青菜","生菜","芹菜","韭菜","韭菜","茄子","西红柿","黄瓜","萝卜","胡萝卜","土豆","红薯","南瓜","冬瓜","苦瓜","丝瓜","洋葱","大蒜","生姜","大葱","辣椒","豆芽","豌豆","毛豆","玉米","花生","核桃壳","瓜子壳","花生壳","开心果壳","栗子壳","鸡蛋壳","鸭蛋壳","鹅蛋壳","虾壳","蟹壳","鱼骨","鸡骨","猪骨","牛骨","排骨","鱼头","鱼内脏","鸡皮","猪皮","肉末","培根","火腿","香肠","茶叶渣","咖啡渣","中药渣","花瓣","落叶","树枝","杂草","麦秆","稻草","米糠","豆渣","豆腐","奶酪","黄油","果酱","蜂蜜","酱油","醋","料酒","盐(受潮)","过期面粉","过期奶粉","过期坚果","过期零食","宠物饲料(过期)","猫砂(豆腐砂)","木屑","纸屑(沾食物)","湿纸巾","一次性湿巾","面膜","茶包","花粉","苔藓","蘑菇","木耳","海带","紫菜","海苔","鱼皮","虾皮","果核","果皮","橙皮","柚子皮","菠萝皮","西瓜皮","香蕉皮","苹果皮","土豆皮","洋葱皮","蒜皮","玉米芯","玉米皮","笋壳","茭白壳","粽叶","粽叶(干)"],"干垃圾":["餐巾纸","卫生纸","湿纸巾","纸尿裤","卫生巾","卫生护垫","一次性杯子","一次性筷子","一次性餐盒","一次性手套","烟蒂","烟灰","烟盒","打火机(用完)","陶瓷","碗(碎)","盘子(碎)","花盆(碎)","马桶","浴缸","瓷砖","砖块","瓦片","灰土","尘土","扫地灰","煤渣","猫砂","宠物粪便","干燥剂","干燥剂包","保鲜袋","保鲜膜(脏)","塑料袋(脏)","塑料袋","编织袋(脏)","橡胶手套","橡皮筋","胶带","透明胶","双面胶","标签贴","口香糖","嚼过的口香糖","口香糖纸","零食包装袋","方便面袋","饼干袋","糖纸","冰棒棍","牙签","棉签","化妆棉","棉球","创可贴(不带血)","创口贴","暖宝宝","暖贴","暖手袋","眼罩","防潮珠","活性炭","硅胶","生石灰","沙子","泥土","头发","假发","毛发","指甲","碎玻璃","镜子(碎)","眼镜","隐形眼镜","眼镜布","雨衣","雨伞(坏)","一次性口罩","口罩","手套(用过)","鞋垫","鞋带","鞋套","一次性鞋套","竹签","烧烤签","吸管","冰袋","干冰","暖包","暖手宝(坏)","铅笔","圆珠笔","水彩笔","马克笔","蜡笔","橡皮","修正带","修正液","涂改液","碳粉","蜡烛","蜡烛油","皮筋","羽毛","海绵","钢丝球","百洁布","抹布","洗碗布","砂纸","过滤网","防撞泡沫","气泡袋","气泡膜(脏)"]
+},
+"湿垃圾":{icon:"🟢",color:"#4CAF50",items:["剩饭","剩菜","面条","米饭","面包","馒头","饺子皮","包子","花卷","蛋糕","饼干","薯片","巧克力","糖果","苹果","香蕉","橘子","西瓜","葡萄","草莓","芒果","桃子","梨","柠檬","柚子","樱桃","菠萝","猕猴桃","火龙果","荔枝","龙眼","橙子","哈密瓜","白菜","菠菜","青菜","生菜","芹菜","韭菜","茄子","西红柿","黄瓜","萝卜","胡萝卜","土豆","红薯","南瓜","冬瓜","苦瓜","丝瓜","洋葱","大蒜","生姜","大葱","辣椒","豆芽","豌豆","毛豆","玉米","花生","核桃壳","瓜子壳","花生壳","开心果壳","栗子壳","鸡蛋壳","鸭蛋壳","鹅蛋壳","虾壳","蟹壳","鱼骨","鸡骨","猪骨","牛骨","排骨","鱼头","鱼内脏","鸡皮","猪皮","肉末","培根","火腿","香肠","茶叶渣","咖啡渣","中药渣","花瓣","落叶","树枝","杂草","麦秆","稻草","米糠","豆渣","豆腐","奶酪","黄油","果酱","蜂蜜","酱油","醋","料酒","过期面粉","过期奶粉","过期坚果","过期零食","猫砂(豆腐砂)","木屑","面膜","茶包","花粉","苔藓","蘑菇","木耳","海带","紫菜","海苔","鱼皮","虾皮","果核","果皮","橙皮","柚子皮","菠萝皮","西瓜皮","香蕉皮","苹果皮","土豆皮","洋葱皮","蒜皮","玉米芯","玉米皮","笋壳","茭白壳","粽叶","鸡蛋","鸭蛋","鹌鹑蛋","牛奶(过期)","酸奶(过期)","豆浆","豆腐脑","年糕","汤圆","粽子","月饼","饺子","混沌","三明治","汉堡","披萨","寿司","沙拉","意面","通心粉","麦片","燕麦","芝麻","腰果","杏仁","松子","瓜子","花生米","核桃仁","红枣","枸杞","桂圆","银耳","莲子","百合","山药","莲藕","竹笋","香椿","荠菜","马兰头","蕨菜","茼蒿","空心菜","西兰花","花菜","秋葵","四季豆","蚕豆","扁豆","芸豆","豇豆","刀豆","荷兰豆","豆角","芦笋","莴笋","竹荪","平菇","金针菇","香菇","杏鲍菇","茶树菇","鸡腿菇","蟹味菇","海鲜菇","松茸","牛肝菌","土豆泥","番薯叶","芥菜","油麦菜","苋菜","紫苏","薄荷","香菜","罗勒","迷迭香","百里香","花椒","八角","桂皮","干辣椒","陈皮","豆豉","腐乳","臭豆腐","豆沙","红豆","绿豆","黑豆","黄豆","芸豆","鹰嘴豆","扁豆","蚕豆","花生酱","芝麻酱","沙拉酱","番茄酱","芥末","咖喱","十三香","孜然","黑胡椒","白胡椒","肉桂","茴香","紫菜","海带丝","裙带菜","石花菜","龙须菜","海蜇","海参","鲍鱼","扇贝","蛤蜊","生蚝","田螺","蜗牛","蚯蚓","蚂蚱","蚕蛹","蜂蛹","知了","蟋蟀","泥鳅","黄鳝","鲶鱼","鲫鱼","鲤鱼","草鱼","鲈鱼","三文鱼","金枪鱼","带鱼","黄花鱼","鳕鱼","龙虾","小龙虾","大闸蟹","梭子蟹","螃蟹","皮皮虾","基围虾","对虾","河虾","虾仁","鱼丸","虾滑","鱼豆腐","蟹棒","海带结","海苔片","紫菜片","果冻","布丁","冰淇淋","雪糕","冰棍","冰沙","奶茶(珍珠)","椰果","仙草","红豆沙","绿豆糕","年糕","汤圆","月饼","粽子","麻花","油条","煎饼","烧饼","肉夹馍","葱油饼","手抓饼","鸡蛋饼","卷饼","春卷","炸鸡","炸串","炸鱼","烤肉","烤鸡","烤鸭","烤鱼","烧烤","串串","火锅底料(用过)","麻辣烫","酸辣粉","米线","粉丝","宽粉","河粉","桂林米粉","螺蛳粉","热干面","担担面","拉面","刀削面","炸酱面","拌面","乌冬面","荞麦面","红薯粉","土豆粉","米粉","凉皮","凉粉","豆腐皮","豆腐干","豆腐泡","豆腐丝","腐竹","千张","素鸡","百叶","豆芽","纳豆","天贝","毛豆腐","臭鳜鱼","臭冬瓜","霉苋菜梗","臭苋菜","蓝纹奶酪","松花蛋","咸鸭蛋","皮蛋","卤蛋","茶叶蛋","水煮蛋","荷包蛋","鸡蛋羹","鸡蛋汤","蛋炒饭","蛋花汤","番茄蛋汤","紫菜蛋花汤","玉米棒","爆米花","爆米花(吃剩)","膨化食品","虾条","虾片","海苔","薯条","鸡米花","鸡翅","鸡腿","鸡爪","鸡脖子","鸡心","鸡肝","鸭脖","鸭翅","鸭掌","鸭肝","鸭肠","猪蹄","猪耳朵","猪舌头","猪大肠","猪小肠","猪肚","猪肝","猪心","猪肺","猪血","牛肚","牛百叶","牛筋","牛腱","羊排","羊肉串","羊蝎子","羊肉卷","肥牛","牛肉丸","猪肉丸","鱼丸","虾丸","蟹丸","鱼饼","鱼片","鱼籽","鱼鳔","鱼肝","海胆","鲍鱼","海参","燕窝","鱼翅","花胶","虫草","鹿茸","阿胶","灵芝","天麻","当归","黄芪","党参","枸杞","红枣","桂圆","银耳","莲子","百合","薏米","芡实","山楂","陈皮","酸梅","话梅","蜜饯","果脯","果丹皮","山楂片","冰糖葫芦","糖葫芦","棒棒糖","棉花糖","太妃糖","牛轧糖","花生糖","芝麻糖","麦芽糖","薄荷糖","润喉糖","薄荷","口香糖(嚼过)","泡泡糖","果冻","布丁","龟苓膏","烧仙草","双皮奶","奶冻","椰奶","杏仁露","核桃露","花生露","豆浆","米浆","椰子水","柠檬水","果汁","果昔","奶昔","酸奶","牛奶","羊奶","驼奶","奶粉","炼乳","奶油","黄油","芝士","奶酪","芝士片","奶盖","奶皮","奶豆腐","酥油","牛油","猪油","鸡油","鸭油","鹅油","鱼油","橄榄油","花生油","大豆油","菜籽油","葵花籽油","玉米油","芝麻油","辣椒油","花椒油","芥末油","色拉油","调和油","棕榈油","椰子油","核桃油","亚麻籽油","紫苏油","葡萄籽油","米糠油","茶油","花生酱","芝麻酱","沙拉酱","千岛酱","番茄酱","芥末酱","咖喱酱","甜辣酱","酸辣酱","蒜蓉酱","辣椒酱","豆瓣酱","甜面酱","海鲜酱","XO酱","蚝油","生抽","老抽","醋","米醋","陈醋","白醋","苹果醋","料酒","黄酒","米酒","白酒(少量)","红酒(少量)","啤酒(少量)","鸡尾酒(少量)","果酒","清酒","朗姆酒","威士忌(少量)","伏特加(少量)","白兰地(少量)","利口酒","药酒","药渣","中药渣","药包","泡脚包","花草茶","红茶","绿茶","白茶","黄茶","黑茶","乌龙茶","普洱茶","铁观音","龙井","碧螺春","毛尖","大红袍","菊花茶","玫瑰花茶","茉莉花茶","桂花茶","金银花茶","枸杞茶","红枣茶","姜茶","桂圆茶","柠檬片","柚子茶","蜂蜜水","红糖水","姜汤","酸梅汤","绿豆汤","红豆汤","银耳汤","莲子汤","雪梨汤","冰糖雪梨","桃胶","皂角米","雪燕","燕窝","花胶","鱼翅","海参","鲍鱼","阿胶糕","固元膏","芝麻丸","枸杞丸","山楂丸","药丸","胶囊(过期)","口服液(过期)","冲剂(过期)","颗粒(过期)","片剂(过期)","丸药(过期)","膏药(过期)","药酒(过期)","药膏(过期)","药水(过期)","药粉(过期)","药油(过期)","药贴(过期)","药膏贴(过期)","膏药贴(过期)","风湿贴(过期)","止痛贴(过期)","创可贴(带血)","纱布(带血)","棉球(带血)","棉签(带血)","纸巾(带血)","口罩(带血)","手套(带血)","衣服(带血)","床单(带血)","枕套(带血)","被罩(带血)","毛巾(带血)","浴巾(带血)","袜子(带血)","内裤(带血)","鞋垫(带血)","鞋套(带血)","帽子(带血)","围巾(带血)","领带(带血)","袖套(带血)","围裙(带血)","套袖(带血)","肚兜(带血)","肚围(带血)","尿布(带血)","纸尿裤(带血)","卫生巾(带血)","护垫(带血)","棉条(带血)","月经杯(带血)","月经裤(带血)"]},
+"干垃圾":{icon:"⚫",color:"#607D8B",items:["餐巾纸","卫生纸","湿纸巾","纸尿裤","卫生巾","卫生护垫","一次性杯子","一次性筷子","一次性餐盒","一次性手套","烟蒂","烟灰","烟盒","陶瓷","碗(碎)","盘子(碎)","花盆(碎)","马桶","浴缸","瓷砖","砖块","瓦片","灰土","尘土","煤渣","猫砂","宠物粪便","干燥剂","保鲜袋","塑料袋(脏)","塑料袋","橡胶手套","橡皮筋","胶带","透明胶","双面胶","标签贴","口香糖","零食包装袋","方便面袋","饼干袋","糖纸","冰棒棍","牙签","棉签","化妆棉","暖宝宝","暖贴","碎玻璃","眼镜","隐形眼镜","雨衣","雨伞(坏)","一次性口罩","口罩","竹签","吸管","冰袋","铅笔","圆珠笔","水彩笔","马克笔","蜡笔","橡皮","修正带","修正液","碳粉","蜡烛","海绵","钢丝球","百洁布","抹布","砂纸","过滤网","防撞泡沫","气泡袋","头发","毛发","指甲","假发","羽毛","皮筋","碎陶片","碎瓷片","碎瓦片","扫帚(坏)","拖把(坏)","垃圾桶(坏)","衣架(坏)","花盆","花盆(碎)","鸟笼","鼠笼","鱼缸(碎)","玻璃珠","弹珠","乒乓球","羽毛球","网球","高尔夫球","台球","弹力球","沙包","毽子","陀螺","风筝(坏)","气球","彩带","彩纸","礼花","鞭炮(残渣)","烟花(残渣)","爆竹(残渣)","蚊香灰","檀香灰","线香灰","卫生香灰","佛香灰","艾草灰","艾灸条","艾灸盒","暖宫贴","暖足贴","眼贴","鼻贴","面膜(干)","化妆棉(干)","卸妆棉","棉片","卫生棉条","护垫(未用)","一次性内裤","一次性袜子","一次性雨衣","一次性鞋套","一次性浴帽","一次性床单","一次性枕套","一次性被套","一次性桌布","一次性台布","一次性围裙","一次性袖套","一次性手套","一次性口罩","一次性浴缸套","一次性马桶垫","一次性坐便垫","一次性牙刷","一次性牙膏","一次性梳子","一次性剃须刀","一次性拖鞋","一次性毛巾","一次性浴巾","一次性洗漱包","一次性旅行套装","一次性餐具","一次性纸杯","一次性纸盘","一次性纸碗","一次性纸盒","一次性纸袋","一次性塑料杯","一次性塑料盘","一次性塑料碗","一次性塑料盒","一次性塑料袋","一次性保鲜膜","一次性锡纸","一次性铝箔","一次性烘焙纸","一次性油纸","一次性蜡纸","一次性玻璃纸","一次性透明纸","一次性硫酸纸","一次性牛皮纸","一次性白卡纸","一次性灰板纸","一次性瓦楞纸","一次性蜂窝纸","一次性珍珠棉","一次性EVA","一次性PE","一次性PP","一次性PS","一次性PET","一次性PVC","一次性ABS","一次性PC","一次性PMMA","一次性PU","一次性TPU","一次性TPE","一次性TPR","一次性TPV","一次性SBS","一次性SEBS","一次性EPDM","一次性NBR","一次性CR","一次性SBR","一次性BR","一次性IR","一次性IIR","一次性FKM","一次性FFKM","一次性PTFE","一次性PVDF","一次性ETFE","一次性PCTFE","一次性FEP","一次性PFA","一次性PEEK","一次性PBI","一次性PPS","一次性PSU","一次性PES","一次性PEI","一次性PAI","一次性LCP","一次性PPA","一次性PAR","一次性COC","一次性COP","一次性TPX","一次性PEN","一次性PEI","一次性PMMA","一次性SAN","一次性MBS","一次性ASA","一次性AES","一次性ACS","一次性AAS","一次性PSM","一次性PLA","一次性PHA","一次性PCL","一次性PBS","一次性PBAT","一次性PBSA","一次性P3HB","一次性P4HB","一次性PHB","一次性PHBV","一次性PHH","一次性MCL","一次性SCL","一次性LPLA","一次性DLPLA","一次性PDLLA","一次性PDLGA","一次性PLGA","一次性PCL","一次性PGLA","一次性PGA","一次性PDO","一次性PDS","一次性Maxon","一次性PDSII","一次性Monocryl","一次性Vicryl","一次性Silk","一次性Nylon","一次性Prolene","一次性Ethibond","一次性Ticron","一次性Steel","一次性PDS","一号干垃圾(其他垃圾)"]}
+};
+
+// Build flat lookup
+const flatDB={};
+for(const[cat,data]of Object.entries(DB)){
+data.items.forEach(item=>{
+const key=item.replace(/[（）]/g,m=>m==='（'?'(':')');
+flatDB[item]=cat;
+flatDB[key]=cat;
+});
+}
+
+function doSearch(){
+const q=document.getElementById('searchInput').value.trim();
+const area=document.getElementById('resultArea');
+const content=document.getElementById('resultContent');
+if(!q){area.classList.remove('show');return}
+let found=null;
+for(const[item,cat]of Object.entries(flatDB)){
+if(item===q||item.includes(q)||q.includes(item)){found={item,cat};break}
+}
+if(!found){
+// fuzzy match
+const qn=q.toLowerCase();
+for(const[item,cat]of Object.entries(flatDB)){
+if(item.toLowerCase().includes(qn)||qn.includes(item.toLowerCase())){found={item,cat};break}
+}
+}
+if(found){
+const info=DB[found.cat];
+area.classList.add('show');
+area.style.borderLeft=`5px solid ${info.color}`;
+content.innerHTML=`<div class="category-icon">${info.icon}</div><div class="category-name" style="color:${info.color}">${found.cat}</div><div class="item-name">${found.item}</div>`;
+}else{
+area.classList.add('show');
+area.style.borderLeft='5px solid #999';
+content.innerHTML=`<div class="category-icon">❓</div><div class="category-name" style="color:#999">未找到</div><div class="item-name">未找到「${q}」的分类信息，请尝试其他关键词</div>`;
+}
+}
+
+document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+
+// Quiz
+let quizScore=0,quizTotal=0,quizAnswer='';
+function startQuiz(){
+quizScore=0;quizTotal=0;
+document.getElementById('quizBody').style.display='block';
+document.getElementById('quizScore').textContent='';
+nextQuestion();
+}
+function nextQuestion(){
+const allItems=[];
+for(const[cat,data]of Object.entries(DB)){
+data.items.forEach(item=>allItems.push({item,cat}));
+}
+const rand=allItems[Math.floor(Math.random()*allItems.length)];
+quizAnswer=rand.cat;
+document.getElementById('quizQ').textContent=`「${rand.item}」属于哪类垃圾？`;
+const cats=["可回收物","有害垃圾","湿垃圾","干垃圾"];
+const opts=document.getElementById('quizOpts');
+opts.innerHTML='';
+cats.forEach(c=>{
+const info=DB[c];
+const btn=document.createElement('div');
+btn.className='quiz-opt';
+btn.innerHTML=`${info.icon} ${c}`;
+btn.onclick=()=>{
+if(btn.classList.contains('correct')||btn.classList.contains('wrong'))return;
+quizTotal++;
+if(c===quizAnswer){quizScore++;btn.classList.add('correct')}
+else{btn.classList.add('wrong');opts.querySelectorAll('.quiz-opt').forEach(b=>{if(b.textContent.includes(quizAnswer))b.classList.add('correct')})}
+document.getElementById('quizScore').textContent=`得分：${quizScore}/${quizTotal} 正确率：${(quizScore/quizTotal*100).toFixed(0)}%`;
+setTimeout(nextQuestion,1500);
+};
+opts.appendChild(btn);
+});
+}
+</script>
+</body>
+</html>

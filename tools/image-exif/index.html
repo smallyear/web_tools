@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片EXIF信息查看 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:960px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;align-items:center}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.upload-area{border:2px dashed #ddd;border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa}
+.upload-area:hover{border-color:#4a90d9;background:#f0f7ff}
+.upload-area.dragover{border-color:#4a90d9;background:#e3f2fd}
+.upload-icon{font-size:48px;margin-bottom:12px}
+.preview-box{text-align:center;margin-bottom:16px}
+.preview-box img{max-width:300px;max-height:200px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 12px;border:1px solid #eee;text-align:left}
+th{background:#f5f7fa;font-weight:600;color:#333;width:180px}
+td{color:#555;word-break:break-all}
+tr:nth-child(even){background:#fafafa}
+.section-title{font-size:16px;font-weight:600;color:#333;margin:20px 0 10px;padding-bottom:8px;border-bottom:2px solid #e0e0e0}
+.info-empty{text-align:center;color:#999;padding:40px;font-size:15px}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">图片EXIF信息查看</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>图片EXIF信息查看</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">📷 图片EXIF信息查看</h2>
+<p style="color:#666;font-size:14px">上传JPEG图片，查看相机、GPS、曝光等EXIF元数据信息</p>
+
+<div class="upload-area" id="uploadArea">
+<div class="upload-icon">📁</div>
+<div>点击或拖拽上传图片</div>
+<div style="font-size:13px;color:#999;margin-top:6px">支持 JPEG 格式</div>
+<input type="file" id="fileInput" accept="image/jpeg,image/jpg" style="display:none">
+</div>
+
+<div id="previewBox" class="preview-box" style="display:none">
+<img id="previewImg">
+</div>
+
+<div id="resultArea">
+<div class="info-empty">请上传一张JPEG图片以查看EXIF信息</div>
+</div>
+
+<div class="btn-group" id="actionBtns" style="display:none">
+<button class="btn btn-success" onclick="copyMeta()">📋 复制元数据JSON</button>
+<button class="btn btn-outline" onclick="resetAll()">🔄 重新上传</button>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+var currentExifData=null;
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+
+var uploadArea=document.getElementById('uploadArea');
+var fileInput=document.getElementById('fileInput');
+
+uploadArea.addEventListener('click',function(){fileInput.click()});
+uploadArea.addEventListener('dragover',function(e){e.preventDefault();uploadArea.classList.add('dragover')});
+uploadArea.addEventListener('dragleave',function(e){e.preventDefault();uploadArea.classList.remove('dragover')});
+uploadArea.addEventListener('drop',function(e){e.preventDefault();uploadArea.classList.remove('dragover');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
+fileInput.addEventListener('change',function(){if(fileInput.files.length)handleFile(fileInput.files[0])});
+
+function handleFile(file){
+  if(!file.type.match(/image\/jpe?g/i)&&!file.name.toLowerCase().endsWith('.jpg')&&!file.name.toLowerCase().endsWith('.jpeg')){
+    showToast('请上传JPEG格式图片');return;
+  }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var buf=e.target.result;
+    var bytes=new Uint8Array(buf);
+    // Show preview
+    document.getElementById('previewImg').src=URL.createObjectURL(file);
+    document.getElementById('previewBox').style.display='block';
+    uploadArea.style.display='none';
+    // Parse EXIF
+    var exif=parseExif(bytes);
+    currentExifData=exif;
+    renderExif(exif);
+    document.getElementById('actionBtns').style.display='flex';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetAll(){
+  document.getElementById('previewBox').style.display='none';
+  uploadArea.style.display='';
+  document.getElementById('resultArea').innerHTML='<div class="info-empty">请上传一张JPEG图片以查看EXIF信息</div>';
+  document.getElementById('actionBtns').style.display='none';
+  currentExifData=null;
+  fileInput.value='';
+}
+
+function parseExif(bytes){
+  var result={raw:{}};
+  // Check JPEG SOI
+  if(bytes[0]!==0xFF||bytes[1]!==0xD8) return result;
+  var i=2;
+  while(i<bytes.length-1){
+    if(bytes[i]!==0xFF) break;
+    var marker=bytes[i+1];
+    if(marker===0xE1){ // APP1 - EXIF
+      var len=(bytes[i+2]<<8)|bytes[i+3];
+      var data=bytes.subarray(i+4,i+2+len);
+      if(data[0]===0x45&&data[1]===0x78&&data[2]===0x69&&data[3]===0x66&&data[4]===0&&data[5]===0){
+        // "Exif\0\0"
+        parseTiff(data.subarray(6),result);
+      }
+      break;
+    }
+    if(marker===0xDA) break; // SOS - stop
+    var segLen=(bytes[i+2]<<8)|bytes[i+3];
+    i+=2+segLen;
+  }
+  return result;
+}
+
+function parseTiff(data,result){
+  var le=data[0]===0x49; // II = little-endian, MM = big-endian
+  var read16=le?function(o){return data[o]|(data[o+1]<<8)}:function(o){return(data[o]<<8)|data[o+1]};
+  var read32=le?function(o){return data[o]|(data[o+1]<<8)|(data[o+2]<<16)|(data[o+3]<<24)}:function(o){return(data[o]<<24)|(data[o+1]<<16)|(data[o+2]<<8)|data[o+3]};
+  result._le=le;result._read16=read16;result._read32=read32;result._data=data;
+  var ifd0Off=read16(4);
+  parseIFD(data,ifd0Off,read16,read32,result,'');
+}
+
+function parseIFD(data,off,read16,read32,result,prefix){
+  if(off<=0||off>=data.length-2) return;
+  var count=read16(off);
+  var nextOff=off+2+count*12;
+  for(var i=0;i<count&&off+2+i*12+12<=data.length;i++){
+    var entryOff=off+2+i*12;
+    var tag=read16(entryOff);
+    var type=read16(entryOff+2);
+    var numValues=read32(entryOff+4);
+    var valueOff=read32(entryOff+8);
+    var tagHex='0x'+('0000'+tag.toString(16)).slice(-4);
+    
+    var val=extractValue(data,type,numValues,valueOff,read16,read32);
+    result.raw[prefix+tagHex]=val;
+    
+    // Sub IFDs
+    if(tag===0x8769||tag===0x8825||tag===0xA005){ // EXIF, GPS, Interop
+      var subPrefix=tag===0x8769?'exif:':tag===0x8825?'gps:':'interop:';
+      var subOff=valueOff;
+      if(tag===0x8769) parseIFD(data,subOff,read16,read32,result,subPrefix);
+      else parseIFD(data,subOff,read16,read32,result,subPrefix);
+    }
+  }
+  // Next IFD
+  if(nextOff+4<=data.length){
+    var next=read32(nextOff);
+    if(next>0) parseIFD(data,next,read16,read32,result,prefix);
+  }
+}
+
+function extractValue(data,type,numValues,valueOff,read16,read32){
+  var sizes={1:1,2:1,3:2,4:4,5:8,6:1,7:1,8:2,9:4,10:8,11:4,12:8};
+  var totalSize=(sizes[type]||1)*numValues;
+  var off=totalSize>4?valueOff:valueOff>0?0:0;
+  // For inline values, offset points to the value in the entry
+  if(totalSize<=4){
+    // Value is inline in the 4-byte offset field
+    off=valueOff>0?0:0;
+    // Actually the value IS at entryOff+8, but valueOff was read from there
+    // For small values, valueOff IS the value itself (for some types)
+  }
+  
+  // The actual offset to data
+  var dOff=totalSize<=4?0:valueOff;
+  
+  if(type===2){ // ASCII
+    var s='';
+    var actualOff=totalSize<=4?valueOff:valueOff;
+    // Handle: for ASCII <=4 bytes, value is stored in the offset field itself
+    // We need to read from the correct position
+    if(totalSize<=4){
+      // valueOff bytes are the characters
+      for(var i=0;i<numValues;i++){
+        var b=(valueOff>>(i*8))&0xFF;
+        if(b===0) break;
+        s+=String.fromCharCode(b);
+      }
+    } else {
+      for(var i=0;i<numValues-1;i++){
+        if(valueOff+i>=data.length) break;
+        var b=data[valueOff+i];
+        if(b===0) break;
+        s+=String.fromCharCode(b);
+      }
+    }
+    return s.trim();
+  }
+  if(type===3){ // SHORT
+    if(numValues===1) return read16(valueOff>0&&totalSize>4?valueOff:0);
+    // For inline: valueOff itself contains the value(s)
+    if(numValues<=2){
+      var vals=[];
+      for(var i=0;i<numValues;i++) vals.push((valueOff>>(i*16))&0xFFFF);
+      return numValues===1?vals[0]:vals;
+    }
+    var vals=[];
+    for(var i=0;i<numValues;i++) vals.push(read16(valueOff+i*2));
+    return vals;
+  }
+  if(type===4||type===9){ // LONG or SLONG
+    if(numValues===1) return read32(valueOff);
+    var vals=[];
+    for(var i=0;i<numValues;i++) vals.push(read32(valueOff+i*4));
+    return vals;
+  }
+  if(type===5||type===10){ // RATIONAL or SRATIONAL
+    var vals=[];
+    for(var i=0;i<numValues;i++){
+      var num=read32(valueOff+i*8);
+      var den=read32(valueOff+i*8+4);
+      vals.push(den===0?0:num/den);
+    }
+    return numValues===1?vals[0]:vals;
+  }
+  if(type===7){ // UNDEFINED
+    if(totalSize<=4){
+      var b=[];
+      for(var i=0;i<totalSize;i++) b.push((valueOff>>(i*8))&0xFF);
+      return b;
+    }
+    var b=[];
+    for(var i=0;i<totalSize&&valueOff+i<data.length;i++) b.push(data[valueOff+i]);
+    return b;
+  }
+  return valueOff;
+}
+
+function renderExif(exif){
+  var r=exif.raw||{};
+  var html='';
+  
+  // Map tags
+  var camera={
+    'Make':r['0x010F']||'未知',
+    'Model':r['0x0110']||'未知',
+    'Software':r['0x0131']||'未知'
+  };
+  var shooting={
+    '拍摄日期':formatExifDate(r['exif:0x9003']||r['exif:0x9004']||r['0x0132']),
+    '曝光时间':r['exif:0x829A']?formatRational(r['exif:0x829A'],'s'):null,
+    '光圈值':r['exif:0x829D']?'F/'+(typeof r['exif:0x829D']==='number'?r['exif:0x829D'].toFixed(1):r['exif:0x829D']):null,
+    'ISO':r['exif:0x8827']||null,
+    '焦距':r['exif:0x920A']?(typeof r['exif:0x920A']==='number'?r['exif:0x920A'].toFixed(1)+'mm':r['exif:0x920A']+'mm'):null,
+    '曝光补偿':r['exif:0x9204']?formatEV(r['exif:0x9204']):null,
+    '测光模式':getMeteringMode(r['exif:0x9207']),
+    '闪光灯':r['exif:0x9209']!=null?((r['exif:0x9209']&1)?'已触发':'未触发'):null,
+    '白平衡':r['exif:0xA403']===0?'自动':'手动'
+  };
+  var image={
+    '宽度':r['exif:0xA002']||r['0x0100']||null,
+    '高度':r['exif:0xA003']||r['0x0101']||null,
+    '方向':getOrientation(r['0x0112']),
+    '色彩空间':r['exif:0xA001']===1?'sRGB':'其他',
+    'X分辨率':r['0x011A']||null,
+    'Y分辨率':r['0x011B']||null
+  };
+  
+  // GPS
+  var gps=null;
+  if(r['gps:0x0002']&&r['gps:0x0004']){
+    var lat=toDecimal(r['gps:0x0002'],r['gps:0x0001']);
+    var lng=toDecimal(r['gps:0x0004'],r['gps:0x0003']);
+    if(r['gps:0x0001']==='S') lat=-lat;
+    if(r['gps:0x0003']==='W') lng=-lng;
+    gps={纬度:lat.toFixed(6),经度:lng.toFixed(6)};
+    if(r['gps:0x0006']) gps['海拔']=typeof r['gps:0x0006']==='number'?r['gps:0x0006'].toFixed(1)+'m':r['gps:0x0006'];
+  }
+  
+  html+=renderTable('📷 相机信息',camera);
+  html+=renderTable('🖼️ 图片信息',image);
+  html+=renderTable('⚡ 拍摄参数',shooting,true);
+  if(gps) html+=renderTable('📍 GPS定位',gps);
+  
+  if(!r['0x010F']&&!r['0x0110']){
+    html='<div class="info-empty">未检测到EXIF信息（可能是非JPEG图片或已去除元数据）</div>';
+  }
+  
+  document.getElementById('resultArea').innerHTML=html;
+}
+
+function renderTable(title,obj,skipNull){
+  var html='<div class="section-title">'+title+'</div><table>';
+  for(var k in obj){
+    var v=obj[k];
+    if(skipNull&&v===null) continue;
+    html+='<tr><th>'+k+'</th><td>'+(v===null||v===undefined?'—':v)+'</td></tr>';
+  }
+  html+='</table>';
+  return html;
+}
+
+function formatExifDate(s){if(!s)return null;return s}
+function formatRational(v,unit){
+  if(typeof v==='number'){
+    if(v<1) return '1/'+Math.round(1/v)+unit;
+    return v.toFixed(1)+unit;
+  }
+  return v+unit;
+}
+function formatEV(v){if(typeof v==='number')return(v>0?'+':'')+v.toFixed(1)+'EV';return v}
+function getOrientation(v){
+  var map={1:'正常',2:'水平翻转',3:'旋转180°',4:'垂直翻转',5:'顺时针90°+水平翻转',6:'顺时针90°',7:'逆时针90°+水平翻转',8:'逆时针90°'};
+  return map[v]||'未知';
+}
+function getMeteringMode(v){
+  var map={0:'未知',1:'平均',2:'中央重点',3:'点测光',4:'多点',5:'评价',6:'局部'};
+  return map[v]||null;
+}
+function toDecimal(dms,ref){
+  if(!Array.isArray(dms)||dms.length<3) return 0;
+  var d=typeof dms[0]==='number'?dms[0]:0;
+  var m=typeof dms[1]==='number'?dms[1]:0;
+  var s=typeof dms[2]==='number'?dms[2]:0;
+  return d+m/60+s/3600;
+}
+
+function copyMeta(){
+  if(!currentExifData||!currentExifData.raw){showToast('无数据可复制');return}
+  var json=JSON.stringify(currentExifData.raw,null,2);
+  navigator.clipboard.writeText(json).then(function(){showToast('已复制到剪贴板')}).catch(function(){
+    var ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板');
+  });
+}
+</script>
+</body>
+</html>

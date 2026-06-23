@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片拼图/九宫格 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:960px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-danger:hover{background:#c0392b}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;align-items:center}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.upload-area{border:2px dashed #ddd;border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa}
+.upload-area:hover{border-color:#4a90d9;background:#f0f7ff}
+.upload-area.dragover{border-color:#4a90d9;background:#e3f2fd}
+.upload-icon{font-size:48px;margin-bottom:12px}
+.options-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.options-row label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px;white-space:nowrap}
+select,input[type="number"],input[type="color"]{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+input[type="color"]{width:50px;height:36px;padding:2px;cursor:pointer}
+.image-list{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;min-height:60px}
+.image-thumb{position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.15);border:2px solid transparent;transition:border-color .2s}
+.image-thumb.dragging{opacity:.5;border-color:#4a90d9}
+.image-thumb.dragover-item{border-color:#e74c3c}
+.image-thumb img{width:100%;height:100%;object-fit:cover}
+.image-thumb .remove-btn{position:absolute;top:2px;right:2px;background:rgba(231,76,60,.85);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.image-thumb .img-index{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;border-radius:4px;padding:1px 6px;font-size:11px}
+.preview-container{background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;min-height:200px;margin:16px 0;overflow:auto}
+.preview-container canvas{max-width:100%;height:auto}
+.layout-btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.layout-btn{padding:8px 16px;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;transition:all .2s}
+.layout-btn.active{border-color:#4a90d9;background:#e3f2fd;color:#4a90d9;font-weight:600}
+.layout-btn:hover{border-color:#4a90d9}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">图片拼图/九宫格</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>图片拼图/九宫格</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">🖼️ 图片拼图/九宫格</h2>
+<p style="color:#666;font-size:14px">上传2-9张图片，选择布局，拖拽排序，生成拼图</p>
+
+<div class="upload-area" id="uploadArea">
+<div class="upload-icon">📁</div>
+<div>点击或拖拽上传图片（2-9张）</div>
+<div style="font-size:13px;color:#999;margin-top:6px">支持 JPG / PNG / GIF / WebP</div>
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+</div>
+
+<div id="imageListSection" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<span style="font-weight:600;color:#333">已选图片 <span id="imgCount">0</span>/9</span>
+<div>
+<button class="btn btn-outline" onclick="document.getElementById('fileInput').click()" style="padding:6px 14px;font-size:13px">➕ 添加图片</button>
+<button class="btn btn-danger" onclick="clearImages()" style="padding:6px 14px;font-size:13px">🗑️ 清空</button>
+</div>
+</div>
+<div class="image-list" id="imageList"></div>
+</div>
+
+<div id="optionsSection" style="display:none">
+<div class="options-row">
+<label>布局：</label>
+<div class="layout-btns" id="layoutBtns">
+<button class="layout-btn active" data-layout="1x2" onclick="setLayout('1x2')">1×2</button>
+<button class="layout-btn" data-layout="2x1" onclick="setLayout('2x1')">2×1</button>
+<button class="layout-btn" data-layout="2x2" onclick="setLayout('2x2')">2×2</button>
+<button class="layout-btn" data-layout="3x3" onclick="setLayout('3x3')">3×3</button>
+<button class="layout-btn" data-layout="custom" onclick="setLayout('custom')">自定义</button>
+</div>
+</div>
+<div class="options-row" id="customGridRow" style="display:none">
+<label>列数：<input type="number" id="customCols" value="3" min="1" max="9" style="width:70px"></label>
+<label>行数：<input type="number" id="customRows" value="3" min="1" max="9" style="width:70px"></label>
+</div>
+<div class="options-row">
+<label>间距(px)：<input type="number" id="gapSize" value="4" min="0" max="50" style="width:70px"></label>
+<label>背景色：<input type="color" id="bgColor" value="#ffffff"></label>
+<label>输出宽度(px)：<input type="number" id="outputWidth" value="1080" min="100" max="8000" style="width:90px"></label>
+</div>
+
+<div class="btn-group">
+<button class="btn btn-primary" onclick="renderCollage()">🎨 生成拼图</button>
+<button class="btn btn-success" onclick="downloadImage('png')">💾 下载PNG</button>
+<button class="btn btn-outline" onclick="downloadImage('jpeg')">💾 下载JPEG</button>
+</div>
+
+<div class="preview-container">
+<canvas id="previewCanvas"></canvas>
+</div>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+var images=[]; // {file, img, name}
+var currentLayout='1x2';
+var dragIndex=-1;
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+
+var uploadArea=document.getElementById('uploadArea');
+var fileInput=document.getElementById('fileInput');
+
+uploadArea.addEventListener('click',function(){fileInput.click()});
+uploadArea.addEventListener('dragover',function(e){e.preventDefault();uploadArea.classList.add('dragover')});
+uploadArea.addEventListener('dragleave',function(e){e.preventDefault();uploadArea.classList.remove('dragover')});
+uploadArea.addEventListener('drop',function(e){e.preventDefault();uploadArea.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
+fileInput.addEventListener('change',function(){handleFiles(fileInput.files);fileInput.value=''});
+
+function handleFiles(files){
+  var remaining=9-images.length;
+  if(remaining<=0){showToast('最多支持9张图片');return}
+  var count=Math.min(files.length,remaining);
+  var loaded=0;
+  for(var i=0;i<count;i++){
+    (function(file){
+      if(!file.type.startsWith('image/')){loaded++;return}
+      var reader=new FileReader();
+      reader.onload=function(e){
+        var img=new Image();
+        img.onload=function(){
+          images.push({img:img,name:file.name});
+          loaded++;
+          if(loaded>=count) updateUI();
+        };
+        img.src=e.target.result;
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+}
+
+function removeImage(idx){
+  images.splice(idx,1);
+  updateUI();
+}
+
+function clearImages(){
+  images=[];
+  updateUI();
+}
+
+function updateUI(){
+  var hasImages=images.length>0;
+  document.getElementById('imageListSection').style.display=hasImages?'':'none';
+  document.getElementById('optionsSection').style.display=hasImages.length>=2?'':'none';
+  document.getElementById('imgCount').textContent=images.length;
+  
+  // Update image list with drag support
+  var list=document.getElementById('imageList');
+  list.innerHTML='';
+  for(var i=0;i<images.length;i++){
+    (function(idx){
+      var div=document.createElement('div');
+      div.className='image-thumb';
+      div.draggable=true;
+      div.innerHTML='<img src="'+images[idx].img.src+'"><button class="remove-btn" onclick="event.stopPropagation();removeImage('+idx+')">×</button><span class="img-index">'+(idx+1)+'</span>';
+      div.addEventListener('dragstart',function(e){dragIndex=idx;div.classList.add('dragging');e.dataTransfer.effectAllowed='move'});
+      div.addEventListener('dragend',function(){dragIndex=-1;div.classList.remove('dragging');clearDragStyles()});
+      div.addEventListener('dragover',function(e){e.preventDefault();e.dataTransfer.dropEffect='move';div.classList.add('dragover-item')});
+      div.addEventListener('dragleave',function(){div.classList.remove('dragover-item')});
+      div.addEventListener('drop',function(e){e.preventDefault();div.classList.remove('dragover-item');if(dragIndex>=0&&dragIndex!==idx){var tmp=images[dragIndex];images[dragIndex]=images[idx];images[idx]=tmp;updateUI()}});
+      list.appendChild(div);
+    })(i);
+  }
+  
+  // Show options if >=2 images
+  if(images.length>=2){
+    document.getElementById('optionsSection').style.display='';
+  }
+}
+
+function clearDragStyles(){
+  var thumbs=document.querySelectorAll('.image-thumb');
+  thumbs.forEach(function(t){t.classList.remove('dragging','dragover-item')});
+}
+
+function setLayout(layout){
+  currentLayout=layout;
+  document.querySelectorAll('.layout-btn').forEach(function(b){b.classList.remove('active')});
+  document.querySelector('[data-layout="'+layout+'"]').classList.add('active');
+  document.getElementById('customGridRow').style.display=layout==='custom'?'':'none';
+}
+
+function getGrid(){
+  switch(currentLayout){
+    case '1x2':return{cols:1,rows:2};
+    case '2x1':return{cols:2,rows:1};
+    case '2x2':return{cols:2,rows:2};
+    case '3x3':return{cols:3,rows:3};
+    case 'custom':return{cols:parseInt(document.getElementById('customCols').value)||3,rows:parseInt(document.getElementById('customRows').value)||3};
+    default:return{cols:2,rows:2};
+  }
+}
+
+function renderCollage(){
+  if(images.length<2){showToast('请至少上传2张图片');return}
+  var grid=getGrid();
+  var gap=parseInt(document.getElementById('gapSize').value)||0;
+  var bgColor=document.getElementById('bgColor').value;
+  var outputW=parseInt(document.getElementById('outputWidth').value)||1080;
+  
+  var cols=grid.cols,rows=grid.rows;
+  var totalCells=cols*rows;
+  var imgCount=Math.min(images.length,totalCells);
+  
+  // Calculate cell size maintaining aspect ratio
+  var cellW=Math.floor((outputW-gap*(cols+1))/cols);
+  var outputH=Math.floor(cellW*rows+gap*(rows+1));
+  
+  var canvas=document.getElementById('previewCanvas');
+  canvas.width=outputW;
+  canvas.height=outputH;
+  var ctx=canvas.getContext('2d');
+  
+  // Background
+  ctx.fillStyle=bgColor;
+  ctx.fillRect(0,0,outputW,outputH);
+  
+  // Draw images
+  for(var i=0;i<imgCount;i++){
+    var col=i%cols;
+    var row=Math.floor(i/cols);
+    var x=gap+col*(cellW+gap);
+    var y=gap+row*(cellW+gap);
+    
+    // Draw image covering cell (center crop)
+    var img=images[i].img;
+    var iw=img.naturalWidth,ih=img.naturalHeight;
+    var scale=Math.max(cellW/iw,cellW/ih);
+    var sw=cellW/scale,sh=cellW/scale;
+    var sx=(iw-sw)/2,sy=(ih-sh)/2;
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x,y,cellW,cellW);
+    ctx.clip();
+    ctx.drawImage(img,sx,sy,sw,sh,x,y,cellW,cellW);
+    ctx.restore();
+  }
+  
+  showToast('拼图已生成');
+}
+
+function downloadImage(format){
+  var canvas=document.getElementById('previewCanvas');
+  if(!canvas.width||!canvas.height){showToast('请先生成拼图');return}
+  var mimeType=format==='jpeg'?'image/jpeg':'image/png';
+  var quality=format==='jpeg'?0.92:undefined;
+  canvas.toBlob(function(blob){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='collage.'+format;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('下载已开始');
+  },mimeType,quality);
+}
+</script>
+</body>
+</html>
