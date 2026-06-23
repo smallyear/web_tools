@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML转义/反转义 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:900px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.textarea{width:100%;min-height:180px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;resize:vertical;box-sizing:border-box}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.panel{margin-bottom:24px}
+.panel h3{margin:0 0 8px;font-size:16px;color:#333}
+.char-ref{font-size:12px;color:#888;margin-top:4px}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">HTML转义/反转义</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>HTML转义/反转义</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">🔤 HTML转义/反转义</h2>
+<p style="color:#666;font-size:14px">在HTML实体与普通字符之间互相转换，支持命名实体、数字实体（十进制和十六进制）</p>
+
+<div class="panel">
+<h3>转义（字符 → HTML实体）</h3>
+<textarea id="escapeInput" class="textarea" placeholder="输入需要转义的文本，例如：<div class=&quot;test&quot;>Hello & World</div>"></textarea>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="doEscape()">转义 →</button>
+<button class="btn btn-success" onclick="copyText('escapeOutput')">📋 复制</button>
+</div>
+<textarea id="escapeOutput" class="textarea" readonly placeholder="转义结果将显示在这里..."></textarea>
+</div>
+
+<div class="panel">
+<h3>反转义（HTML实体 → 字符）</h3>
+<textarea id="unescapeInput" class="textarea" placeholder="输入需要反转义的文本，例如：&amp;lt;div class=&amp;quot;test&amp;quot;&amp;gt;Hello &amp;amp; World&amp;lt;/div&amp;gt;"></textarea>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="doUnescape()">← 反转义</button>
+<button class="btn btn-success" onclick="copyText('unescapeOutput')">📋 复制</button>
+</div>
+<textarea id="unescapeOutput" class="textarea" readonly placeholder="反转义结果将显示在这里..."></textarea>
+</div>
+
+<div class="card" style="background:#f8f9fa">
+<h3 style="margin-top:0;font-size:15px">常用HTML实体参考</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;font-size:13px">
+<span>&amp;lt; → &lt;（小于号）</span>
+<span>&amp;gt; → &gt;（大于号）</span>
+<span>&amp;amp; → &amp;（和号）</span>
+<span>&amp;quot; → "（双引号）</span>
+<span>&amp;apos; → '（单引号）</span>
+<span>&amp;nbsp; → 空格</span>
+<span>&amp;copy; → ©（版权）</span>
+<span>&amp;reg; → ®（注册商标）</span>
+<span>&amp;times; → ×（乘号）</span>
+<span>&amp;divide; → ÷（除号）</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+
+function copyText(id){var text=document.getElementById(id).value;if(!text){showToast('没有内容可复制');return}navigator.clipboard.writeText(text).then(function(){showToast('已复制到剪贴板')}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板')})}
+
+var escapeMap={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'};
+var unescapeMap={'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'",'&nbsp;':' ','&copy;':'©','&reg;':'®','&trade;':'™','&times;':'×','&divide;':'÷','&hellip;':'…','&mdash;':'—','&ndash;':'–','&lsquo;':'\u2018','&rsquo;':'\u2019','&ldquo;':'\u201C','&rdquo;':'\u201D','&bull;':'•','&middot;':'·','&laquo;':'«','&raquo;':'»','&cent;':'¢','&pound;':'£','&yen;':'¥','&euro;':'€','&sect;':'§','&para;':'¶','&dagger;':'†','&Dagger;':'‡','&permil;':'‰','&lsaquo;':'‹','&rsaquo;':'›','&oline;':'‾','&larr;':'←','&rarr;':'→','&uarr;':'↑','&darr;':'↓','&harr;':'↔','&lArr;':'⇐','&rArr;':'⇒','&uArr;':'⇑','&dArr;':'⇓','&hArr;':'⇔','&spades;':'♠','&clubs;':'♣','&hearts;':'♥','&diams;':'♦'};
+
+function doEscape(){
+  var input=document.getElementById('escapeInput').value;
+  if(!input){showToast('请先输入文本');return}
+  var result=input.replace(/[&<>"']/g,function(ch){return escapeMap[ch]});
+  document.getElementById('escapeOutput').value=result;
+}
+
+function doUnescape(){
+  var input=document.getElementById('unescapeInput').value;
+  if(!input){showToast('请先输入文本');return}
+  var result=input;
+  // Handle numeric entities: &#NNN; and &#xHHH;
+  result=result.replace(/&#x([0-9a-fA-F]+);/g,function(m,hex){return String.fromCharCode(parseInt(hex,16))});
+  result=result.replace(/&#(\d+);/g,function(m,dec){return String.fromCharCode(parseInt(dec,10))});
+  // Handle named entities
+  result=result.replace(/&[a-zA-Z]+;/g,function(entity){return unescapeMap[entity]||entity});
+  document.getElementById('unescapeOutput').value=result;
+}
+
+// Real-time conversion
+document.getElementById('escapeInput').addEventListener('input',doEscape);
+document.getElementById('unescapeInput').addEventListener('input',doUnescape);
+</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JWT Token解析器 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tool-container{max-width:900px;margin:0 auto;padding:1rem}
+.breadcrumb{font-size:.85rem;color:#888;margin-bottom:1rem}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
+.card h3{margin-top:0;color:#333;border-bottom:2px solid #4a90d9;padding-bottom:.5rem}
+textarea{width:100%;min-height:80px;border:1px solid #ddd;border-radius:6px;padding:.75rem;font-family:monospace;font-size:.9rem;resize:vertical;box-sizing:border-box}
+textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,.2)}
+.btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius:6px;cursor:pointer;font-size:.9rem;transition:background .2s}
+.btn:hover{background:#357abd}
+.btn-sm{padding:.3rem .7rem;font-size:.8rem}
+.btn-success{background:#27ae60}
+.btn-success:hover{background:#219a52}
+.result-box{background:#f8f9fa;border:1px solid #e9ecef;border-radius:6px;padding:1rem;font-family:monospace;font-size:.85rem;white-space:pre-wrap;word-break:break-all;position:relative;margin-top:.5rem;max-height:400px;overflow-y:auto}
+.copy-btn{position:absolute;top:.5rem;right:.5rem;background:#6c757d;color:#fff;border:none;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.75rem}
+.copy-btn:hover{background:#545b62}
+.field-desc{background:#e8f4fd;border-left:3px solid #4a90d9;padding:.5rem .75rem;margin-top:.5rem;font-size:.85rem;border-radius:0 4px 4px 0}
+.field-desc .label{font-weight:bold;color:#4a90d9}
+.expired-yes{color:#e74c3c;font-weight:bold}
+.expired-no{color:#27ae60;font-weight:bold}
+.highlight-field{background:#fff3cd;padding:.2rem .4rem;border-radius:3px}
+.copy-individual{display:inline-flex;align-items:center;gap:.5rem}
+.result-section{margin-top:.5rem}
+.token-parts{display:flex;gap:.5rem;margin:.5rem 0}
+.part-badge{background:#4a90d9;color:#fff;padding:.2rem .6rem;border-radius:12px;font-size:.75rem}
+.footer{text-align:center;padding:2rem;color:#888;font-size:.8rem;margin-top:2rem;border-top:1px solid #eee}
+@media(max-width:768px){.tool-container{padding:.5rem}.card{padding:1rem}}
+</style>
+</head>
+<body>
+<nav style="background:#2c3e50;color:#fff;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:bold;font-size:1.1rem">🛠 Web工具箱</a>
+</nav>
+<div class="tool-container">
+<div class="breadcrumb"><a href="../../index.html">首页</a> / JWT Token解析器</div>
+<div class="card">
+<h3>🔐 JWT Token解析器</h3>
+<p style="color:#666;font-size:.9rem">粘贴JWT Token，自动解析Header、Payload和Signature部分</p>
+<div style="margin-bottom:1rem">
+<textarea id="jwtInput" placeholder="粘贴JWT Token，例如: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" oninput="parseJWT()"></textarea>
+</div>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+<button class="btn" onclick="parseJWT()">解析</button>
+<button class="btn" onclick="loadExample()">加载示例</button>
+<button class="btn btn-success" onclick="copyAll()">复制全部JSON</button>
+</div>
+</div>
+
+<div id="resultArea" style="display:none">
+<div class="card">
+<h3>📋 解析结果</h3>
+<div id="expiryStatus" style="margin-bottom:1rem;font-size:1rem"></div>
+<div class="token-parts">
+<span class="part-badge">Header</span>
+<span class="part-badge" style="background:#27ae60">Payload</span>
+<span class="part-badge" style="background:#e74c3c">Signature</span>
+</div>
+</div>
+
+<div class="card">
+<h3>📄 Header <button class="btn btn-sm copy-btn" style="position:static" onclick="copyPart('headerDecoded')">复制</button></h3>
+<div class="result-box" id="headerResult"></div>
+<div id="headerFields" class="field-desc" style="display:none"></div>
+</div>
+
+<div class="card">
+<h3>📦 Payload <button class="btn btn-sm copy-btn" style="position:static" onclick="copyPart('payloadDecoded')">复制</button></h3>
+<div class="result-box" id="payloadResult"></div>
+<div id="payloadFields" class="field-desc" style="display:none"></div>
+</div>
+
+<div class="card">
+<h3>🔑 Signature</h3>
+<div class="result-box" id="signatureResult"></div>
+<div class="field-desc" style="margin-top:.5rem">
+<span class="label">说明：</span>签名部分使用Header中指定的算法和密钥生成，用于验证Token的完整性。无法在此处解码。
+</div>
+</div>
+</div>
+
+<div class="footer">Web工具箱 - JWT Token解析器 | 纯前端处理，数据不会上传服务器</div>
+</div>
+
+<script>
+let parsedData={header:null,payload:null,signature:''};
+
+function base64UrlDecode(str){
+str=str.replace(/-/g,'+').replace(/_/g,'/');
+while(str.length%4)str+='=';
+return decodeURIComponent(atob(str).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+
+function parseJWT(){
+const input=document.getElementById('jwtInput').value.trim();
+const resultArea=document.getElementById('resultArea');
+if(!input){resultArea.style.display='none';return;}
+const parts=input.split('.');
+if(parts.length!==3){
+resultArea.style.display='none';
+alert('无效的JWT Token格式，JWT应包含3个由"."分隔的部分');
+return;
+}
+try{
+const header=JSON.parse(base64UrlDecode(parts[0]));
+const payload=JSON.parse(base64UrlDecode(parts[1]));
+parsedData={header,payload,signature:parts[2]};
+document.getElementById('headerResult').textContent=JSON.stringify(header,null,2);
+document.getElementById('payloadResult').textContent=JSON.stringify(payload,null,2);
+document.getElementById('signatureResult').textContent=parts[2];
+showFieldDescriptions(header,payload);
+showExpiryStatus(payload);
+resultArea.style.display='block';
+}catch(e){
+resultArea.style.display='none';
+alert('解析失败：'+e.message);
+}
+}
+
+function showFieldDescriptions(header,payload){
+const headerEl=document.getElementById('headerFields');
+headerEl.style.display='block';
+let hDesc='<span class="label">Header字段：</span><br>';
+if(header.alg)hDesc+=`<span class="highlight-field">alg</span>: 签名算法 - ${header.alg}<br>`;
+if(header.typ)hDesc+=`typ: Token类型 - ${header.typ}<br>`;
+if(header.kid)hDesc+=`kid: 密钥ID - ${header.kid}<br>`;
+headerEl.innerHTML=hDesc;
+
+const payloadEl=document.getElementById('payloadFields');
+payloadEl.style.display='block';
+let pDesc='<span class="label">Payload字段：</span><br>';
+const fieldNames={iss:'签发者(issuer)',sub:'主题(subject)',aud:'受众(audience)',exp:'过期时间(expiry)',iat:'签发时间(issued at)',nbf:'生效时间(not before)',jti:'JWT ID',name:'姓名',email:'邮箱',role:'角色',admin:'管理员'};
+for(const[key,val]of Object.entries(payload)){
+const label=fieldNames[key]||key;
+if(key==='exp'||key==='iat'||key==='nbf'){
+const date=new Date(val*1000);
+pDesc+=`<span class="highlight-field">${key}</span>: ${label} = ${val} → <strong>${date.toLocaleString('zh-CN')}</strong><br>`;
+}else if(key==='aud'){
+pDesc+=`<span class="highlight-field">${key}</span>: ${label} = ${Array.isArray(val)?val.join(', '):val}<br>`;
+}else{
+pDesc+=`${key}: ${label} = ${typeof val==='object'?JSON.stringify(val):val}<br>`;
+}
+}
+payloadEl.innerHTML=pDesc;
+}
+
+function showExpiryStatus(payload){
+const el=document.getElementById('expiryStatus');
+if(!payload.exp){el.innerHTML='ℹ️ 该Token未设置过期时间';return;}
+const expDate=new Date(payload.exp*1000);
+const now=new Date();
+const diff=expDate-now;
+if(diff<0){
+const ago=formatDuration(-diff);
+el.innerHTML=`<span class="expired-yes">❌ Token已过期</span> — 过期时间: ${expDate.toLocaleString('zh-CN')} (已过期 ${ago})`;
+}else{
+const remain=formatDuration(diff);
+el.innerHTML=`<span class="expired-no">✅ Token有效</span> — 过期时间: ${expDate.toLocaleString('zh-CN')} (剩余 ${remain})`;
+}
+}
+
+function formatDuration(ms){
+const s=Math.floor(ms/1000);
+if(s<60)return s+'秒';
+if(s<3600)return Math.floor(s/60)+'分钟'+(s%60?' '+s%60+'秒':'');
+if(s<86400)return Math.floor(s/3600)+'小时'+Math.floor(s%3600/60)+'分钟';
+return Math.floor(s/86400)+'天'+Math.floor(s%86400/3600)+'小时';
+}
+
+function copyPart(part){
+const data=part==='headerDecoded'?parsedData.header:parsedData.payload;
+if(!data)return;
+navigator.clipboard.writeText(JSON.stringify(data,null,2)).then(()=>showToast('已复制到剪贴板'));
+}
+
+function copyAll(){
+if(!parsedData.header)return;
+navigator.clipboard.writeText(JSON.stringify({header:parsedData.header,payload:parsedData.payload,signature:parsedData.signature},null,2)).then(()=>showToast('已复制到剪贴板'));
+}
+
+function loadExample(){
+document.getElementById('jwtInput').value='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MDAwMDAwMDAsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJlbWFpbCI6ImpvaG5AZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+parseJWT();
+}
+
+function showToast(msg){
+const t=document.createElement('div');
+t.textContent=msg;
+t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:6px;z-index:9999;font-size:.9rem';
+document.body.appendChild(t);
+setTimeout(()=>t.remove(),2000);
+}
+</script>
+</body>
+</html>

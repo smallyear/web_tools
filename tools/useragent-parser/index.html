@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UserAgent解析 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tool-container{max-width:900px;margin:0 auto;padding:1rem}
+.breadcrumb{font-size:.85rem;color:#888;margin-bottom:1rem}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
+.card h3{margin-top:0;color:#333;border-bottom:2px solid #4a90d9;padding-bottom:.5rem}
+textarea,input[type=text]{width:100%;border:1px solid #ddd;border-radius:6px;padding:.75rem;font-family:monospace;font-size:.9rem;box-sizing:border-box}
+textarea{min-height:60px;resize:vertical}
+textarea:focus,input[type=text]:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,.2)}
+.btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius:6px;cursor:pointer;font-size:.9rem;transition:background .2s}
+.btn:hover{background:#357abd}
+.btn-sm{padding:.3rem .7rem;font-size:.8rem}
+.btn-success{background:#27ae60}
+.btn-success:hover{background:#219a52}
+.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin-top:1rem}
+.info-item{background:#f8f9fa;border-radius:6px;padding:1rem;border-left:4px solid #4a90d9}
+.info-item .icon{font-size:1.5rem;margin-bottom:.5rem}
+.info-item .label{font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.info-item .value{font-size:1.1rem;font-weight:bold;color:#333;margin-top:.25rem}
+.info-item .detail{font-size:.85rem;color:#666;margin-top:.25rem}
+.raw-ua{background:#f8f9fa;border:1px solid #e9ecef;border-radius:6px;padding:1rem;font-family:monospace;font-size:.85rem;word-break:break-all;color:#555;margin-top:.5rem}
+.footer{text-align:center;padding:2rem;color:#888;font-size:.8rem;margin-top:2rem;border-top:1px solid #eee}
+@media(max-width:768px){.tool-container{padding:.5rem}.card{padding:1rem}.result-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav style="background:#2c3e50;color:#fff;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:bold;font-size:1.1rem">🛠 Web工具箱</a>
+</nav>
+<div class="tool-container">
+<div class="breadcrumb"><a href="../../index.html">首页</a> / UserAgent解析</div>
+<div class="card">
+<h3>🔍 UserAgent解析器</h3>
+<p style="color:#666;font-size:.9rem">解析User-Agent字符串，识别浏览器、操作系统、设备类型等信息</p>
+<div style="margin-bottom:1rem">
+<input type="text" id="uaInput" placeholder="输入User-Agent字符串..." style="font-family:monospace">
+</div>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+<button class="btn" onclick="parseUA()">解析</button>
+<button class="btn" onclick="detectCurrent()">检测当前浏览器</button>
+<button class="btn btn-success" onclick="copyJSON()">复制JSON结果</button>
+</div>
+</div>
+
+<div id="resultArea" style="display:none">
+<div class="card">
+<h3>📊 解析结果</h3>
+<div class="result-grid">
+<div class="info-item">
+<div class="icon">🌐</div>
+<div class="label">浏览器</div>
+<div class="value" id="rBrowser">-</div>
+<div class="detail" id="rBrowserDetail"></div>
+</div>
+<div class="info-item">
+<div class="icon">💻</div>
+<div class="label">操作系统</div>
+<div class="value" id="rOS">-</div>
+<div class="detail" id="rOSDetail"></div>
+</div>
+<div class="info-item">
+<div class="icon">📱</div>
+<div class="label">设备类型</div>
+<div class="value" id="rDevice">-</div>
+</div>
+<div class="info-item">
+<div class="icon">⚙️</div>
+<div class="label">渲染引擎</div>
+<div class="value" id="rEngine">-</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3>📋 原始User-Agent</h3>
+<div class="raw-ua" id="rawUA"></div>
+</div>
+</div>
+
+<div class="footer">Web工具箱 - UserAgent解析器 | 纯前端处理，数据不会上传服务器</div>
+</div>
+
+<script>
+let lastResult=null;
+
+function parseUA(){
+const ua=document.getElementById('uaInput').value.trim();
+if(!ua){alert('请输入User-Agent字符串');return;}
+lastResult=analyzeUA(ua);
+displayResult(lastResult,ua);
+}
+
+function detectCurrent(){
+document.getElementById('uaInput').value=navigator.userAgent;
+parseUA();
+}
+
+function analyzeUA(ua){
+const result={browser:{name:'未知',version:'',detail:''},os:{name:'未知',version:''},device:'桌面设备',engine:'未知'};
+
+// Browser detection
+let m;
+if(m=ua.match(/Edg\/([\d.]+)/)){
+result.browser={name:'Microsoft Edge',version:m[1],detail:'基于Chromium'};
+}else if(m=ua.match(/OPR\/([\d.]+)|Opera\/([\d.]+)/)){
+result.browser={name:'Opera',version:m[1]||m[2],detail:'基于Chromium'};
+}else if(m=ua.match(/Chrome\/([\d.]+)(?!.*(?:Edg|OPR|Brave|Vivaldi))/)){
+result.browser={name:'Google Chrome',version:m[1],detail:'基于Blink'};
+}else if(m=ua.match(/Firefox\/([\d.]+)/)){
+result.browser={name:'Mozilla Firefox',version:m[1],detail:'基于Gecko'};
+}else if(m=ua.match(/Version\/([\d.]+).*Safari/)){
+result.browser={name:'Apple Safari',version:m[1],detail:'基于WebKit'};
+}else if(m=ua.match(/MSIE ([\d.]+)|Trident.*rv:([\d.]+)/)){
+result.browser={name:'Internet Explorer',version:m[1]||m[2],detail:'已停用'};
+}else if(m=ua.match(/Brave Chrome\/([\d.]+)/)){
+result.browser={name:'Brave',version:m[1],detail:'基于Chromium'};
+}else if(m=ua.match(/Vivaldi\/([\d.]+)/)){
+result.browser={name:'Vivaldi',version:m[1],detail:'基于Chromium'};
+}
+
+// OS detection
+if(m=ua.match(/Windows NT ([\d.]+)/)){
+const winVersions={'10.0':'10/11','6.3':'8.1','6.2':'8','6.1':'7','6.0':'Vista','5.1':'XP'};
+result.os={name:'Windows',version:winVersions[m[1]]||m[1]};
+}else if(m=ua.match(/Mac OS X ([\d_]+)/)){
+result.os={name:'macOS',version:m[1].replace(/_/g,'.')};
+}else if(m=ua.match(/Android ([\d.]+)/)){
+result.os={name:'Android',version:m[1]};
+result.device=ua.match(/Mobile/)?'手机':'平板';
+}else if(m=ua.match(/iPhone OS ([\d_]+)|iPad.*OS ([\d_]+)/)){
+const ver=(m[1]||m[2]).replace(/_/g,'.');
+result.os={name:'iOS',version:ver};
+result.device=ua.match(/iPhone/)?'手机':'平板';
+}else if(ua.match(/CrOS/)){
+result.os={name:'Chrome OS',version:''};
+}else if(m=ua.match(/Linux/)){
+result.os={name:'Linux',version:''};
+}else if(m=ua.match(/Ubuntu/)){
+result.os={name:'Ubuntu',version:''};
+}
+
+// Device type refinement
+if(ua.match(/Mobile|Android.*Mobile|iPhone|iPod/)){
+result.device='手机';
+}else if(ua.match(/iPad|Android(?!.*Mobile)|Tablet|Kindle|Silk/)){
+result.device='平板';
+}
+
+// Engine detection
+if(m=ua.match(/AppleWebKit\/([\d.]+)/)){
+result.engine='WebKit '+m[1];
+}else if(m=ua.match(/Gecko\/([\d.]+)/)){
+result.engine='Gecko '+m[1];
+}else if(m=ua.match(/Trident\/([\d.]+)/)){
+result.engine='Trident '+m[1];
+}
+
+if(ua.match(/Blink/))result.engine='Blink';
+if(ua.match(/Chrome\/([\d.]+)/)&&!ua.match(/Edg|OPR/))result.engine='Blink';
+
+return result;
+}
+
+function displayResult(r,ua){
+document.getElementById('rBrowser').textContent=r.browser.name;
+document.getElementById('rBrowserDetail').textContent=r.browser.version?`v${r.browser.version} · ${r.browser.detail||''}`:r.browser.detail;
+document.getElementById('rOS').textContent=r.os.name;
+document.getElementById('rOSDetail').textContent=r.os.version||'';
+document.getElementById('rDevice').textContent=r.device;
+document.getElementById('rEngine').textContent=r.engine;
+document.getElementById('rawUA').textContent=ua;
+document.getElementById('resultArea').style.display='block';
+}
+
+function copyJSON(){
+if(!lastResult){alert('请先解析一个User-Agent');return;}
+const output={browser:lastResult.browser,os:lastResult.os,device:lastResult.device,engine:lastResult.engine};
+navigator.clipboard.writeText(JSON.stringify(output,null,2)).then(()=>showToast('已复制JSON到剪贴板'));
+}
+
+function showToast(msg){
+const t=document.createElement('div');
+t.textContent=msg;
+t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:6px;z-index:9999;font-size:.9rem';
+document.body.appendChild(t);
+setTimeout(()=>t.remove(),2000);
+}
+
+// Auto-detect on load
+window.addEventListener('DOMContentLoaded',()=>{document.getElementById('uaInput').value=navigator.userAgent;});
+</script>
+</body>
+</html>

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成语词典 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .search-wrapper { position: relative; }
+    .search-wrapper .form-input { padding-left: 40px; font-size: 16px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-secondary); }
+    .search-controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-controls .form-input { flex: 1; min-width: 200px; }
+    .idiom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    @media (max-width: 600px) { .idiom-grid { grid-template-columns: 1fr; } }
+    .idiom-card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid var(--primary); transition: transform 0.2s, box-shadow 0.2s; }
+    .idiom-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .idiom-card .idiom-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .idiom-card .idiom-text { font-size: 28px; font-weight: 700; color: var(--primary-dark); letter-spacing: 4px; }
+    .idiom-card .idiom-pinyin { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; font-style: italic; }
+    .idiom-card .idiom-section { margin-bottom: 10px; }
+    .idiom-card .idiom-label { font-size: 12px; font-weight: 600; color: var(--primary); background: #E3F2FD; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+    .idiom-card .idiom-content { font-size: 14px; color: var(--text); line-height: 1.7; }
+    .idiom-card .idiom-example { font-size: 13px; color: var(--text-secondary); font-style: italic; }
+    .idiom-card .idiom-similar, .idiom-card .idiom-opposite { font-size: 13px; }
+    .idiom-card .idiom-similar span { color: var(--success); }
+    .idiom-card .idiom-opposite span { color: var(--error); }
+    .idiom-card .copy-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: all 0.2s; flex-shrink: 0; }
+    .idiom-card .copy-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .random-btn { background: linear-gradient(135deg, #FF9800, #FFA726); color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+    .random-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); }
+    .stats-bar { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 16px; background: var(--bg); border-radius: 8px; font-size: 14px; color: var(--text-secondary); }
+    .stats-bar .stat-item { display: flex; align-items: center; gap: 4px; }
+    .stats-bar .stat-num { font-weight: 700; color: var(--primary); }
+    .highlight { background: #FFF9C4; padding: 0 2px; border-radius: 2px; }
+    .no-result { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+    .no-result .icon { font-size: 48px; margin-bottom: 16px; }
+    .initial-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .initial-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 13px; background: white; transition: all 0.2s; }
+    .initial-btn:hover, .initial-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>成语词典</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">📖 成语词典</h1>
+        <p style="color: var(--text-secondary);">收录常用成语，支持拼音首字母搜索，随机学习新成语</p>
+      </div>
+
+      <div class="card">
+        <div class="search-controls">
+          <div class="search-wrapper" style="flex:1; min-width:200px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" class="form-input" placeholder="输入成语或拼音首字母搜索..." oninput="onSearch()">
+          </div>
+          <button class="random-btn" onclick="randomIdiom()">🎲 随机学成语</button>
+        </div>
+        <div class="initial-filter" id="initialFilter"></div>
+      </div>
+
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-item">📚 共收录 <span class="stat-num" id="totalCount">0</span> 个成语</div>
+        <div class="stat-item">🔍 当前显示 <span class="stat-num" id="showCount">0</span> 个</div>
+      </div>
+
+      <div class="idiom-grid" id="idiomGrid"></div>
+      <div class="no-result" id="noResult" style="display:none;">
+        <div class="icon">🔍</div>
+        <p>未找到匹配的成语，试试其他关键词</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    // 成语词典数据
+    const IDIOMS = [
+      { idiom: "一帆风顺", pinyin: "yī fān fēng shùn", explain: "船挂着满帆顺风行驶。比喻非常顺利，没有任何阻碍。", source: "唐·孟郊《送崔爽之湖南》", example: "祝你此去一帆风顺，马到成功。", similar: "一路顺风、无往不利", opposite: "一波三折、节外生枝" },
+      { idiom: "画蛇添足", pinyin: "huà shé tiān zú", explain: "画蛇时给蛇添上脚。比喻做了多余的事，非但无益，反而不合适。", source: "《战国策·齐策二》", example: "这篇文章已经很完整了，你再加上这段就是画蛇添足。", similar: "多此一举、弄巧成拙", opposite: "恰到好处、画龙点睛" },
+      { idiom: "守株待兔", pinyin: "shǒu zhū dài tù", explain: "原比喻希图不经过努力而得到成功的侥幸心理。现也比喻死守狭隘经验，不知变通。", source: "《韩非子·五蠹》", example: "守株待兔的做法是行不通的，必须主动出击。", similar: "刻舟求剑、墨守成规", opposite: "随机应变、通权达变" },
+      { idiom: "亡羊补牢", pinyin: "wáng yáng bǔ láo", explain: "羊逃跑了再去修补羊圈，还不算晚。比喻出了问题以后想办法补救，可以防止继续受损失。", source: "《战国策·楚策四》", example: "虽然损失了一些，但现在亡羊补牢，为时未晚。", similar: "知错就改、见兔顾犬", opposite: "未雨绸缪、防患未然" },
+      { idiom: "对牛弹琴", pinyin: "duì niú tán qín", explain: "比喻对不讲道理的人讲道理，对不懂得美的人讲风雅。也用来讥讽人讲话时不看对象。", source: "汉·牟融《理惑论》", example: "跟他讲道理简直是 对牛弹琴。", similar: "白费口舌、问道于盲", opposite: "有的放矢、对症下药" },
+      { idiom: "狐假虎威", pinyin: "hú jiǎ hǔ wēi", explain: "狐狸假借老虎的威势。比喻依仗别人的势力欺压人。", source: "《战国策·楚策一》", example: "他不过是狐假虎威，借着上司的名义吓唬人罢了。", similar: "狗仗人势、仗势欺人", opposite: "独步天下、自力更生" },
+      { idiom: "掩耳盗铃", pinyin: "yǎn ěr dào líng", explain: "偷铃铛怕别人听见而捂住自己的耳朵。比喻自己欺骗自己，明明掩盖不住的事情偏要想法子掩盖。", source: "《吕氏春秋·自知》", example: "你这样做不过是掩耳盗铃，迟早会被发现的。", similar: "自欺欺人、弄巧成拙", opposite: "开诚布公、实事求是" },
+      { idiom: "愚公移山", pinyin: "yú gōng yí shān", explain: "比喻坚持不懈地改造自然和坚定不移地进行斗争。", source: "《列子·汤问》", example: "只要有愚公移山的精神，没有什么困难不能克服。", similar: "铁杵磨针、精卫填海", opposite: "半途而废、知难而退" },
+      { idiom: "刻舟求剑", pinyin: "kè zhōu qiú jiàn", explain: "比喻不懂事物已发展变化而仍静止地看问题。", source: "《吕氏春秋·察今》", example: "时代不同了，我们不能刻舟求剑，要与时俱进。", similar: "守株待兔、墨守成规", opposite: "因时制宜、随机应变" },
+      { idiom: "叶公好龙", pinyin: "yè gōng hào lóng", explain: "比喻表面上爱好某事物，实际上并不真正爱好。", source: "汉·刘向《新序·杂事》", example: "他说喜欢挑战，实际上是叶公好龙，真遇到困难就退缩了。", similar: "口是心非、表里不一", opposite: "名副其实、言行一致" },
+      { idiom: "自相矛盾", pinyin: "zì xiāng máo dùn", explain: "比喻自己说话做事前后抵触。", source: "《韩非子·难一》", example: "你的论点自相矛盾，根本站不住脚。", similar: "前后矛盾、漏洞百出", opposite: "自圆其说、天衣无缝" },
+      { idiom: "班门弄斧", pinyin: "bān mén nòng fǔ", explain: "在鲁班门前舞弄斧子。比喻在行家面前卖弄本领，不自量力。", source: "明·梅之涣《题李白墓》", example: "在您这位专家面前，我哪敢班门弄斧。", similar: "布鼓雷门、不自量力", opposite: "虚怀若谷、程门立雪" },
+      { idiom: "杯弓蛇影", pinyin: "bēi gōng shé yǐng", explain: "将映在酒杯里的弓影误认为蛇。比喻因疑神疑鬼而引起恐惧。", source: "《晋书·乐广传》", example: "你别杯弓蛇影了，根本没有那回事。", similar: "疑神疑鬼、草木皆兵", opposite: "坦然自若、处之泰然" },
+      { idiom: "破釜沉舟", pinyin: "pò fǔ chén zhōu", explain: "把饭锅打破，把渡船凿沉。比喻下定决心，不顾一切地干到底。", source: "《史记·项羽本纪》", example: "我们要有破釜沉舟的决心，才能取得最后的胜利。", similar: "背水一战、义无反顾", opposite: "优柔寡断、瞻前顾后" },
+      { idiom: "卧薪尝胆", pinyin: "wò xīn cháng dǎn", explain: "睡在柴草上，经常尝苦胆。形容人刻苦自励，发奋图强。", source: "《史记·越王勾践世家》", example: "他卧薪尝胆三年，终于东山再起。", similar: "发愤图强、励精图治", opposite: "自暴自弃、一蹶不振" },
+      { idiom: "纸上谈兵", pinyin: "zhǐ shàng tán bīng", explain: "在纸面上谈论打仗。比喻空谈理论，不能解决实际问题。", source: "《史记·廉颇蔺相如列传》", example: "光有理论不行，不能纸上谈兵，必须付诸实践。", similar: "坐而论道、华而不实", opposite: "身体力行、脚踏实地" },
+      { idiom: "望梅止渴", pinyin: "wàng méi zhǐ kě", explain: "想吃梅子就不由得流出口水，因而就不渴了。比喻愿望无法实现，用空想安慰自己。", source: "南朝宋·刘义庆《世说新语》", example: "这只是望梅止渴罢了，解决不了实际问题。", similar: "画饼充饥、指雁为羹", opposite: "实事求是" },
+      { idiom: "四面楚歌", pinyin: "sì miàn chǔ gē", explain: "比喻陷入四面受敌、处于孤立无援的窘迫境地。", source: "《史记·项羽本纪》", example: "公司经营不善，如今已是四面楚歌。", similar: "腹背受敌、走投无路", opposite: "旗开得胜、左右逢源" },
+      { idiom: "完璧归赵", pinyin: "wán bì guī zhào", explain: "本指蔺相如将和氏璧完好地自秦送回赵国。后比喻把原物完好地归还本人。", source: "《史记·廉颇蔺相如列传》", example: "这本书我看完了，现在完璧归赵。", similar: "物归原主", opposite: "巧取豪夺、支离破碎" },
+      { idiom: "负荆请罪", pinyin: "fù jīng qǐng zuì", explain: "背着荆条向对方请罪。表示向人认错赔罪。", source: "《史记·廉颇蔺相如列传》", example: "知道自己错了，就应该负荆请罪。", similar: "引咎自责、肉袒面缚", opposite: "兴师问罪" },
+      { idiom: "三顾茅庐", pinyin: "sān gù máo lú", explain: "原为汉末刘备访聘诸葛亮的故事。比喻真心诚意，一再邀请。", source: "三国蜀·诸葛亮《出师表》", example: "他三顾茅庐，终于请到了这位专家。", similar: "礼贤下士、求贤若渴", opposite: "拒人千里" },
+      { idiom: "胸有成竹", pinyin: "xiōng yǒu chéng zhú", explain: "原指画竹子之前心中先有竹子的形象。后比喻在做事之前已经有了成熟的计划。", source: "宋·苏轼《文与可画筼筜谷偃竹记》", example: "他对此胸有成竹，不必担心。", similar: "心中有数、成竹在胸", opposite: "心中无数、不知所措" },
+      { idiom: "画龙点睛", pinyin: "huà lóng diǎn jīng", explain: "原形容梁代画家张僧繇作画的神妙。后比喻写文章或讲话时，在关键处用几句话点明实质，使内容更加生动有力。", source: "唐·张彦远《历代名画记》", example: "这篇文章结尾的那段话起到了画龙点睛的作用。", similar: "锦上添花、点石成金", opposite: "画蛇添足、弄巧成拙" },
+      { idiom: "雪中送炭", pinyin: "xuě zhōng sòng tàn", explain: "在下雪天给人送炭取暖。比喻在别人急需时给以物质上或精神上的帮助。", source: "宋·范成大《大雪送炭与芥隐》", example: "你的帮助真是雪中送炭，太感谢了。", similar: "急人之困、济困扶危", opposite: "落井下石、雪上加霜" },
+      { idiom: "锦上添花", pinyin: "jǐn shàng tiān huā", explain: "好比在锦缎上再绣上花。比喻好上加好，美上添美。", source: "宋·黄庭坚《了了庵颂》", example: "这本是好事，你的加入更是锦上添花。", similar: "如虎添翼、好上加好", opposite: "雪上加霜" },
+      { idiom: "入木三分", pinyin: "rù mù sān fēn", explain: "相传王羲之在木板上写字，木工刻时，发现字迹透入木板三分深。形容书法极有笔力。现多比喻分析问题很深刻。", source: "唐·张怀瓘《书断》", example: "他的分析入木三分，令人佩服。", similar: "力透纸背、鞭辟入里", opposite: "不着边际、浮光掠影" },
+      { idiom: "栩栩如生", pinyin: "xǔ xǔ rú shēng", explain: "形容画作、雕塑中的艺术形象等生动逼真，就像活的一样。", source: "《庄子·齐物论》", example: "这幅画中的人物栩栩如生，仿佛要从画中走出来。", similar: "活灵活现、惟妙惟肖", opposite: "死气沉沉、毫无生气" },
+      { idiom: "一丝不苟", pinyin: "yī sī bù gǒu", explain: "形容办事认真，连最细微的地方也不马虎。", source: "清·吴敬梓《儒林外史》", example: "他对待工作一丝不苟，从不敷衍了事。", similar: "精益求精、谨小慎微", opposite: "粗心大意、马马虎虎" },
+      { idiom: "锲而不舍", pinyin: "qiè ér bù shě", explain: "不断地镂刻。比喻有恒心，有毅力。", source: "《荀子·劝学》", example: "只要锲而不舍地努力，一定能成功。", similar: "持之以恒、坚持不懈", opposite: "半途而废、浅尝辄止" },
+      { idiom: "举一反三", pinyin: "jǔ yī fǎn sān", explain: "从一件事情类推而知道许多事情。指善于推理，由此知彼。", source: "《论语·述而》", example: "学习要善于举一反三，触类旁通。", similar: "触类旁通、闻一知十", opposite: "囫囵吞枣、食而不化" },
+      { idiom: "温故知新", pinyin: "wēn gù zhī xīn", explain: "温习旧的知识，得到新的理解和体会。也指回忆过去，能更好地认识现在。", source: "《论语·为政》", example: "学习需要温故知新，不断巩固提高。", similar: "忆苦思甜、鉴往知来", opposite: "数典忘祖" },
+      { idiom: "不耻下问", pinyin: "bù chǐ xià wèn", explain: "不以向学问比自己差或辈分、地位比自己低的人请教为可耻。", source: "《论语·公冶长》", example: "他虽然已经是专家，仍然不耻下问。", similar: "虚怀若谷、谦虚谨慎", opposite: "好为人师、骄傲自满" },
+      { idiom: "学而不厌", pinyin: "xué ér bù yàn", explain: "学习总感到不满足。形容好学。", source: "《论语·述而》", example: "他学而不厌的精神值得我们学习。", similar: "手不释卷、孜孜不倦", opposite: "不学无术、浅尝辄止" },
+      { idiom: "三人行必有我师", pinyin: "sān rén xíng bì yǒu wǒ shī", explain: "几个人走在一起，其中必定有可以做我老师的人。指应该虚心向别人学习。", source: "《论语·述而》", example: "三人行必有我师，我们要善于向身边的人学习。", similar: "不耻下问、取长补短", opposite: "好为人师、自以为是" },
+      { idiom: "百折不挠", pinyin: "bǎi zhé bù náo", explain: "无论受到多少挫折都不退缩，形容意志坚强。", source: "汉·蔡邕《太尉乔玄碑》", example: "他凭着百折不挠的精神，终于攻克了技术难关。", similar: "不屈不挠、坚韧不拔", opposite: "一蹶不振、半途而废" },
+      { idiom: "乘风破浪", pinyin: "chéng fēng pò làng", explain: "船只乘着风势破浪前进。比喻排除困难，奋勇前进。", source: "《宋书·宗悫传》", example: "让我们乘风破浪，勇往直前。", similar: "披荆斩棘、高歌猛进", opposite: "畏缩不前、裹足不前" },
+      { idiom: "势如破竹", pinyin: "shì rú pò zhú", explain: "形势就像劈竹子，头上几节破开以后，下面各节顺着刀势就分开了。比喻节节胜利，毫无阻碍。", source: "《晋书·杜预传》", example: "我军势如破竹，连克数城。", similar: "锐不可当、所向披靡", opposite: "寸步难行、节节败退" },
+      { idiom: "风调雨顺", pinyin: "fēng tiáo yǔ shùn", explain: "风雨及时适宜。形容风雨适合农时。", source: "《旧唐书·礼仪志一》", example: "今年风调雨顺，一定是个丰收年。", similar: "五谷丰登、国泰民安", opposite: "天灾人祸、风雨交加" },
+      { idiom: "国泰民安", pinyin: "guó tài mín ān", explain: "国家太平，人民安乐。", source: "宋·吴自牧《梦梁录》", example: "改革开放以来，国泰民安，繁荣昌盛。", similar: "太平盛世、安居乐业", opposite: "国破家亡、民不聊生" },
+      { idiom: "安居乐业", pinyin: "ān jū lè yè", explain: "安于所居，乐于所业。指安定地生活，愉快地工作。", source: "《汉书·货殖列传》", example: "人民安居乐业，生活蒸蒸日上。", similar: "国泰民安、丰衣足食", opposite: "流离失所、颠沛流离" },
+      { idiom: "画饼充饥", pinyin: "huà bǐng chōng jī", explain: "画个饼来解决饥饿。比喻用空想来安慰自己。", source: "《三国志·魏志·卢毓传》", example: "光想不干，等于画饼充饥。", similar: "望梅止渴、纸上谈兵", opposite: "脚踏实地、实事求是" },
+      { idiom: "井底之蛙", pinyin: "jǐng dǐ zhī wā", explain: "井底下的青蛙只能看到井口那么大的一块天。比喻见识狭窄的人。", source: "《庄子·秋水》", example: "不做井底之蛙，要走出去看看外面的世界。", similar: "坐井观天、鼠目寸光", opposite: "见多识广、高瞻远瞩" },
+      { idiom: "鹤立鸡群", pinyin: "hè lì jī qún", explain: "比喻仪表或才能在周围一群人里显得很突出。", source: "晋·戴逵《竹林七贤论》", example: "他的才华鹤立鸡群，令人赞叹。", similar: "出类拔萃、卓尔不群", opposite: "碌碌无为、默默无闻" },
+      { idiom: "龙飞凤舞", pinyin: "lóng fēi fèng wǔ", explain: "原形容山势的蜿蜒雄壮，后也形容书法笔势有力，灵活舒展。", source: "宋·苏轼《表忠观碑》", example: "他的书法龙飞凤舞，气势非凡。", similar: "笔走龙蛇、挥洒自如", opposite: "信笔涂鸦" },
+      { idiom: "心旷神怡", pinyin: "xīn kuàng shén yí", explain: "心境开阔，精神愉快。", source: "宋·范仲淹《岳阳楼记》", example: "登上山顶，远眺美景，令人心旷神怡。", similar: "赏心悦目、悠然自得", opposite: "心烦意乱、忧心忡忡" },
+      { idiom: "心花怒放", pinyin: "xīn huā nù fàng", explain: "心里高兴得像花儿盛开一样。形容极其高兴。", source: "清·李宝嘉《文明小史》", example: "听到这个好消息，他心花怒放。", similar: "欣喜若狂、喜出望外", opposite: "心如刀割、愁眉苦脸" },
+      { idiom: "喜出望外", pinyin: "xǐ chū wàng wài", explain: "遇到出乎意料的喜事而特别高兴。", source: "宋·苏轼《与李之仪书》", example: "能够获得这个奖项，真是喜出望外。", similar: "大喜过望、喜不自胜", opposite: "大失所望、祸不单行" },
+      { idiom: "眉开眼笑", pinyin: "méi kāi yǎn xiào", explain: "眉头舒展，眼含笑意。形容高兴愉快的样子。", source: "元·王实甫《西厢记》", example: "奶奶看到孙子回来，顿时眉开眼笑。", similar: "笑逐颜开、眉飞色舞", opposite: "愁眉不展、愁眉苦脸" },
+      { idiom: "手舞足蹈", pinyin: "shǒu wǔ zú dǎo", explain: "两手舞动，两只脚也跳了起来。形容高兴到了极点。", source: "《诗经·周南·关雎》", example: "孩子们收到礼物，高兴得手舞足蹈。", similar: "欢天喜地、兴高采烈", opposite: "闷闷不乐、愁眉苦脸" },
+      { idiom: "兴高采烈", pinyin: "xìng gāo cǎi liè", explain: "原指文章志趣高尚，言词犀利。后多形容兴致高，精神饱满。", source: "南朝梁·刘勰《文心雕龙》", example: "同学们兴高采烈地参加联欢会。", similar: "欢天喜地、喜气洋洋", opposite: "无精打采、垂头丧气" },
+      { idiom: "垂头丧气", pinyin: "chuí tóu sàng qì", explain: "形容因失败或不顺利而情绪低落、萎蘼不振的样子。", source: "唐·韩愈《送穷文》", example: "考试没考好，他垂头丧气地走回了家。", similar: "灰心丧气、无精打采", opposite: "趾高气扬、兴高采烈" },
+      { idiom: "怒发冲冠", pinyin: "nù fà chōng guān", explain: "愤怒得头发直竖，把帽子都顶起来了。形容极度愤怒。", source: "《史记·廉颇蔺相如列传》", example: "听到这个不公的消息，他怒发冲冠。", similar: "怒不可遏、火冒三丈", opposite: "欣喜若狂、喜不自胜" },
+      { idiom: "义愤填膺", pinyin: "yì fèn tián yīng", explain: "发于正义的愤懑充满胸中。", source: "清·曾朴《孽海花》", example: "面对这种不公正的行为，大家义愤填膺。", similar: "怒火中烧、义愤填胸", opposite: "无动于衷、麻木不仁" },
+      { idiom: "心惊肉跳", pinyin: "xīn jīng ròu tiào", explain: "形容担心灾祸临头，恐慌不安。", source: "元·无名氏《争报恩》", example: "听到那个可怕的消息，我心惊肉跳。", similar: "心惊胆战、提心吊胆", opposite: "镇定自若、泰然自若" },
+      { idiom: "提心吊胆", pinyin: "tí xīn diào dǎn", explain: "形容十分担心或害怕。", source: "明·吴承恩《西游记》", example: "他提心吊胆地过了一个晚上。", similar: "心惊胆战、忐忑不安", opposite: "心安理得、高枕无忧" },
+      { idiom: "胆战心惊", pinyin: "dǎn zhàn xīn jīng", explain: "形容十分害怕。", source: "元·郑德辉《伷梅香》", example: "走在悬崖边的小路上，令人胆战心惊。", similar: "心惊肉跳、毛骨悚然", opposite: "无所畏惧、镇定自若" },
+      { idiom: "目瞪口呆", pinyin: "mù dèng kǒu dāi", explain: "形容因吃惊或害怕而发愣的样子。", source: "元·无名氏《赚蒯通》", example: "看到这个惊人的场面，大家都目瞪口呆。", similar: "瞠目结舌、呆若木鸡", opposite: "从容不迫、神色自若" },
+      { idiom: "呆若木鸡", pinyin: "dāi ruò mù jī", explain: "呆得像木头鸡一样。形容因恐惧或惊异而发愣的样子。", source: "《庄子·达生》", example: "听到这个噩耗，他呆若木鸡。", similar: "目瞪口呆、张口结舌", opposite: "神色自若、面不改色" },
+      { idiom: "窃窃私语", pinyin: "qiè qiè sī yǔ", explain: "背地里小声说话。", source: "唐·韩愈《顺宗实录》", example: "他们在角落里窃窃私语，不知在说什么。", similar: "交头接耳、窃窃私议", opposite: "高谈阔论、大声喧哗" },
+      { idiom: "口若悬河", pinyin: "kǒu ruò xuán hé", explain: "讲起话来滔滔不绝，像瀑布不停地奔流倾泻。形容能说会辩，说起来没个完。", source: "南朝宋·刘义庆《世说新语》", example: "他口若悬河，讲起故事来绘声绘色。", similar: "滔滔不绝、侃侃而谈", opposite: "沉默寡言、缄口不言" },
+      { idiom: "侃侃而谈", pinyin: "kǎn kǎn ér tán", explain: "理直气壮、从容不迫地说话。", source: "《论语·乡党》", example: "他在会上侃侃而谈，表达了自己的观点。", similar: "口若悬河、娓娓而谈", opposite: "沉默寡言、吞吞吐吐" },
+      { idiom: "语重心长", pinyin: "yǔ zhòng xīn cháng", explain: "话深刻有力，情意深长。形容对人真诚的劝告或忠告。", source: "清·洛日生《海国英雄记》", example: "老师语重心长地教导我们要好好学习。", similar: "苦口婆心、谆谆告诫", opposite: "冷嘲热讽、轻描淡写" },
+      { idiom: "滔滔不绝", pinyin: "tāo tāo bù jué", explain: "像流水那样毫不间断。指话很多，说起来没个完。", source: "五代后周·王仁裕《开元天宝遗事》", example: "他滔滔不绝地讲了两个小时。", similar: "口若悬河、源源不断", opposite: "沉默寡言、哑口无言" },
+      { idiom: "妙语连珠", pinyin: "miào yǔ lián zhū", explain: "巧妙风趣的话一个接一个。", source: "现代汉语", example: "他的演讲妙语连珠，赢得了阵阵掌声。", similar: "妙趣横生、出口成章", opposite: "笨嘴拙舌、语无伦次" },
+      { idiom: "出口成章", pinyin: "chū kǒu chéng zhāng", explain: "话说出来就是一篇文章。形容文思敏捷，口才好。", source: "《诗经·小雅·都人士》", example: "他博学多才，出口成章。", similar: "下笔成文、锦心绣口", opposite: "语无伦次、笨嘴拙舌" },
+      { idiom: "出类拔萃", pinyin: "chū lèi bá cuì", explain: "超出同类之上。多指人的品德才能。", source: "《孟子·公孙丑上》", example: "她在众多竞争者中出类拔萃，脱颖而出。", similar: "鹤立鸡群、超群绝伦", opposite: "碌碌无为、滥竽充数" },
+      { idiom: "才华横溢", pinyin: "cái huá héng yì", explain: "才华充分显露出来。", source: "现代汉语", example: "他是一位才华横溢的青年作家。", similar: "才高八斗、学富五车", opposite: "才疏学浅、胸无点墨" },
+      { idiom: "学富五车", pinyin: "xué fù wǔ chē", explain: "形容学问渊博。", source: "《庄子·天下》", example: "他学富五车，是大家公认的学者。", similar: "博学多才、才高八斗", opposite: "目不识丁、胸无点墨" },
+      { idiom: "博古通今", pinyin: "bó gǔ tōng jīn", explain: "通晓古今的事情。形容知识渊博。", source: "《孔子家语·观周》", example: "他博古通今，对历史很有研究。", similar: "博学多闻、学贯中西", opposite: "孤陋寡闻、才疏学浅" },
+      { idiom: "融会贯通", pinyin: "róng huì guàn tōng", explain: "把各方面的知识和道理融化汇合，得到全面透彻的理解。", source: "《朱子全书》", example: "学习知识要融会贯通，不能死记硬背。", similar: "举一反三、触类旁通", opposite: "囫囵吞枣、生吞活剥" },
+      { idiom: "专心致志", pinyin: "zhuān xīn zhì zhì", explain: "把心思全放在上面。形容一心一意，聚精会神。", source: "《孟子·告子上》", example: "他专心致志地学习，不受任何干扰。", similar: "聚精会神、全神贯注", opposite: "心不在焉、三心二意" },
+      { idiom: "聚精会神", pinyin: "jù jīng huì shén", explain: "原指君臣协力，集思广益。后形容精神高度集中。", source: "汉·王褒《圣主得贤臣颂》", example: "同学们聚精会神地听老师讲课。", similar: "全神贯注、专心致志", opposite: "心不在焉、漫不经心" },
+      { idiom: "全神贯注", pinyin: "quán shén guàn zhù", explain: "全部精神集中在一点上。形容注意力高度集中。", source: "现代汉语", example: "他全神贯注地做实验，连饭都忘了吃。", similar: "聚精会神、专心致志", opposite: "心不在焉、魂不守舍" },
+      { idiom: "坚持不懈", pinyin: "jiān chí bù xiè", explain: "坚持到底，一点不忪懈。", source: "现代汉语", example: "通过坚持不懈的努力，他终于实现了目标。", similar: "持之以恒、锲而不舍", opposite: "半途而废、有始无终" },
+      { idiom: "持之以恒", pinyin: "chí zhī yǐ héng", explain: "长久地坚持下去。", source: "清·曾国藩《家训》", example: "学习外语需要持之以恒的精神。", similar: "锲而不舍、坚持不渝", opposite: "半途而废、虎头蛇尾" },
+      { idiom: "循序渐进", pinyin: "xún xù jiàn jìn", explain: "指学习工作等按照一定的步骤逐渐深入或提高。", source: "《论语·宪问》", example: "学习要循序渐进，不能急于求成。", similar: "由浅入深、按部就班", opposite: "急于求成、一步登天" },
+      { idiom: "精益求精", pinyin: "yì qiú yì jīng", explain: "好了还求更好。", source: "《论语·学而》", example: "他对工作精益求精，从不满足于现状。", similar: "锦上添花、好上加好", opposite: "得过且过、粗制滥造" },
+      { idiom: "不骄不躁", pinyin: "bù jiāo bù zào", explain: "不骄傲，不急躁。", source: "现代汉语", example: "取得成绩后要不骄不躁，继续努力。", similar: "不卑不亢、谦虚谨慎", opposite: "骄傲自满、急功近利" },
+      { idiom: "谦虚谨慎", pinyin: "qiān xū jǐn shèn", explain: "虚心，不自满，慎重小心。", source: "现代汉语", example: "他为人谦虚谨慎，从不自吹自擂。", similar: "虚怀若谷、不骄不躁", opposite: "骄傲自大、狂妄自大" },
+      { idiom: "虚怀若谷", pinyin: "xū huái ruò gǔ", explain: "胸怀像山谷一样深广。形容十分谦虚，能容纳别人的意见。", source: "《老子》", example: "他虚怀若谷，善于听取不同意见。", similar: "谦虚谨慎、不耻下问", opposite: "目空一切、骄傲自满" },
+      { idiom: "大公无私", pinyin: "dà gōng wú sī", explain: "办事公正，没有私心。现多指从集体利益出发，毫无个人打算。", source: "汉·马融《忠经》", example: "他大公无私，深受大家的爱戴。", similar: "公正无私、铁面无私", opposite: "自私自利、假公济私" },
+      { idiom: "光明磊落", pinyin: "guāng míng lěi luò", explain: "胸怀坦白，正大光明。", source: "《晋书·石勒载记》", example: "做人要光明磊落，不做亏心事。", similar: "光明正大、堂堂正正", opposite: "阴险狡诈、鬼鬼祟祟" },
+      { idiom: "两袖清风", pinyin: "liǎng xiù qīng fēng", explain: "衣袖中除清风外，别无所有。比喻做官廉洁。", source: "明·于谦《入京》", example: "他为官多年，两袖清风，从不贪污受贿。", similar: "廉洁奉公、一尘不染", opposite: "贪赃枉法、中饱私囊" },
+      { idiom: "见义勇为", pinyin: "jiàn yì yǒng wéi", explain: "看到正义的事，就勇敢地去做。", source: "《论语·为政》", example: "他见义勇为的行为受到了大家的赞扬。", similar: "挺身而出、拔刀相助", opposite: "见死不救、袖手旁观" },
+      { idiom: "拾金不昧", pinyin: "shí jīn bù mèi", explain: "拾到东西并不隐藏下来据为己有。", source: "清·吴炽昌《客窗闲话》", example: "拾金不昧是中华民族的传统美德。", similar: "路不拾遗、物归原主", opposite: "据为己有、见利忘义" },
+      { idiom: "助人为乐", pinyin: "zhù rén wéi lè", explain: "帮助人就是快乐。", source: "现代汉语", example: "他一向助人为乐，邻里有困难都找他帮忙。", similar: "乐善好施、济困扶危", opposite: "落井下石、趁火打劫" },
+      { idiom: "舍己为人", pinyin: "shě jǐ wèi rén", explain: "舍弃自己的利益去帮助别人。", source: "《论语·先进》", example: "他舍己为人的精神值得我们学习。", similar: "大公无私、自我牺牲", opposite: "损人利己、自私自利" },
+      { idiom: "同甘共苦", pinyin: "tóng gān gòng kǔ", explain: "共同享受幸福，共同担当艰苦。", source: "《战国策·燕策一》", example: "他们同甘共苦，携手走过了几十年。", similar: "风雨同舟、荣辱与共", opposite: "同床异梦、分道扬镳" },
+      { idiom: "风雨同舟", pinyin: "fēng yǔ tóng zhōu", explain: "在狂风暴雨中同乘一条船，一起与风雨搏斗。比喻共同经历困难。", source: "《孙子·九地》", example: "我们风雨同舟，共度难关。", similar: "同甘共苦、患难与共", opposite: "背信弃义、分道扬镳" },
+      { idiom: "同心协力", pinyin: "tóng xīn xié lì", explain: "团结一致，共同努力。", source: "汉·贾谊《过秦论》", example: "只要大家同心协力，一定能克服困难。", similar: "齐心协力、群策群力", opposite: "各自为政、离心离德" },
+      { idiom: "众志成城", pinyin: "zhòng zhì chéng chéng", explain: "万众一心，像坚固的城堡一样不可摧毁。比喻大家团结一致，力量就无比强大。", source: "《国语·周语下》", example: "众志成城，我们一定能战胜自然灾害。", similar: "万众一心、同心协力", opposite: "一盘散沙、孤掌难鸣" },
+      { idiom: "齐心协力", pinyin: "qí xīn xié lì", explain: "形容认识一致，共同努力。", source: "《墨子·尚贤》", example: "只要大家齐心协力，没有办不成的事。", similar: "同心协力、群策群力", opposite: "各行其是、各自为政" },
+      { idiom: "和衷共济", pinyin: "hé zhōng gòng jì", explain: "大家一条心，共同渡过江河。比喻同心协力，克服困难。", source: "《尚书·皋陶谟》", example: "让我们和衷共济，共创美好未来。", similar: "风雨同舟、同心同德", opposite: "同床异梦、分崩离析" },
+      { idiom: "开天辟地", pinyin: "kāi tiān pì dì", explain: "古代神话传说：盘古氏开辟天地，开始有人类历史。后常比喻空前的，自古以来没有过的。", source: "三国吴·徐整《三五历纪》", example: "这是一项开天辟地的伟大事业。", similar: "史无前例、亘古未有", opposite: "司空见惯" },
+      { idiom: "翻天覆地", pinyin: "fān tiān fù dì", explain: "形容变化巨大而彻底。", source: "唐·刘商《胡笳十八拍》", example: "改革开放以来，中国发生了翻天覆地的变化。", similar: "天翻地覆、日新月异", opposite: "一成不变、依然如故" },
+      { idiom: "日新月异", pinyin: "rì xīn yuè yì", explain: "每天都在更新，每月都有变化。指发展或进步迅速，不断出现新事物、新气象。", source: "《礼记·大学》", example: "科技发展日新月异，我们必须不断学习。", similar: "突飞猛进、一日千里", opposite: "一成不变、停滞不前" },
+      { idiom: "蒸蒸日上", pinyin: "zhēng zhēng rì shàng", explain: "形容事业一天天向上发展。", source: "清·李宝嘉《官场现形记》", example: "公司业务蒸蒸日上，前景一片光明。", similar: "欣欣向荣、方兴未艾", opposite: "每况愈下、江河日下" },
+      { idiom: "欣欣向荣", pinyin: "xīn xīn xiàng róng", explain: "形容草木长得茂盛。比喻事业蓬勃发展，兴旺昌盛。", source: "晋·陶潜《归去来兮辞》", example: "祖国大地欣欣向荣，到处呈现新气象。", similar: "蒸蒸日上、朝气蓬勃", opposite: "每况愈下、日薄西山" },
+      { idiom: "如鱼得水", pinyin: "rú yú dé shuǐ", explain: "好像鱼得到水一样。比喻有所凭借。也比喻得到跟自己十分投合的人或对自己很合适的环境。", source: "《三国志·蜀志·诸葛亮传》", example: "他到了新公司如鱼得水，很快就做出了成绩。", similar: "如虎添翼、得心应手", opposite: "寸步难行、英雄无用武之地" },
+      { idiom: "得心应手", pinyin: "dé xīn yìng shǒu", explain: "心里怎么想，手就能怎么做。比喻技艺纯熟或做事情非常顺利。", source: "《庄子·天道》", example: "他做这项工作得心应手，驾轻就熟。", similar: "游刃有余、驾轻就熟", opposite: "力不从心、捉襟见肘" },
+      { idiom: "游刃有余", pinyin: "yóu rèn yǒu yú", explain: "刀刃运转于骨节空隙中，有回旋的余地。比喻工作熟练，有实际经验，解决问题毫不费事。", source: "《庄子·养生主》", example: "他处理这些问题游刃有余。", similar: "得心应手、应付自如", opposite: "捉襟见肘、力不从心" },
+      { idiom: "驾轻就熟", pinyin: "jià qīng jiù shú", explain: "驾轻车，走熟路。比喻对某事有经验，很熟悉，做起来容易。", source: "唐·韩愈《送石处士序》", example: "他做这行已经十几年了，驾轻就熟。", similar: "轻车熟路、得心应手", opposite: "半路出家、力不从心" },
+      { idiom: "循规蹈矩", pinyin: "xún guī dǎo jǔ", explain: "原指遵守规矩，不敢违反。现也指拘守旧准则，不敢稍做变动。", source: "宋·朱熹《答方宾生》", example: "他做事循规蹈矩，从不越雷池一步。", similar: "安分守己、规行矩步", opposite: "随心所欲、为所欲为" },
+      { idiom: "随心所欲", pinyin: "suí xīn suǒ yù", explain: "随着自己的意思，想要干什么就干什么。", source: "《论语·为政》", example: "退休以后，他过上了随心所欲的生活。", similar: "为所欲为、随性而为", opposite: "循规蹈矩、谨言慎行" },
+      { idiom: "天衣无缝", pinyin: "tiān yī wú fèng", explain: "神话传说，仙女的衣服没有衣缝。比喻事物周密完善，找不出什么毛病。", source: "前蜀·牛峤《灵怪录》", example: "这个计划天衣无缝，找不出任何破绽。", similar: "完美无缺、无懈可击", opposite: "漏洞百出、破绽百出" },
+      { idiom: "万无一失", pinyin: "wàn wú yī shī", explain: "形容非常有把握，绝对不会出差错。", source: "《史记·淮阴侯列传》", example: "经过反复检查，确保万无一失。", similar: "十拿九稳、稳操胜券", opposite: "漏洞百出、百密一疏" },
+      { idiom: "十全十美", pinyin: "shí quán shí měi", explain: "十分完美，毫无欠缺。", source: "《周礼·天官冢宰》", example: "世上没有十全十美的事。", similar: "完美无缺、尽善尽美", opposite: "美中不足、白璧微瑕" },
+      { idiom: "美中不足", pinyin: "měi zhōng bù zú", explain: "大体很好，但还有不足。", source: "明·凌濛初《初刻拍案惊奇》", example: "这次旅行非常愉快，美中不足的是天气不太好。", similar: "白璧微瑕、略有遗憾", opposite: "十全十美、完美无缺" },
+      { idiom: "无微不至", pinyin: "wú wēi bù zhì", explain: "没有一处细微的地方不照顾到。形容关怀、照顾得非常细心周到。", source: "宋·魏了翁《辞免督视军马》", example: "母亲无微不至地照顾着每一个孩子。", similar: "体贴入微、关怀备至", opposite: "漠不关心、置之不理" },
+      { idiom: "一视同仁", pinyin: "yī shì tóng rén", explain: "原指圣人对百姓一样看待，同施仁爱。后多表示对人同样看待，不分厚薄。", source: "唐·韩愈《原人》", example: "老师对所有学生一视同仁，从不偏心。", similar: "等量齐观、相提并论", opposite: "厚此薄彼、另眼相看" },
+      { idiom: "千变万化", pinyin: "qiān biàn wàn huà", explain: "形容变化极多。", source: "《列子·周穆王》", example: "商场形势千变万化，必须灵活应对。", similar: "变化多端、瞬息万变", opposite: "一成不变、依然如故" },
+      { idiom: "瞬息万变", pinyin: "shùn xī wàn biàn", explain: "在极短的时间内就有很多变化。形容变化很多很快。", source: "宋·胡宏《题上封寺》", example: "战场形势瞬息万变，指挥员必须随机应变。", similar: "千变万化、变幻莫测", opposite: "一成不变、亘古不变" },
+      { idiom: "变幻莫测", pinyin: "biàn huàn mò cè", explain: "变化很多，不能预料。", source: "唐·韩愈《殿中少监马君墓志》", example: "天气变幻莫测，出门记得带伞。", similar: "变化无常、千变万化", opposite: "一成不变、始终如一" },
+      { idiom: "惊天动地", pinyin: "jīng tiān dòng dì", explain: "使天地惊动。形容某个事件的声势或意义极大。", source: "唐·白居易《李白墓》", example: "他做出了惊天动地的伟业。", similar: "震天动地、轰轰烈烈", opposite: "无声无息、默默无闻" },
+      { idiom: "惊心动魄", pinyin: "jīng xīn dòng pò", explain: "使人神魂震惊。原指文辞优美，意境深远，使人感受极深，震动极大。", source: "南朝梁·钟嵘《诗品》", example: "这部惊心动魄的电影让人印象深刻。", similar: "触目惊心、惊天动地", opposite: "平淡无奇、索然无味" },
+      { idiom: "沧海桑田", pinyin: "cāng hǎi sāng tián", explain: "大海变成桑田，桑田变成大海。比喻世事变化很大。", source: "晋·葛洪《神仙传·麻姑》", example: "几十年过去了，这里已是沧海桑田。", similar: "日新月异、时过境迁", opposite: "一成不变" },
+      { idiom: "世外桃源", pinyin: "shì wài táo yuán", explain: "原指与现实社会隔绝、生活安乐的理想境界。后也指环境幽静生活安逸的地方。", source: "晋·陶潜《桃花源记》", example: "这个小山村就像世外桃源一般宁静美好。", similar: "洞天福地、人间仙境", opposite: "人间地狱" },
+      { idiom: "天长地久", pinyin: "tiān cháng dì jiǔ", explain: "跟天和地存在的时间那样长。形容时间悠久。也形容永远不变（多指爱情）。", source: "《老子》", example: "愿我们的友谊天长地久。", similar: "天荒地老、海枯石烂", opposite: "昙花一现、稍纵即逝" },
+      { idiom: "海枯石烂", pinyin: "hǎi kū shí làn", explain: "海水干涸、石头腐烂。形容历时久远。比喻坚定的意志永远不变。", source: "宋·王奕《法曲献仙音》", example: "即使海枯石烂，我对你的爱也不会改变。", similar: "天长地久、地老天荒", opposite: "昙花一现" },
+      { idiom: "花好月圆", pinyin: "huā hǎo yuè yuán", explain: "花儿正盛开，月亮正圆满。比喻美好圆满。多用于祝贺人新婚。", source: "宋·张先《木兰花》", example: "祝你们花好月圆，白头偕老。", similar: "鸾凤和鸣、百年好合", opposite: "花残月缺" },
+      { idiom: "花前月下", pinyin: "huā qián yuè xià", explain: "本指游乐休息的环境。后多指谈情说爱的处所。", source: "唐·白居易《老病》", example: "他们经常在花前月下约会。", similar: "月下花前、风花雪月", opposite: "" },
+      { idiom: "鸟语花香", pinyin: "niǎo yǔ huā xiāng", explain: "鸟叫得好听，花开得喷香。形容春天的美好景象。", source: "宋·吕本中《紫薇·庵居》", example: "春天来了，公园里鸟语花香，景色宜人。", similar: "山清水秀、春光明媚", opposite: "百花凋零、满目疮痍" },
+      { idiom: "山清水秀", pinyin: "shān qīng shuǐ xiù", explain: "形容风景优美。", source: "宋·黄庭坚《蓦山溪》", example: "这里山清水秀，是个旅游的好地方。", similar: "山明水秀、鸟语花香", opposite: "穷山恶水、荒山野岭" },
+      { idiom: "湖光山色", pinyin: "hú guāng shān sè", explain: "湖的风光，山的景色。指有水有山，风景秀丽。", source: "宋·吴自牧《梦梁录》", example: "西湖的湖光山色令人流连忘返。", similar: "山光水色、锦绣河山", opposite: "穷山恶水" },
+      { idiom: "春暖花开", pinyin: "chūn nuǎn huā kāi", explain: "春天气候温暖，百花盛开，景色优美。比喻游览、观赏的大好时机。", source: "明·朱国祯《涌幢小品》", example: "春暖花开的时节，正是外出踏青的好时候。", similar: "春光明媚、百花齐放", opposite: "天寒地冻、冰天雪地" },
+      { idiom: "秋高气爽", pinyin: "qiū gāo qì shuǎng", explain: "形容秋季晴空万里，天气清爽。", source: "唐·杜甫《崔氏东山草堂》", example: "秋高气爽，正是登高望远的好时节。", similar: "天高气爽、秋色宜人", opposite: "烈日炎炎、寒冬腊月" },
+      { idiom: "风和日丽", pinyin: "fēng hé rì lì", explain: "和风习习，阳光灿烂。形容晴朗暖和的天气。", source: "元·李爱山《集贤宾》", example: "今天风和日丽，适合出去散步。", similar: "阳光明媚、春光明媚", opposite: "风雨交加、狂风暴雨" },
+      { idiom: "冰天雪地", pinyin: "bīng tiān xuě dì", explain: "形容冰雪漫天盖地。", source: "清·蒋士铨《鸡毛房》", example: "北方的冬天冰天雪地，寒风刺骨。", similar: "天寒地冻、银装素裹", opposite: "春暖花开、骄阳似火" },
+      { idiom: "骄阳似火", pinyin: "jiāo yáng sì huǒ", explain: "强烈的阳光好像烈火一样。形容天气非常炎热。", source: "现代汉语", example: "骄阳似火的夏天，人们纷纷躲进空调房。", similar: "烈日炎炎、赤日炎炎", opposite: "冰天雪地、天寒地冻" },
+      { idiom: "暴风骤雨", pinyin: "bào fēng zhòu yǔ", explain: "来势急速而猛烈的大风雨。比喻声势浩大，发展急速而猛烈。", source: "《老子》", example: "这场暴风骤雨来得突然，去得也快。", similar: "狂风暴雨、疾风暴雨", opposite: "和风细雨、风平浪静" },
+      { idiom: "风平浪静", pinyin: "fēng píng làng jìng", explain: "指没有风浪。比喻平静无事。", source: "宋·陆九渊《语录》", example: "海面上风平浪静，船只平稳地行驶。", similar: "平安无事、一帆风顺", opposite: "惊涛骇浪、暴风骤雨" },
+      { idiom: "水落石出", pinyin: "shuǐ luò shí chū", explain: "水落下去，水底的石头就露出来。比喻事情的真相完全显露出来。", source: "宋·欧阳修《醉翁亭记》", example: "经过调查，真相终于水落石出。", similar: "真相大白、原形毕露", opposite: "不明真相、扑朔迷离" },
+      { idiom: "柳暗花明", pinyin: "liǔ àn huā míng", explain: "垂柳浓密，鲜花夺目。形容柳树成荫，繁花似锦的春天景象。也比喻在困难中遇到转机。", source: "宋·陆游《游山西村》", example: "正当大家一筹莫展时，事情突然柳暗花明。", similar: "峰回路转、绝处逢生", opposite: "山穷水尽、走投无路" },
+      { idiom: "水到渠成", pinyin: "shuǐ dào qú chéng", explain: "水流到之处便有渠道。比喻有条件之后，事情自然会成功。", source: "宋·苏轼《答秦太虚书》", example: "只要基础扎实，成功自然水到渠成。", similar: "瓜熟蒂落、顺理成章", opposite: "欲速不达、拔苗助长" },
+      { idiom: "瓜熟蒂落", pinyin: "guā shú dì luò", explain: "瓜熟了，瓜蒂自然脱落。指时机一旦成熟，事情自然成功。", source: "宋·张君房《云笈七签》", example: "不要着急，瓜熟蒂落，时机到了自然会成功。", similar: "水到渠成、顺理成章", opposite: "欲速不达" },
+      { idiom: "锦囊妙计", pinyin: "jǐn náng miào jì", explain: "旧小说里描写足智多谋的人把对付敌方的计策写在纸条上，放在锦囊里，以便当事人在紧急时拆阅。比喻有准备的巧妙办法。", source: "明·罗贯中《三国演义》", example: "他已经准备了锦囊妙计来应对各种情况。", similar: "神机妙算、万全之策", opposite: "无计可施、束手无策" },
+      { idiom: "神机妙算", pinyin: "shén jī miào suàn", explain: "形容预料准确，善于估计形势，决定策略。", source: "《后汉书·王涣传》", example: "诸葛亮神机妙算，令人佩服。", similar: "锦囊妙计、料事如神", opposite: "无计可施、束手无策" },
+      { idiom: "足智多谋", pinyin: "zú zhì duō móu", explain: "富有智慧，善于谋划。形容人善于料事和用计。", source: "元·无名氏《连环计》", example: "他足智多谋，是团队中的智囊。", similar: "老谋深算、多谋善断", opposite: "愚昧无知、束手无策" },
+      { idiom: "老谋深算", pinyin: "lǎo móu shēn suàn", explain: "周密的筹划，深远的打算。形容人办事精明老练。", source: "清·曾朴《孽海花》", example: "他是个老谋深算的商人。", similar: "足智多谋、深谋远虑", opposite: "初出茅庐、毫无经验" },
+      { idiom: "未雨绸缪", pinyin: "wèi yǔ chóu móu", explain: "天还没有下雨，先把门窗绑牢。比喻事先做好准备工作。", source: "《诗经·豳风·鸱号》", example: "我们应该未雨绸缪，提前做好防洪准备。", similar: "防患未然、有备无患", opposite: "临渴掘井、亡羊补牢" },
+      { idiom: "防患未然", pinyin: "fáng huàn wèi rán", explain: "防止事故或祸害于尚未发生之前。", source: "《周易·既济》", example: "防火工作要防患未然，不能等出了事才重视。", similar: "未雨绸缪、防微杜渐", opposite: "临渴掘井、亡羊补牢" },
+      { idiom: "居安思危", pinyin: "jū ān sī wēi", explain: "虽然处在平安的环境里，也想到有出现危险的可能。指随时有应付意外事件的思想准备。", source: "《左传·襄公十一年》", example: "在成绩面前要居安思危，不能骄傲自满。", similar: "安不忘危、未雨绸缪", opposite: "高枕无忧、麻痹大意" },
+      { idiom: "高枕无忧", pinyin: "gāo zhěn wú yōu", explain: "垫高枕头睡觉，无忧无虑。比喻思想麻痹，丧失警惕。", source: "《战国策·齐策四》", example: "不能因为一时的安全就高枕无忧。", similar: "无忧无虑、麻痹大意", opposite: "居安思危、提心吊胆" },
+      { idiom: "朝三暮四", pinyin: "zhāo sān mù sì", explain: "原指玩弄手法欺骗人。后用来比喻常常变卦，反复无常。", source: "《庄子·齐物论》", example: "做人不能朝三暮四，要言行一致。", similar: "朝秦暮楚、反复无常", opposite: "始终如一、坚定不移" },
+      { idiom: "半途而废", pinyin: "bàn tú ér fèi", explain: "做事不能善始善终。", source: "《礼记·中庸》", example: "学习贵在坚持，不能半途而废。", similar: "有始无终、功亏一篑", opposite: "坚持不懈、持之以恒" },
+      { idiom: "功亏一篑", pinyin: "gōng kuī yī kuì", explain: "堆九仞高的山，只缺一筐土而不能完成。比喻做一件事只差最后一点没能完成。", source: "《尚书·旅獒》", example: "千万不能功亏一篑，坚持到底就是胜利。", similar: "半途而废、前功尽弃", opposite: "善始善终、大功告成" },
+      { idiom: "前功尽弃", pinyin: "qián gōng jìn qì", explain: "以前的功劳全部丢失。也指以前的努力全部白费。", source: "《战国策·西周策》", example: "如果不坚持下去，就会前功尽弃。", similar: "功亏一篑、付之东流", opposite: "大功告成、功成名就" },
+      { idiom: "因小失大", pinyin: "yīn xiǎo shī dà", explain: "为了小的利益，造成大的损失。", source: "汉·刘昼《新论》", example: "不要因小失大，为了一点蝇头小利而失去更大的机会。", similar: "得不偿失、因噎废食", opposite: "一举两得、两全其美" },
+      { idiom: "得不偿失", pinyin: "dé bù cháng shī", explain: "所得的利益抵偿不了所受的损失。", source: "宋·苏轼《和子由除日见寄》", example: "为了省钱而买劣质产品，最后得不偿失。", similar: "因小失大、得不偿失", opposite: "一举两得、一本万利" },
+      { idiom: "一举两得", pinyin: "yī jǔ liǎng dé", explain: "做一件事得到两方面的好处。", source: "《晋书·束皙传》", example: "这样做既环保又省钱，一举两得。", similar: "一箭双雕、两全其美", opposite: "得不偿失、顾此失彼" },
+      { idiom: "一箭双雕", pinyin: "yī jiàn shuāng diāo", explain: "原指射箭技术高超，一箭射中两只雕。后比喻做一件事达到两个目的。", source: "《北史·长孙晟传》", example: "这个方案一箭双雕，同时解决了两个问题。", similar: "一举两得、两全其美", opposite: "事倍功半、得不偿失" },
+      { idiom: "事半功倍", pinyin: "shì bàn gōng bèi", explain: "指做事得法，因而费力小，收效大。", source: "《孟子·公孙丑上》", example: "找到了正确的学习方法，就能事半功倍。", similar: "一举两得、一本万利", opposite: "事倍功半、得不偿失" },
+      { idiom: "事倍功半", pinyin: "shì bèi gōng bàn", explain: "指工作费力大，收效小。", source: "清·李宝嘉《官场现形记》", example: "方法不对，就会事倍功半。", similar: "劳而无功、吃力不讨好", opposite: "事半功倍、一举两得" },
+      { idiom: "弄巧成拙", pinyin: "nòng qiǎo chéng zhuō", explain: "本想耍弄聪明，结果做了蠢事。", source: "宋·黄庭坚《拙轩颂》", example: "他想讨好别人，结果弄巧成拙。", similar: "画蛇添足、多此一举", opposite: "恰到好处、歪打正着" },
+      { idiom: "适得其反", pinyin: "shì dé qí fǎn", explain: "恰恰得到与预期相反的结果。", source: "清·魏源《筹海篇》", example: "过度保护孩子，往往适得其反。", similar: "事与愿违、弄巧成拙", opposite: "如愿以偿、称心如意" },
+      { idiom: "事与愿违", pinyin: "shì yǔ yuàn wéi", explain: "事实与愿望相反。指原来打算做的事没能做到。", source: "三国魏·嵇康《幽愤》", example: "没想到事与愿违，计划全都泡汤了。", similar: "适得其反、大失所望", opposite: "如愿以偿、称心如意" },
+      { idiom: "心想事成", pinyin: "xīn xiǎng shì chéng", explain: "想到什么就能做成什么。形容愿望都能实现。", source: "现代汉语", example: "祝你新的一年心想事成，万事如意。", similar: "如愿以偿、万事如意", opposite: "事与愿违" },
+      { idiom: "万事如意", pinyin: "wàn shì rú yì", explain: "一切都符合心意。", source: "现代汉语", example: "祝大家新年快乐，万事如意。", similar: "心想事成、一帆风顺", opposite: "事事不顺、万事不顺" },
+      { idiom: "年富力强", pinyin: "nián fù lì qiáng", explain: "形容年纪轻，精力旺盛。", source: "《论语·子罕》", example: "公司需要年富力强的人才来推动发展。", similar: "年轻力壮、风华正茂", opposite: "年老体弱、老态龙钟" },
+      { idiom: "老当益壮", pinyin: "lǎo dāng yì zhuàng", explain: "年纪虽老而志气更旺盛，干劲更足。", source: "《后汉书·马援传》", example: "他虽然已经七十多岁了，仍然老当益壮。", similar: "老骥伏枥、宝刀不老", opposite: "未老先衰、老气横秋" },
+      { idiom: "老骥伏枥", pinyin: "lǎo jì fú lì", explain: "年老的千里马虽然伏处在马槽上，但志向仍然是跑千里。比喻有志向的人虽然年老，仍有雄心壮志。", source: "三国魏·曹操《步出夏门行》", example: "老骥伏枥，志在千里，烈士暮年，壮心不已。", similar: "老当益壮、宝刀不老", opposite: "未老先衰" },
+      { idiom: "朝气蓬勃", pinyin: "zhāo qì péng bó", explain: "形容充满了生命和活力。", source: "现代汉语", example: "年轻人朝气蓬勃，是国家的未来和希望。", similar: "生机勃勃、意气风发", opposite: "死气沉沉、暮气沉沉" },
+      { idiom: "生机勃勃", pinyin: "shēng jī bó bó", explain: "形容自然界充满生命力，或社会生活活跃。", source: "现代汉语", example: "春天来了，大地一片生机勃勃的景象。", similar: "朝气蓬勃、欣欣向荣", opposite: "死气沉沉、毫无生气" },
+      { idiom: "意气风发", pinyin: "yì qì fēng fā", explain: "形容精神振奋，气概豪迈。", source: "三国魏·曹植《魏德论》", example: "同学们意气风发，对未来充满信心。", similar: "斗志昂扬、神采飞扬", opposite: "垂头丧气、心灰意冷" },
+      { idiom: "斗志昂扬", pinyin: "dòu zhì áng yáng", explain: "斗争的意志旺盛。", source: "现代汉语", example: "战士们斗志昂扬地奔赴前线。", similar: "意气风发、精神抖擞", opposite: "垂头丧气、萎靡不振" },
+      { idiom: "精神抖擞", pinyin: "jīng shén dǒu sǒu", explain: "形容精神振奋。", source: "宋·释道原《景德传灯录》", example: "他精神抖擞地走上了讲台。", similar: "精神焕发、神采奕奕", opposite: "无精打采、萎靡不振" },
+      { idiom: "容光焕发", pinyin: "róng guāng huàn fā", explain: "脸上的光彩四射。形容身体健康、精神饱满。", source: "清·蒲松龄《聊斋志异》", example: "经过休养，他容光焕发，精神很好。", similar: "神采奕奕、精神焕发", opposite: "面黄肌瘦、萎靡不振" },
+      { idiom: "神采奕奕", pinyin: "shén cǎi yì yì", explain: "形容精神饱满，容光焕发。", source: "明·沈德符《万历野获编》", example: "老人虽然年过八旬，但仍然神采奕奕。", similar: "精神焕发、容光焕发", opposite: "无精打采、萎靡不振" },
+      { idiom: "满面春风", pinyin: "mǎn miàn chūn fēng", explain: "形容心情愉快，满脸笑容。", source: "宋·陈与义《寓居刘仓廨中》", example: "他满面春风地走进来，看来有什么喜事。", similar: "笑容满面、喜气洋洋", opposite: "愁眉苦脸、垂头丧气" },
+      { idiom: "笑容可掬", pinyin: "xiào róng kě jū", explain: "形容笑容满面，讨人喜欢的样子。", source: "明·罗贯中《三国演义》", example: "老师笑容可掬地迎接每一位新同学。", similar: "笑容满面、和蔼可亲", opposite: "愁眉苦脸、冷若冰霜" },
+      { idiom: "和蔼可亲", pinyin: "hé ǎi kě qīn", explain: "态度温和，容易接近。", source: "明·李开先《贺邑令贺洪滨奖异序》", example: "奶奶和蔼可亲，孩子们都喜欢她。", similar: "平易近人、和颜悦色", opposite: "冷若冰霜、凶神恶煞" },
+      { idiom: "平易近人", pinyin: "píng yì jìn rén", explain: "对人和蔼可亲，没有架子，使人容易接近。也指文字浅显，容易了解。", source: "《史记·鲁周公世家》", example: "他虽然身居高位，但平易近人。", similar: "和蔼可亲、和颜悦色", opposite: "盛气凌人、高高在上" },
+      { idiom: "盛气凌人", pinyin: "shèng qì líng rén", explain: "以骄横的气势压人。形容傲慢自大，气势逼人。", source: "宋·朱熹《朱子全书》", example: "他总是盛气凌人，让人难以接近。", similar: "目中无人、不可一世", opposite: "平易近人、和蔼可亲" },
+      { idiom: "目中无人", pinyin: "mù zhōng wú rén", explain: "眼里没有别人。形容骄傲自大，看不起人。", source: "明·冯梦龙《东周列国志》", example: "他目中无人的态度让同事们很反感。", similar: "目空一切、狂妄自大", opposite: "虚怀若谷、平易近人" },
+      { idiom: "目空一切", pinyin: "mù kōng yī qiè", explain: "什么都不放在眼里。形容极端骄傲自大。", source: "清·李汝珍《镜花缘》", example: "他自以为才华出众，目空一切。", similar: "目中无人、不可一世", opposite: "虚怀若谷、谦虚谨慎" },
+      { idiom: "自以为是", pinyin: "zì yǐ wéi shì", explain: "总以为自己是对的。形容主观，不虚心。", source: "《孟子·尽心下》", example: "他自以为是，从不听取别人的意见。", similar: "固执己见、刚愎自用", opposite: "虚怀若谷、从善如流" },
+      { idiom: "刚愎自用", pinyin: "gāng bì zì yòng", explain: "十分固执自信，不考虑别人的意见。", source: "《左传·宣公十二年》", example: "领导刚愎自用，最终导致了失败。", similar: "自以为是、固执己见", opposite: "虚怀若谷、从谏如流" },
+      { idiom: "固执己见", pinyin: "gù zhí jǐ jiàn", explain: "顽固地坚持自己的意见，不肯改变。", source: "《宋史·陈宓传》", example: "他固执己见，不愿接受新的方案。", similar: "刚愎自用、一意孤行", opposite: "从善如流、集思广益" },
+      { idiom: "一意孤行", pinyin: "yī yì gū xíng", explain: "指不接受别人的劝告，顽固地按照自己的主观想法去做。", source: "《史记·酷吏列传》", example: "他一意孤行，最终酿成了大错。", similar: "固执己见、独断专行", opposite: "集思广益、从善如流" },
+      { idiom: "独断专行", pinyin: "dú duàn zhuān xíng", explain: "行事专断，不考虑别人的意见。形容作风不民主。", source: "现代汉语", example: "领导独断专行，不听取群众意见。", similar: "一意孤行、刚愎自用", opposite: "集思广益、群策群力" },
+      { idiom: "集思广益", pinyin: "jí sī guǎng yì", explain: "集中群众的智慧，广泛吸收有益的意见。", source: "三国蜀·诸葛亮《教与军师长史参军掾属》", example: "我们应该集思广益，共同寻找解决办法。", similar: "群策群力、博采众长", opposite: "独断专行、一意孤行" },
+      { idiom: "群策群力", pinyin: "qún cè qún lì", explain: "大家出主意，大家出力量。形容发挥集体的智慧和力量。", source: "汉·扬雄《法言·重黎》", example: "只要大家群策群力，没有克服不了的困难。", similar: "集思广益、同心协力", opposite: "独断专行、各自为政" },
+      { idiom: "知人善任", pinyin: "zhī rén shàn rèn", explain: "善于认识人的品德和才能，最合理地使用。", source: "汉·班彪《王命论》", example: "他知人善任，把每个人都安排在合适的岗位上。", similar: "任人唯贤、量才录用", opposite: "任人唯亲、大材小用" },
+      { idiom: "任人唯贤", pinyin: "rèn rén wéi xián", explain: "任用才德兼备的人，而不管他跟自己的关系是否密切。", source: "《尚书·咸有一德》", example: "选拔干部要任人唯贤，不能任人唯亲。", similar: "知人善任、量才录用", opposite: "任人唯亲、拉帮结派" },
+      { idiom: "礼贤下士", pinyin: "lǐ xián xià shì", explain: "对有才有德的人以礼相待，对一般有才能的人不计自己的身分去结交。", source: "《宋书·江夏文献王义恭传》", example: "他礼贤下士，广纳人才。", similar: "三顾茅庐、求贤若渴", opposite: "嫉贤妒能、拒人千里" },
+      { idiom: "求贤若渴", pinyin: "qiú xián ruò kě", explain: "像口渴思饮那样访求贤士。形容罗致人才的迫切。", source: "《后汉书·周举传》", example: "公司求贤若渴，大量招聘优秀人才。", similar: "礼贤下士、三顾茅庐", opposite: "嫉贤妒能" },
+      { idiom: "大义灭亲", pinyin: "dà yì miè qīn", explain: "为了维护正义，对犯罪的亲属不徇私情，使受到应得的惩罚。", source: "《左传·隐公四年》", example: "他大义灭亲，举报了自己儿子的违法行为。", similar: "铁面无私、公正无私", opposite: "徇私枉法、包庇纵容" },
+      { idiom: "铁面无私", pinyin: "tiě miàn wú sī", explain: "形容公正严明，不怕权势，不讲情面。", source: "清·曹雪芹《红楼梦》", example: "他做审判工作铁面无私，秉公执法。", similar: "大公无私、刚正不阿", opposite: "徇私舞弊、营私舞弊" },
+      { idiom: "刚正不阿", pinyin: "gāng zhèng bù ē", explain: "刚强正直，不逢迎，无偏私。", source: "明·余继登《典故纪闻》", example: "他为人刚正不阿，深得百姓爱戴。", similar: "铁面无私、正直不阿", opposite: "阿谀奉承、趋炎附势" },
+      { idiom: "阿谀奉承", pinyin: "ē yú fèng chéng", explain: "迎合别人，竭力向人讨好。", source: "明·东鲁古狂生《醉醒石》", example: "他最讨厌那些阿谀奉承的人。", similar: "溜须拍马、趋炎附势", opposite: "刚正不阿、直言不讳" },
+      { idiom: "趋炎附势", pinyin: "qū yán fù shì", explain: "奉承和依附有权有势的人。", source: "《宋史·李垂传》", example: "他为人正直，从不趋炎附势。", similar: "阿谀奉承、攀龙附凤", opposite: "刚正不阿、不卑不亢" },
+      { idiom: "厚颜无耻", pinyin: "hòu yán wú chǐ", explain: "指人脸皮厚，不知羞耻。", source: "南朝齐·孔稚圭《北山移文》", example: "做了错事还理直气壮，真是厚颜无耻。", similar: "恬不知耻、无耻之尤", opposite: "知耻后勇、自惭形秽" },
+      { idiom: "恬不知耻", pinyin: "tián bù zhī chǐ", explain: "做了坏事满不在乎，一点儿也不感到羞耻。", source: "唐·冯贽《云仙杂记》", example: "他做了那么丢人的事，居然恬不知耻。", similar: "厚颜无耻、寡廉鲜耻", opposite: "知耻后勇、自惭形秽" },
+      { idiom: "厚德载物", pinyin: "hòu dé zài wù", explain: "旧指道德高尚者能承担重大任务。", source: "《周易·坤》", example: "做人要厚德载物，宽容大度。", similar: "德高望重、上善若水", opposite: "德薄才疏" },
+      { idiom: "上善若水", pinyin: "shàng shàn ruò shuǐ", explain: "最高的善像水一样。喻指做人的方法，即做人应如水，帮助万物，默默不争。", source: "《道德经》", example: "上善若水，水善利万物而不争。", similar: "厚德载物、大爱无疆", opposite: "" },
+      { idiom: "大智若愚", pinyin: "dà zhì ruò yú", explain: "才智很高而不露锋芒，表面上看好像愚笨。", source: "宋·苏轼《贺欧阳少师致仕启》", example: "真正的高手往往大智若愚，不显山不露水。", similar: "大巧若拙、深藏不露", opposite: "锋芒毕露、自作聪明" },
+      { idiom: "深藏若虚", pinyin: "shēn cáng ruò xū", explain: "把宝贵的东西藏起来，好像没有这东西一样。比喻人有真才实学，但不爱在人前卖弄。", source: "《史记·老子韩非列传》", example: "他学问很深，却深藏若虚，从不炫耀。", similar: "大智若愚、不露锋芒", opposite: "锋芒毕露、自吹自擂" },
+      { idiom: "沧海一粟", pinyin: "cāng hǎi yī sù", explain: "大海里的一粒谷子。比喻非常渺小。", source: "宋·苏轼《前赤壁赋》", example: "个人的力量在历史长河中不过是沧海一粟。", similar: "九牛一毛、微不足道", opposite: "举足轻重、不可忽视" },
+      { idiom: "九牛一毛", pinyin: "jiǔ niú yī máo", explain: "九条牛身上的一根毛。比喻极大数量中极微小的数量，微不足道。", source: "汉·司马迁《报任少卿书》", example: "这点损失对他来说不过是九牛一毛。", similar: "沧海一粟、微不足道", opposite: "举足轻重、不可小觑" },
+      { idiom: "微不足道", pinyin: "wēi bù zú dào", explain: "微小得很，不值得一提。指意义、价值等小得不值得一提。", source: "《穀梁传·隐公七年》", example: "这只不过是微不足道的小事。", similar: "微乎其微、不足挂齿", opposite: "举足轻重、非同小可" },
+      { idiom: "举足轻重", pinyin: "jǔ zú qīng zhòng", explain: "只要脚稍微移动一下，就会影响两边的轻重。指处于重要地位，一举一动都足以影响全局。", source: "《后汉书·窦融传》", example: "他在公司里起着举足轻重的作用。", similar: "至关重要、非同小可", opposite: "无足轻重、微不足道" },
+      { idiom: "无足轻重", pinyin: "wú zú qīng zhòng", explain: "没有它并不轻些，有它也并不重些。指无关紧要。", source: "明·沈德符《万历野获编》", example: "不要把这个问题看成无足轻重的小事。", similar: "无关紧要、微不足道", opposite: "举足轻重、至关重要" },
+      { idiom: "一言九鼎", pinyin: "yī yán jiǔ dǐng", explain: "一句话抵得上九鼎重。形容所说的话分量很重，作用很大。", source: "《史记·平原君列传》", example: "他说话一言九鼎，大家都会认真听。", similar: "一诺千金、一字千金", opposite: "人微言轻、一文不值" },
+      { idiom: "一诺千金", pinyin: "yī nuò qiān jīn", explain: "许下的一个诺言有千金的价值。比喻说话算数，极有信用。", source: "《史记·季布栾布列传》", example: "他一诺千金，答应的事一定办到。", similar: "一言九鼎、言而有信", opposite: "出尔反尔、言而无信" },
+      { idiom: "言而有信", pinyin: "yán ér yǒu xìn", explain: "说出话来算数，有信用。", source: "《论语·学而》", example: "做人要言而有信，说到做到。", similar: "一诺千金、信守承诺", opposite: "出尔反尔、言而无信" },
+      { idiom: "言而无信", pinyin: "yán ér wú xìn", explain: "说话不算数，没有信用。", source: "《穀梁传·僖公二十二年》", example: "他言而无信，以后没人再相信他了。", similar: "出尔反尔、背信弃义", opposite: "言而有信、一诺千金" },
+      { idiom: "背信弃义", pinyin: "bèi xìn qì yì", explain: "违背诺言，不讲道义。", source: "《北史·周本纪》", example: "他背信弃义的行为让朋友们非常失望。", similar: "出尔反尔、忘恩负义", opposite: "一诺千金、恪守信用" },
+      { idiom: "忘恩负义", pinyin: "wàng ēn fù yì", explain: "忘记了恩情，辜负了情义。", source: "《魏书·萧宝夤传》", example: "他忘恩负义，把帮助过他的人全都忘了。", similar: "恩将仇报、背信弃义", opposite: "感恩戴德、知恩图报" },
+      { idiom: "感恩戴德", pinyin: "gǎn ēn dài dé", explain: "感激别人的恩惠和好处。", source: "《三国志·吴志·骆统传》", example: "他对帮助过自己的人感恩戴德。", similar: "感激涕零、知恩图报", opposite: "忘恩负义、恩将仇报" },
+      { idiom: "知恩图报", pinyin: "zhī ēn tú bào", explain: "受恩者谋划准备以后报德于施恩人。", source: "现代汉语", example: "知恩图报是做人的基本道理。", similar: "感恩戴德、饮水思源", opposite: "忘恩负义、恩将仇报" },
+      { idiom: "饮水思源", pinyin: "yǐn shuǐ sī yuán", explain: "喝水的时候想起水是从哪儿来的。比喻不忘本。", source: "北周·庾信《徵调曲》", example: "饮水思源，我们要感谢那些帮助过我们的人。", similar: "知恩图报、感恩戴德", opposite: "忘恩负义、过河拆桥" },
+      { idiom: "过河拆桥", pinyin: "guò hé chāi qiáo", explain: "自己过了河，便把桥拆掉。比喻达到目的后，就把帮助过自己的人一脚踢开。", source: "元·康进之《李逵负荆》", example: "他是个过河拆桥的人，不可深交。", similar: "忘恩负义、鸟尽弓藏", opposite: "知恩图报、饮水思源" },
+      { idiom: "鸟尽弓藏", pinyin: "niǎo jìn gōng cáng", explain: "鸟没有了，弓也就藏起来不用了。比喻事情成功之后，把曾经出过力的人一脚踢开。", source: "《史记·越王勾践世家》", example: "历史上鸟尽弓藏的例子不胜枚举。", similar: "过河拆桥、兔死狗烹", opposite: "知恩图报、感恩戴德" },
+      { idiom: "勤能补拙", pinyin: "qín néng bǔ zhuō", explain: "勤奋能够弥补不足。", source: "宋·邵雍《弄笔吟》", example: "勤能补拙，只要肯下功夫，一定能做好。", similar: "笨鸟先飞、将勤补拙", opposite: "自暴自弃、懒惰懈怠" },
+      { idiom: "粗心大意", pinyin: "cū xīn dà yì", explain: "做事不细心，不认真。", source: "现代汉语", example: "考试时粗心大意就会丢很多分。", similar: "马马虎虎、粗枝大叶", opposite: "一丝不苟、小心谨慎" },
+      { idiom: "三心二意", pinyin: "sān xīn èr yì", explain: "又想这样又想那样，犹豫不定。常指不安心，不专一。", source: "汉·王充《论衡》", example: "做事不能三心二意，要专心致志。", similar: "心猿意马、见异思迁", opposite: "一心一意、专心致志" },
+      { idiom: "一心一意", pinyin: "yī xīn yī yì", explain: "只有一个心眼儿，没有别的考虑。", source: "《三国志·魏志·杜恕传》", example: "他一心一意地投入到科研工作中。", similar: "全心全意、专心致志", opposite: "三心二意、心不在焉" },
+      { idiom: "全心全意", pinyin: "quán xīn quán yì", explain: "投入全部精力，毫无保留。", source: "现代汉语", example: "他全心全意为人民服务。", similar: "一心一意、尽心尽力", opposite: "三心二意、敷衍了事" },
+      { idiom: "尽心尽力", pinyin: "jìn xīn jìn lì", explain: "费尽心思，使出全力。形容做事十分认真。", source: "《晋书·王坦之传》", example: "他对工作尽心尽力，从不偷懒。", similar: "竭尽全力、尽职尽责", opposite: "敷衍了事、得过且过" },
+      { idiom: "竭尽全力", pinyin: "jié jìn quán lì", explain: "用尽全部力量。", source: "《三国志·魏志·贾逵传》", example: "我们一定会竭尽全力完成任务。", similar: "尽心尽力、全力以赴", opposite: "敷衍了事、偷工减料" },
+      { idiom: "全力以赴", pinyin: "quán lì yǐ fù", explain: "把全部力量都投入进去。", source: "现代汉语", example: "为了实现目标，我们必须全力以赴。", similar: "竭尽全力、尽心尽力", opposite: "敷衍了事、虚应故事" },
+      { idiom: "勇往直前", pinyin: "yǒng wǎng zhí qián", explain: "不畏艰险，勇敢地一直前进。", source: "宋·朱熹《朱子全书》", example: "面对困难，我们要勇往直前。", similar: "一往无前、奋勇向前", opposite: "畏缩不前、瞻前顾后" },
+      { idiom: "知难而进", pinyin: "zhī nán ér jìn", explain: "明知道困难还要前进，形容不怕困难，迎难而上。", source: "现代汉语", example: "遇到困难不能退缩，要知难而进。", similar: "迎难而上、勇往直前", opposite: "知难而退、畏缩不前" },
+      { idiom: "临危不惧", pinyin: "lín wēi bù jù", explain: "遇到危难的时候，一点也不怕。", source: "《邓析子·无厚》", example: "他临危不惧，冷静地指挥大家撤离。", similar: "无所畏惧、镇定自若", opposite: "临阵脱逃、胆小如鼠" },
+      { idiom: "视死如归", pinyin: "shì sǐ rú guī", explain: "把死看得像回家一样平常。形容不怕牺牲生命。", source: "《韩非子·外储说左下》", example: "革命先烈视死如归的精神令人敬佩。", similar: "舍生忘死、万死不辞", opposite: "贪生怕死、苟且偷生" },
+      { idiom: "奋不顾身", pinyin: "fèn bù gù shēn", explain: "奋勇向前，不考虑个人安危。", source: "汉·司马迁《报任少卿书》", example: "他奋不顾身地跳入河中救起了落水儿童。", similar: "舍生忘死、赴汤蹈火", opposite: "贪生怕死、畏缩不前" },
+      { idiom: "赴汤蹈火", pinyin: "fù tāng dǎo huǒ", explain: "沸水敢蹚，烈火敢踏。比喻不避艰险，奋勇向前。", source: "《荀子·议兵》", example: "为了朋友，他赴汤蹈火在所不辞。", similar: "奋不顾身、肝脑涂地", opposite: "贪生怕死、畏缩不前" },
+      { idiom: "鞠躬尽瘁", pinyin: "jū gōng jìn cuì", explain: "指恭敬谨慎，竭尽心力。", source: "三国蜀·诸葛亮《后出师表》", example: "他为人民鞠躬尽瘁，死而后已。", similar: "尽心尽力、呕心沥血", opposite: "敷衍了事、尸位素餐" },
+      { idiom: "死而后已", pinyin: "sǐ ér hòu yǐ", explain: "死了以后才罢手。形容为完成一种责任而奋斗终身。", source: "《论语·泰伯》", example: "鞠躬尽瘁，死而后已，是他一生的写照。", similar: "鞠躬尽瘁、奋斗终身", opposite: "半途而废、虎头蛇尾" },
+      { idiom: "呕心沥血", pinyin: "ǒu xīn lì xuè", explain: "比喻用尽心思。多用来形容工作、创作等费尽心思。", source: "唐·李商隐《李贺小传》", example: "老师呕心沥血地教育了一代又一代学生。", similar: "鞠躬尽瘁、殚精竭虑", opposite: "敷衍了事、漫不经心" },
+      { idiom: "殚精竭虑", pinyin: "dān jīng jié lǜ", explain: "用尽精力，费尽心思。", source: "唐·白居易《策林一》", example: "他殚精竭虑地思考着解决方案。", similar: "呕心沥血、煞费苦心", opposite: "无所用心、漫不经心" },
+      { idiom: "煞费苦心", pinyin: "shà fèi kǔ xīn", explain: "费尽心思。", source: "现代汉语", example: "他煞费苦心地为孩子准备了这个惊喜。", similar: "费尽心机、挖空心思", opposite: "无所用心、漠不关心" },
+      { idiom: "费尽心机", pinyin: "fèi jìn xīn jī", explain: "挖空心思，想尽办法。", source: "宋·朱熹《朱文公文集》", example: "他费尽心机想出了这个方案。", similar: "煞费苦心、绞尽脑汁", opposite: "无所用心、轻而易举" },
+      { idiom: "绞尽脑汁", pinyin: "jiǎo jìn nǎo zhī", explain: "费尽脑筋。", source: "现代汉语", example: "他绞尽脑汁也想不出解决办法。", similar: "费尽心机、挖空心思", opposite: "不假思索、信手拈来" },
+      { idiom: "不假思索", pinyin: "bù jiǎ sī suǒ", explain: "形容做事答话敏捷、熟练，用不着考虑。", source: "宋·黄干《复黄会卿》", example: "他不假思索地回答了所有问题。", similar: "脱口而出、毫不犹豫", opposite: "绞尽脑汁、深思熟虑" },
+      { idiom: "深思熟虑", pinyin: "shēn sī shú lǜ", explain: "反复深入地考虑。", source: "《楚辞·渔父》", example: "这个决定是他深思熟虑后做出的。", similar: "深谋远虑、三思而行", opposite: "不假思索、轻举妄动" },
+      { idiom: "三思而行", pinyin: "sān sī ér xíng", explain: "指经过反复考虑，然后再去做。", source: "《论语·公冶长》", example: "遇到重大决定要三思而行。", similar: "深思熟虑、谨言慎行", opposite: "轻举妄动、不假思索" },
+      { idiom: "轻举妄动", pinyin: "qīng jǔ wàng dòng", explain: "指不经慎重考虑，轻率地采取行动。", source: "《韩非子·解老》", example: "不要轻举妄动，先想清楚再说。", similar: "草率行事、鲁莽行事", opposite: "三思而行、深思熟虑" },
+      { idiom: "草率从事", pinyin: "cǎo shuài cóng shì", explain: "形容办事的态度不认真，不仔细。", source: "现代汉语", example: "做决定不能草率从事，要考虑周全。", similar: "轻举妄动、敷衍了事", opposite: "深思熟虑、一丝不苟" },
+      { idiom: "随机应变", pinyin: "suí jī yìng biàn", explain: "随着情况的变化灵活机动地应付。", source: "《旧唐书·郭孝恪传》", example: "做销售要懂得随机应变，灵活处理各种情况。", similar: "见机行事、通权达变", opposite: "墨守成规、刻舟求剑" },
+      { idiom: "见机行事", pinyin: "jiàn jī xíng shì", explain: "看具体情况灵活办事。", source: "《周易·系辞下》", example: "到了那里要见机行事，灵活应对。", similar: "随机应变、相机行事", opposite: "墨守成规、刻舟求剑" },
+      { idiom: "审时度势", pinyin: "shěn shí duó shì", explain: "研究时势，估计情况的变化。", source: "明·沈德符《万历野获编》", example: "领导者要善于审时度势，做出正确决策。", similar: "高瞻远瞩、深谋远虑", opposite: "目光短浅、一叶障目" },
+      { idiom: "高瞻远瞩", pinyin: "gāo zhān yuǎn zhǔ", explain: "站得高，看得远。比喻眼光远大。", source: "汉·王充《论衡》", example: "领导要有高瞻远瞩的战略眼光。", similar: "深谋远虑、目光远大", opposite: "目光短浅、鼠目寸光" },
+      { idiom: "深谋远虑", pinyin: "shēn móu yuǎn lǜ", explain: "计划得很周密，考虑得很长远。", source: "汉·贾谊《过秦论》", example: "做大事需要深谋远虑，不能只顾眼前。", similar: "高瞻远瞩、老谋深算", opposite: "目光短浅、鼠目寸光" },
+      { idiom: "目光短浅", pinyin: "mù guāng duǎn qiǎn", explain: "眼光不远，见识不深。形容缺乏远见。", source: "现代汉语", example: "目光短浅的人只看到眼前的利益。", similar: "鼠目寸光、坐井观天", opposite: "高瞻远瞩、深谋远虑" },
+      { idiom: "鼠目寸光", pinyin: "shǔ mù cùn guāng", explain: "老鼠的眼睛只能看到一寸远。形容目光短浅，没有远见。", source: "清·蒋士铨《临川梦》", example: "不能鼠目寸光，要考虑长远发展。", similar: "目光短浅、坐井观天", opposite: "高瞻远瞩、目光如炬" },
+      { idiom: "一叶障目", pinyin: "yī yè zhàng mù", explain: "眼睛被一片树叶挡住，指看不到事物的全貌。", source: "《鹖冠子·天则》", example: "不要一叶障目，要全面地看待问题。", similar: "坐井观天、目光如豆", opposite: "高瞻远瞩、明察秋毫" },
+      { idiom: "明察秋毫", pinyin: "míng chá qiū háo", explain: "眼力好到能看清秋天鸟兽新生的细毛。形容目光敏锐，能洞察一切。", source: "《孟子·梁惠王上》", example: "法官明察秋毫，不放过任何细节。", similar: "洞若观火、了如指掌", opposite: "一叶障目、视而不见" },
+      { idiom: "洞若观火", pinyin: "dòng ruò guān huǒ", explain: "清楚得就像看火一样。形容观察事物明白透彻。", source: "《尚书·盘庚上》", example: "他对局势洞若观火，早有准备。", similar: "明察秋毫、了如指掌", opposite: "一无所知、雾里看花" },
+      { idiom: "了如指掌", pinyin: "liǎo rú zhǐ zhǎng", explain: "形容对事物了解得非常清楚，像把东西放在手掌里给人家看一样。", source: "《论语·八佾》", example: "他对这个领域的知识了如指掌。", similar: "一清二楚、洞若观火", opposite: "一无所知、一知半解" },
+      { idiom: "一知半解", pinyin: "yī zhī bàn jiě", explain: "知道得不全面，理解得也不透彻。", source: "宋·严羽《沧浪诗话》", example: "他对这个问题只是一知半解。", similar: "略知皮毛、不甚了了", opposite: "了如指掌、融会贯通" },
+      { idiom: "不求甚解", pinyin: "bù qiú shèn jiě", explain: "只求知道个大概，不求彻底了解。常指学习或研究不认真、不深入。", source: "晋·陶潜《五柳先生传》", example: "读书不能不求甚解，要认真理解每个知识点。", similar: "囫囵吞枣、浅尝辄止", opposite: "追根究底、精益求精" },
+      { idiom: "囫囵吞枣", pinyin: "hú lún tūn zǎo", explain: "把枣整个咽下去，不加咀嚼，不辨滋味。比喻对事物不加分析思考。", source: "宋·圆悟禅师《碧岩录》", example: "学习不能囫囵吞枣，要真正理解。", similar: "不求甚解、生吞活剥", opposite: "融会贯通、细嚼慢咽" },
+      { idiom: "生吞活剥", pinyin: "shēng tūn huó bō", explain: "原指生硬搬用别人诗文的词句。现比喻生硬地接受或机械地搬用经验、理论等。", source: "唐·刘肃《大唐新语》", example: "学习外国经验不能生吞活剥，要结合实际。", similar: "囫囵吞枣、生搬硬套", opposite: "融会贯通、举一反三" },
+      { idiom: "实事求是", pinyin: "shí shì qiú shì", explain: "指从实际对象出发，探求事物的内部联系及其发展的规律性，认识事物的本质。通常指按照事物的实际情况办事。", source: "《汉书·河间献王传》", example: "做学问要实事求是，不能弄虚作假。", similar: "脚踏实地、求真务实", opposite: "弄虚作假、自欺欺人" },
+      { idiom: "脚踏实地", pinyin: "jiǎo tà shí dì", explain: "脚踏在坚实的土地上。比喻做事踏实，认真。", source: "宋·邵雍《邵氏闻见后录》", example: "做事要脚踏实地，一步一个脚印。", similar: "实事求是、兢兢业业", opposite: "好高骛远、弄虚作假" },
+      { idiom: "兢兢业业", pinyin: "jīng jīng yè yè", explain: "形容做事情谨慎、勤恳。", source: "《诗经·大雅·云汉》", example: "他兢兢业业地工作了几十年。", similar: "勤勤恳恳、脚踏实地", opposite: "敷衍了事、马马虎虎" },
+      { idiom: "勤勤恳恳", pinyin: "qín qín kěn kěn", explain: "形容勤劳踏实。也形容勤恳的样子。", source: "汉·司马迁《报任少卿书》", example: "他勤勤恳恳地工作，从不抱怨。", similar: "兢兢业业、任劳任怨", opposite: "好吃懒做、游手好闲" },
+      { idiom: "任劳任怨", pinyin: "rèn láo rèn yuàn", explain: "不怕吃苦，也不怕招怨。", source: "《颜氏家训》", example: "他任劳任怨，从不计较个人得失。", similar: "勤勤恳恳、不辞辛劳", opposite: "拈轻怕重、挑肥拣瘦" },
+      { idiom: "吃苦耐劳", pinyin: "chī kǔ nài láo", explain: "能过困苦的生活，也经得起劳累。", source: "现代汉语", example: "农村的孩子大多吃苦耐劳。", similar: "任劳任怨、不辞辛劳", opposite: "好吃懒做、拈轻怕重" },
+      { idiom: "勤俭节约", pinyin: "qín jiǎn jié yuē", explain: "勤劳而节俭，形容工作勤劳，生活节俭。", source: "现代汉语", example: "勤俭节约是中华民族的传统美德。", similar: "克勤克俭、艰苦朴素", opposite: "铺张浪费、挥霍无度" },
+      { idiom: "艰苦朴素", pinyin: "jiān kǔ pǔ sù", explain: "指吃苦耐劳、勤俭朴实的作风。", source: "现代汉语", example: "我们要保持艰苦朴素的优良传统。", similar: "勤俭节约、克勤克俭", opposite: "铺张浪费、奢侈腐化" },
+      { idiom: "自强不息", pinyin: "zì qiáng bù xī", explain: "自觉地努力向上，永不松懈。", source: "《周易·乾》", example: "天行健，君子以自强不息。", similar: "发愤图强、奋发图强", opposite: "自暴自弃、得过且过" },
+      { idiom: "厚积薄发", pinyin: "hòu jī bó fā", explain: "多多积蓄，慢慢放出。形容只有准备充分才能办好事情。", source: "宋·苏轼《稼说送张琥》", example: "他厚积薄发，终于在专业领域取得了突破。", similar: "蓄势待发、养精蓄锐", opposite: "急功近利、急于求成" },
+      { idiom: "养精蓄锐", pinyin: "yǎng jīng xù ruì", explain: "保养精神，蓄积力量。", source: "明·罗贯中《三国演义》", example: "大家先养精蓄锐，明天继续赶路。", similar: "休养生息、养精蓄锐", opposite: "劳民伤财、疲于奔命" },
+      { idiom: "蓄势待发", pinyin: "xù shì dài fā", explain: "积蓄势力或能量，等待时机行动。", source: "现代汉语", example: "公司蓄势待发，准备进军国际市场。", similar: "厚积薄发、整装待发", opposite: "强弩之末、精疲力竭" },
+      { idiom: "天道酬勤", pinyin: "tiān dào chóu qín", explain: "上天会按照每个人付出的勤奋，给予相应的酬劳。多一分耕耘，多一分收获。", source: "《周易》", example: "天道酬勤，只要努力就会有回报。", similar: "功到自成、勤能补拙", opposite: "守株待兔、坐享其成" },
+      { idiom: "海纳百川", pinyin: "hǎi nà bǎi chuān", explain: "大海可以容得下成百上千条江河之水。比喻包容的东西非常广泛，而且数量很大。", source: "晋·袁宏《三国名臣序赞》", example: "海纳百川，有容乃大。", similar: "兼容并蓄、博采众长", opposite: "排斥异己、党同伐异" },
+      { idiom: "兼容并蓄", pinyin: "jiān róng bìng xù", explain: "把不同内容、不同性质的东西收下来，保存起来。", source: "唐·韩愈《进学解》", example: "学术研究需要兼容并蓄的态度。", similar: "海纳百川、博采众长", opposite: "排斥异己、党同伐异" },
+      { idiom: "博采众长", pinyin: "bó cǎi zhòng cháng", explain: "广泛地采纳各家的长处。", source: "现代汉语", example: "他博采众长，形成了自己独特的风格。", similar: "集思广益、兼容并蓄", opposite: "闭门造车、固步自封" },
+      { idiom: "取长补短", pinyin: "qǔ cháng bǔ duǎn", explain: "吸取别人的长处，来弥补自己的不足之处。", source: "《孟子·滕文公上》", example: "团队成员之间要取长补短，互相学习。", similar: "扬长避短、互相学习", opposite: "固步自封、各自为政" },
+      { idiom: "扬长避短", pinyin: "yáng cháng bì duǎn", explain: "发扬长处，回避短处。", source: "现代汉语", example: "做事情要扬长避短，发挥自己的优势。", similar: "取长补短、趋利避害", opposite: "以短击长" },
+      { idiom: "居高临下", pinyin: "jū gāo lín xià", explain: "占据高处，俯视下面。形容占据的地势非常有利。现形容处于有利的地位。", source: "《淮南子·原道训》", example: "站在山顶，居高临下，景色尽收眼底。", similar: "高屋建瓴、高高在上", opposite: "仰人鼻息、低人一等" },
+      { idiom: "高屋建瓴", pinyin: "gāo wū jiàn líng", explain: "在高屋的顶上倒翻瓶子里的水。比喻居高临下，不可阻遏的形势。", source: "《史记·高祖本纪》", example: "他的报告高屋建瓴，分析深刻。", similar: "居高临下、高瞻远瞩", opposite: "鼠目寸光" },
+      { idiom: "势不可挡", pinyin: "shì bù kě dǎng", explain: "来势迅猛，不可抵挡。", source: "《晋书·郗鉴传》", example: "新事物的发展势不可挡。", similar: "势如破竹、锐不可当", opposite: "强弩之末、势单力薄" },
+      { idiom: "锐不可当", pinyin: "ruì bù kě dāng", explain: "锋利无比，不可抵挡。形容勇往直前的气势，不可抵挡。", source: "《后汉书·吴汉传》", example: "我军攻势锐不可当，势如破竹。", similar: "势不可挡、所向披靡", opposite: "望风而逃、不堪一击" },
+      { idiom: "所向披靡", pinyin: "suǒ xiàng pī mǐ", explain: "所到之处，一切障碍全被扫除。比喻力量所达到的地方，一切障碍全被扫除。", source: "《史记·项羽本纪》", example: "这支球队所向披靡，连续夺冠。", similar: "势不可挡、一往无前", opposite: "望风而逃、溃不成军" },
+      { idiom: "一往无前", pinyin: "yī wǎng wú qián", explain: "一直往前，无所阻挡。形容勇猛无畏地前进。", source: "明·孙传庭《官兵苦战斩获疏》", example: "战士们一往无前，冲破了敌人的防线。", similar: "勇往直前、所向披靡", opposite: "畏缩不前、瞻前顾后" },
+      { idiom: "长驱直入", pinyin: "cháng qū zhí rù", explain: "长驱不停顿地快速深入敌方。形容进军的顺利和神速。", source: "《战国策·燕策二》", example: "大军长驱直入，很快占领了全城。", similar: "势如破竹、直捣黄龙", opposite: "步步为营、稳扎稳打" },
+      { idiom: "步步为营", pinyin: "bù bù wéi yíng", explain: "军队每向前推进一步就设下一道营垒。形容进军谨慎。有时也比喻行动、做事谨慎。", source: "明·罗贯中《三国演义》", example: "市场竞争中，我们要步步为营，稳扎稳打。", similar: "稳扎稳打、小心谨慎", opposite: "长驱直入、轻举妄动" },
+      { idiom: "稳扎稳打", pinyin: "wěn zhā wěn dǎ", explain: "稳当而有把握地打仗。比喻有把握、有步骤地工作。", source: "清·刘坤一《书牍》", example: "做事要稳扎稳打，不能急于求成。", similar: "步步为营、循序渐进", opposite: "急于求成、轻举妄动" },
+      { idiom: "急功近利", pinyin: "jí gōng jìn lì", explain: "急于求成，贪图眼前的成效和利益。", source: "汉·董仲舒《春秋繁露》", example: "做学问不能急功近利，要耐得住寂寞。", similar: "急于求成、好大喜功", opposite: "深谋远虑、高瞻远瞩" },
+      { idiom: "好高骛远", pinyin: "hào gāo wù yuǎn", explain: "比喻不切实际地追求过高过远的目标。", source: "《宋史·程颢传》", example: "年轻人不要好高骛远，要脚踏实地。", similar: "好大喜功、眼高手低", opposite: "脚踏实地、实事求是" },
+      { idiom: "眼高手低", pinyin: "yǎn gāo shǒu dī", explain: "眼力过高，手法过低。指要求的标准很高，实际上自己做不到。", source: "现代汉语", example: "不能眼高手低，要从基础做起。", similar: "好高骛远、志大才疏", opposite: "脚踏实地、量力而行" },
+      { idiom: "言之有物", pinyin: "yán zhī yǒu wù", explain: "说话或写文章有实际内容，不空洞。", source: "《周易·家人》", example: "写文章要言之有物，不能空话连篇。", similar: "言之凿凿、有的放矢", opposite: "言之无物、空洞无物" },
+      { idiom: "坐而论道", pinyin: "zuò ér lùn dào", explain: "坐着空谈大道理。指口头说说，不见行动。", source: "《周礼·冬官考工记》", example: "不要只会坐而论道，要付诸行动。", similar: "纸上谈兵、夸夸其谈", opposite: "身体力行、脚踏实地" },
+      { idiom: "夸夸其谈", pinyin: "kuā kuā qí tán", explain: "形容说话浮夸不切实际。", source: "清·吴敬梓《儒林外史》", example: "他只会夸夸其谈，从不实干。", similar: "高谈阔论、纸上谈兵", opposite: "脚踏实地、言简意赅" },
+      { idiom: "言简意赅", pinyin: "yán jiǎn yì gāi", explain: "形容说话写文章简明扼要。", source: "宋·欧阳修《六一诗话》", example: "他的报告言简意赅，重点突出。", similar: "简明扼要、要言不烦", opposite: "长篇大论、拖泥带水" },
+      { idiom: "简明扼要", pinyin: "jiǎn míng è yào", explain: "指说话、写文章简单明了，能抓住要点。", source: "现代汉语", example: "回答问题要简明扼要。", similar: "言简意赅、要言不烦", opposite: "长篇大论、冗词赘句" },
+      { idiom: "长篇大论", pinyin: "cháng piān dà lùn", explain: "滔滔不绝的言论。多指内容烦琐、词句重复的长篇发言或文章。", source: "清·曹雪芹《红楼梦》", example: "不要长篇大论，讲重点就行。", similar: "冗词赘句、连篇累牍", opposite: "言简意赅、简明扼要" },
+      { idiom: "千篇一律", pinyin: "qiān piān yī lǜ", explain: "一千篇文章都一个调。指文章公式化。也比喻办事按一个格式，非常机械。", source: "南朝梁·钟嵘《诗品》", example: "文章不能千篇一律，要有自己的特色。", similar: "如出一辙、千人一面", opposite: "千变万化、别出心裁" },
+      { idiom: "别出心裁", pinyin: "bié chū xīn cái", explain: "另有一种构思或设计。指想出的办法与众不同。", source: "明·李贽《水浒全书发凡》", example: "这个设计别出心裁，令人耳目一新。", similar: "独具匠心、别出机杼", opposite: "千篇一律、如法炮制" },
+      { idiom: "独具匠心", pinyin: "dú jù jiàng xīn", explain: "具有独到的灵巧的心思。指在技巧和艺术方面的创造性。", source: "唐·张祜《题王右丞山水障》", example: "这件艺术品独具匠心，令人赞叹。", similar: "别出心裁、独树一帜", opposite: "千篇一律、如出一辙" },
+      { idiom: "独树一帜", pinyin: "dú shù yī zhì", explain: "单独树起一面旗帜。比喻独特新奇，自成一家。", source: "清·袁枚《随园诗话》", example: "他的画风独树一帜，形成了独特的艺术风格。", similar: "标新立异、别具一格", opposite: "千篇一律、随波逐流" },
+      { idiom: "标新立异", pinyin: "biāo xīn lì yì", explain: "提出新奇的主张，表示与众不同。", source: "南朝宋·刘义庆《世说新语》", example: "他喜欢标新立异，追求与众不同。", similar: "独树一帜、别出心裁", opposite: "墨守成规、因循守旧" },
+      { idiom: "别具一格", pinyin: "bié jù yī gé", explain: "另有一种独特的风格。", source: "清·吕留良《与施愚山书》", example: "这座建筑别具一格，很有特色。", similar: "独树一帜、别开生面", opposite: "千篇一律、如出一辙" },
+      { idiom: "耳目一新", pinyin: "ěr mù yī xīn", explain: "听到的、看到的跟以前完全不同，使人感到新鲜。", source: "唐·白居易《序洛诗》", example: "经过重新装修，整个餐厅令人耳目一新。", similar: "焕然一新、面目一新", opposite: "依然如故、一成不变" },
+      { idiom: "焕然一新", pinyin: "huàn rán yī xīn", explain: "改变旧面貌，出现崭新的气象。", source: "宋·李之仪《姑溪居士文集》", example: "经过整修，老城区焕然一新。", similar: "耳目一新、面目一新", opposite: "依然如故、一成不变" },
+      { idiom: "推陈出新", pinyin: "tuī chén chū xīn", explain: "去掉旧事物的糟粕，取其精华，并使它向新的方向发展。", source: "宋·费衮《梁溪漫志》", example: "传统文化要推陈出新，与时俱进。", similar: "革故鼎新、吐故纳新", opposite: "墨守成规、因循守旧" },
+      { idiom: "革故鼎新", pinyin: "gé gù dǐng xīn", explain: "旧指朝政变革或改朝换代。现泛指除去旧的，建立新的。", source: "《周易·杂卦》", example: "改革就是要革故鼎新，除旧布新。", similar: "推陈出新、除旧布新", opposite: "墨守成规、因循守旧" },
+      { idiom: "继往开来", pinyin: "jì wǎng kāi lái", explain: "继承前人的事业，开辟未来的道路。", source: "宋·朱熹《朱子全书》", example: "青年一代要继往开来，为国家做出贡献。", similar: "承前启后、承上启下", opposite: "后继无人、空前绝后" },
+      { idiom: "承前启后", pinyin: "chéng qián qǐ hòu", explain: "承接前面的，引起后面的。", source: "明·朱国祯《涌幢小品》", example: "他在学术上起着承前启后的作用。", similar: "继往开来、承上启下", opposite: "空前绝后" },
+      { idiom: "承上启下", pinyin: "chéng shàng qǐ xià", explain: "承接上面的，引起下面的。多用于写作。", source: "宋·张炎《词源》", example: "这个过渡段起着承上启下的作用。", similar: "承前启后、继往开来", opposite: "" },
+      { idiom: "任重道远", pinyin: "rèn zhòng dào yuǎn", explain: "担子很重，路很远。比喻责任重大，要经历长期的奋斗。", source: "《论语·泰伯》", example: "实现中华民族伟大复兴，任重道远。", similar: "负重致远、道远日暮", opposite: "轻而易举、一蹴而就" },
+      { idiom: "负重致远", pinyin: "fù zhòng zhì yuǎn", explain: "背着沉重的东西送到远方。比喻能肩挑重任。", source: "《周易·系辞下》", example: "他是一个能负重致远的人才。", similar: "任重道远", opposite: "轻而易举" },
+      { idiom: "坚韧不拔", pinyin: "jiān rèn bù bá", explain: "形容信念坚定，意志顽强，不可动摇。", source: "宋·苏轼《晁错论》", example: "他以坚韧不拔的毅力完成了这项艰巨的任务。", similar: "百折不挠、不屈不挠", opposite: "一蹶不振、半途而废" },
+      { idiom: "不屈不挠", pinyin: "bù qū bù náo", explain: "比喻在压力和困难面前不屈服，表现十分顽强。", source: "《汉书·叙传下》", example: "他不屈不挠地与病魔作斗争。", similar: "百折不挠、坚忍不拔", opposite: "卑躬屈膝、奴颜婢膝" },
+      { idiom: "坚忍不拔", pinyin: "jiān rěn bù bá", explain: "形容在艰苦困难的情况下意志坚定，毫不动摇。", source: "宋·苏轼《晁错论》", example: "他以坚忍不拔的毅力完成了这项艰巨的任务。", similar: "百折不挠、不屈不挠", opposite: "一蹶不振、半途而废" },
+      { idiom: "矢志不渝", pinyin: "shǐ zhì bù yú", explain: "立志永远不改变。", source: "现代汉语", example: "他对科学的追求矢志不渝。", similar: "坚定不移、始终如一", opposite: "朝三暮四、见异思迁" },
+      { idiom: "坚定不移", pinyin: "jiān dìng bù yí", explain: "稳定坚强，毫不动摇。", source: "《资治通鉴·唐记》", example: "我们必须坚定不移地走自己的路。", similar: "矢志不渝、坚韧不拔", opposite: "摇摆不定、左右摇摆" },
+      { idiom: "始终如一", pinyin: "shǐ zhōng rú yī", explain: "自始自终一个样子。指能坚持，不间断。", source: "《荀子·议兵》", example: "他对工作的热情始终如一。", similar: "一如既往、矢志不渝", opposite: "虎头蛇尾、有始无终" },
+      { idiom: "一如既往", pinyin: "yī rú jì wǎng", explain: "态度没有变化，完全像从前一样。", source: "现代汉语", example: "他一如既往地支持公益事业。", similar: "始终如一、依然故我", opposite: "判若两人、一反常态" },
+      { idiom: "一成不变", pinyin: "yī chéng bù biàn", explain: "一经形成，不再改变。", source: "《礼记·王制》", example: "规章制度不能一成不变，要与时俱进。", similar: "墨守成规、原封不动", opposite: "千变万化、日新月异" },
+      { idiom: "墨守成规", pinyin: "mò shǒu chéng guī", explain: "指思想保守，守着老规矩不肯改变。", source: "明·黄宗羲《钱退山诗文序》", example: "不能墨守成规，要勇于创新。", similar: "因循守旧、故步自封", opposite: "推陈出新、标新立异" },
+      { idiom: "因循守旧", pinyin: "yīn xún shǒu jiù", explain: "沿袭旧规，不思革新。", source: "《汉书·循吏传序》", example: "因循守旧只会被时代淘汰。", similar: "墨守成规、故步自封", opposite: "革故鼎新、推陈出新" },
+      { idiom: "故步自封", pinyin: "gù bù zì fēng", explain: "比喻安于现状，不求进步。", source: "《汉书·叙传上》", example: "企业不能故步自封，要不断创新。", similar: "墨守成规、因循守旧", opposite: "勇往直前、开拓进取" },
+      { idiom: "闭门造车", pinyin: "bì mén zào chē", explain: "关起门来造车子。比喻脱离实际，只凭主观办事。", source: "宋·朱熹《中庸或问》", example: "做产品不能闭门造车，要了解用户需求。", similar: "纸上谈兵、主观臆断", opposite: "深入实际、调查研究" },
+      { idiom: "坐井观天", pinyin: "zuò jǐng guān tiān", explain: "坐在井底看天。比喻眼界小，见识少。", source: "唐·韩愈《原道》", example: "要多出去走走，不能坐井观天。", similar: "井底之蛙、鼠目寸光", opposite: "见多识广、高瞻远瞩" },
+      { idiom: "夜郎自大", pinyin: "yè láng zì dà", explain: "比喻骄傲无知的肤浅自负或自大行为。", source: "《史记·西南夷列传》", example: "不能夜郎自大，要虚心学习别人的长处。", similar: "妄自尊大、目空一切", opposite: "虚怀若谷、妄自菲薄" },
+      { idiom: "妄自尊大", pinyin: "wàng zì zūn dà", explain: "过高地看待自己。形容狂妄自大。", source: "《后汉书·马援传》", example: "他妄自尊大，看不起任何人。", similar: "夜郎自大、目空一切", opposite: "虚怀若谷、妄自菲薄" },
+      { idiom: "妄自菲薄", pinyin: "wàng zì fěi bó", explain: "过分看轻自己。形容自卑。", source: "三国蜀·诸葛亮《出师表》", example: "不要妄自菲薄，要对自己有信心。", similar: "自轻自贱、自暴自弃", opposite: "妄自尊大、自高自大" },
+      { idiom: "自暴自弃", pinyin: "zì bào zì qì", explain: "自己糟蹋自己，自己鄙弃自己。形容不知自爱，甘于堕落。", source: "《孟子·离娄上》", example: "不要因为一次失败就自暴自弃。", similar: "妄自菲薄、自轻自贱", opposite: "自强不息、发愤图强" },
+      { idiom: "发愤图强", pinyin: "fā fèn tú qiáng", explain: "下定决心，努力追求进步。", source: "现代汉语", example: "他发愤图强，终于考上了理想的大学。", similar: "自强不息、奋发图强", opposite: "自暴自弃、苟且偷安" },
+      { idiom: "奋发图强", pinyin: "fèn fā tú qiáng", explain: "振作精神，以求强盛。", source: "现代汉语", example: "全国人民奋发图强，建设美好家园。", similar: "发愤图强、自强不息", opposite: "自暴自弃、苟且偷安" },
+      { idiom: "卧薪尝胆", pinyin: "wò xīn cháng dǎn", explain: "睡在柴草上，经常尝苦胆。形容人刻苦自励，发奋图强。", source: "《史记·越王勾践世家》", example: "他卧薪尝胆多年，终于东山再起。", similar: "发愤图强、励精图治", opposite: "自暴自弃、一蹶不振" },
+      { idiom: "励精图治", pinyin: "lì jīng tú zhì", explain: "振奋精神，想办法治理好国家。", source: "《汉书·魏相传》", example: "新一届领导班子励精图治，推动了各项改革。", similar: "奋发图强、励精求治", opposite: "无所作为、得过且过" },
+      { idiom: "东山再起", pinyin: "dōng shān zài qǐ", explain: "指再度出任要职。也比喻失势之后又重新得势。", source: "《晋书·谢安传》", example: "经过几年的努力，他终于东山再起。", similar: "卷土重来、重整旗鼓", opposite: "一蹶不振、灰飞烟灭" },
+      { idiom: "卷土重来", pinyin: "juǎn tǔ chóng lái", explain: "比喻失败之后，重新恢复势力。", source: "唐·杜牧《题乌江亭》", example: "他们不甘心失败，准备卷土重来。", similar: "东山再起、死灰复燃", opposite: "一蹶不振、偃旗息鼓" },
+      { idiom: "重整旗鼓", pinyin: "chóng zhěng qí gǔ", explain: "比喻失败之后，整顿力量，准备再干。", source: "现代汉语", example: "失败不可怕，重要的是重整旗鼓，再接再厉。", similar: "卷土重来、东山再起", opposite: "一蹶不振、偃旗息鼓" },
+      { idiom: "再接再厉", pinyin: "zài jiē zài lì", explain: "比喻继续努力，再加一把劲。", source: "唐·韩愈《斗鸡联句》", example: "取得好成绩后要再接再厉，不能骄傲。", similar: "再接再砺、马不停蹄", opposite: "得过且过、每况愈下" },
+      { idiom: "百尺竿头", pinyin: "bǎi chǐ gān tóu", explain: "百尺高的竿子。比喻极高的官位和功名。也指学问、事业有很高的成就。", source: "宋·释道原《景德传灯录》", example: "百尺竿头，更进一步。", similar: "更进一步、精益求精", opposite: "固步自封、停滞不前" },
+      { idiom: "更进一步", pinyin: "gèng jìn yī bù", explain: "再往前走一步。形容在已有的基础上再提高一步。", source: "现代汉语", example: "希望你在新的岗位上更进一步。", similar: "百尺竿头、锦上添花", opposite: "停滞不前、每况愈下" },
+    ];
+
+    let currentFilter = '';
+    let currentInitial = '';
+
+    function onSearch() {
+      currentFilter = document.getElementById('searchInput').value.trim().toLowerCase();
+      currentInitial = '';
+      document.querySelectorAll('.initial-btn').forEach(b => b.classList.remove('active'));
+      renderIdioms();
+    }
+
+    function filterByInitial(initial) {
+      currentInitial = initial;
+      currentFilter = '';
+      document.getElementById('searchInput').value = '';
+      document.querySelectorAll('.initial-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent === initial);
+      });
+      renderIdioms();
+    }
+
+    function getFilteredIdioms() {
+      return IDIOMS.filter(item => {
+        if (currentFilter) {
+          const q = currentFilter;
+          return item.idiom.toLowerCase().includes(q) ||
+                 item.pinyin.toLowerCase().includes(q) ||
+                 item.pinyin.replace(/\s/g, '').toLowerCase().includes(q) ||
+                 item.explain.includes(q);
+        }
+        if (currentInitial) {
+          // 拼音首字母匹配
+          const initials = item.pinyin.split(' ').map(s => s[0]).join('');
+          return initials.startsWith(currentInitial);
+        }
+        return true;
+      });
+    }
+
+    function renderIdioms() {
+      const filtered = getFilteredIdioms();
+      const grid = document.getElementById('idiomGrid');
+      const noResult = document.getElementById('noResult');
+      document.getElementById('showCount').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        noResult.style.display = 'block';
+        return;
+      }
+
+      noResult.style.display = 'none';
+      grid.innerHTML = filtered.map(item => `
+        <div class="idiom-card">
+          <div class="idiom-head">
+            <div class="idiom-text">${highlightText(item.idiom)}</div>
+            <button class="copy-btn" onclick="copyIdiom('${item.idiom}', this)">📋 复制</button>
+          </div>
+          <div class="idiom-pinyin">${highlightText(item.pinyin)}</div>
+          <div class="idiom-section">
+            <span class="idiom-label">释义</span>
+            <div class="idiom-content">${highlightText(item.explain)}</div>
+          </div>
+          ${item.source ? `<div class="idiom-section">
+            <span class="idiom-label">出处</span>
+            <div class="idiom-content" style="font-size:13px; color: var(--text-secondary);">${item.source}</div>
+          </div>` : ''}
+          ${item.example ? `<div class="idiom-section">
+            <span class="idiom-label">示例</span>
+            <div class="idiom-example">${highlightText(item.example)}</div>
+          </div>` : ''}
+          ${item.similar ? `<div class="idiom-section">
+            <span class="idiom-label">近义词</span>
+            <div class="idiom-similar"><span>${item.similar}</span></div>
+          </div>` : ''}
+          ${item.opposite ? `<div class="idiom-section">
+            <span class="idiom-label">反义词</span>
+            <div class="idiom-opposite"><span>${item.opposite}</span></div>
+          </div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function highlightText(text) {
+      if (!currentFilter) return text;
+      const regex = new RegExp(`(${currentFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return text.replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    async function copyIdiom(idiom, btn) {
+      const item = IDIOMS.find(i => i.idiom === idiom);
+      if (!item) return;
+      let text = `${item.idiom}\n拼音：${item.pinyin}\n释义：${item.explain}`;
+      if (item.source) text += `\n出处：${item.source}`;
+      if (item.example) text += `\n示例：${item.example}`;
+      if (item.similar) text += `\n近义词：${item.similar}`;
+      if (item.opposite) text += `\n反义词：${item.opposite}`;
+      await copyToClipboard(text);
+      const orig = btn.textContent;
+      btn.textContent = '✅ 已复制';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }
+
+    function randomIdiom() {
+      const idx = Math.floor(Math.random() * IDIOMS.length);
+      const item = IDIOMS[idx];
+      currentFilter = '';
+      currentInitial = '';
+      document.getElementById('searchInput').value = '';
+      document.querySelectorAll('.initial-btn').forEach(b => b.classList.remove('active'));
+
+      const grid = document.getElementById('idiomGrid');
+      document.getElementById('noResult').style.display = 'none';
+      document.getElementById('showCount').textContent = 1;
+
+      grid.innerHTML = `
+        <div class="idiom-card" style="border-left-color: #FF9800; grid-column: 1 / -1;">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <span style="background: #FFF3E0; color: #E65100; padding: 4px 16px; border-radius: 20px; font-size: 13px;">🎲 随机学成语</span>
+          </div>
+          <div class="idiom-head">
+            <div class="idiom-text" style="font-size: 36px; width: 100%; text-align: center;">${item.idiom}</div>
+          </div>
+          <div class="idiom-pinyin" style="text-align: center; font-size: 16px;">${item.pinyin}</div>
+          <div class="idiom-section">
+            <span class="idiom-label">释义</span>
+            <div class="idiom-content">${item.explain}</div>
+          </div>
+          ${item.source ? `<div class="idiom-section">
+            <span class="idiom-label">出处</span>
+            <div class="idiom-content" style="font-size:13px; color: var(--text-secondary);">${item.source}</div>
+          </div>` : ''}
+          ${item.example ? `<div class="idiom-section">
+            <span class="idiom-label">示例</span>
+            <div class="idiom-example">${item.example}</div>
+          </div>` : ''}
+          ${item.similar ? `<div class="idiom-section">
+            <span class="idiom-label">近义词</span>
+            <div class="idiom-similar"><span>${item.similar}</span></div>
+          </div>` : ''}
+          ${item.opposite ? `<div class="idiom-section">
+            <span class="idiom-label">反义词</span>
+            <div class="idiom-opposite"><span>${item.opposite}</span></div>
+          </div>` : ''}
+          <div style="text-align: center; margin-top: 16px;">
+            <button class="random-btn" onclick="randomIdiom()">🎲 再来一个</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // 初始化拼音首字母筛选
+    function initInitialFilter() {
+      const initials = 'abcdefghijklmnopqrstuvwxyz';
+      const container = document.getElementById('initialFilter');
+      container.innerHTML = initials.split('').map(l => 
+        `<button class="initial-btn" onclick="filterByInitial('${l}')">${l.toUpperCase()}</button>`
+      ).join('');
+    }
+
+    // 初始化
+    document.getElementById('totalCount').textContent = IDIOMS.length;
+    initInitialFilter();
+    renderIdioms();
+  </script>
+</body>
+</html>

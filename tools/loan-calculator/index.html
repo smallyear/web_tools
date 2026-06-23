@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>贷款计算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .mode-switch { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .mode-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; background: white; border: none; font-size: 15px; font-weight: 500; transition: all 0.2s; color: var(--text-secondary); }
+    .mode-btn.active { background: var(--primary); color: white; }
+    .mode-btn:hover:not(.active) { background: #E3F2FD; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 20px 0; }
+    .result-card { border-radius: 12px; padding: 20px; text-align: center; color: white; }
+    .result-card .label { font-size: 13px; margin-bottom: 8px; opacity: 0.9; }
+    .result-card .value { font-size: 24px; font-weight: 700; }
+    .rc-monthly { background: linear-gradient(135deg, #1E88E5, #42A5F5); }
+    .rc-interest { background: linear-gradient(135deg, #F44336, #EF5350); }
+    .rc-total { background: linear-gradient(135deg, #4CAF50, #66BB6A); }
+    .schedule-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .schedule-table th, .schedule-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+    .schedule-table th { background: var(--bg); font-weight: 600; color: var(--text); text-align: center; position: sticky; top: 0; }
+    .schedule-table td:first-child { text-align: center; font-weight: 500; }
+    .schedule-table tr:hover { background: #F5F5F5; }
+    .table-wrapper { max-height: 500px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+    .ellipsis-row td { text-align: center; color: var(--text-secondary); background: #FAFAFA; font-style: italic; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .comparison-table th, .comparison-table td { padding: 12px 16px; text-align: center; border-bottom: 1px solid var(--border); }
+    .comparison-table th { background: var(--bg); font-weight: 600; }
+    .comparison-table td:first-child { text-align: left; font-weight: 500; }
+    .highlight { color: var(--success); font-weight: 600; }
+    .term-group { display: flex; gap: 8px; align-items: center; }
+    .term-group .form-input { flex: 1; }
+    .term-group .unit { min-width: 30px; color: var(--text-secondary); }
+    .action-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>贷款计算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">🏠 贷款计算器</h1>
+        <p style="color: var(--text-secondary);">支持等额本息和等额本金两种还款方式，详细还款计划表一目了然</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📝 贷款信息</div>
+        <div class="mode-switch">
+          <button class="mode-btn active" onclick="switchMode('equal-principal-interest')">等额本息</button>
+          <button class="mode-btn" onclick="switchMode('equal-principal')">等额本金</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">贷款金额</label>
+            <div class="term-group">
+              <input type="number" id="loanAmount" class="form-input" value="100" min="1" step="1" oninput="calculate()">
+              <span class="unit">万元</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">年利率</label>
+            <div class="term-group">
+              <input type="number" id="annualRate" class="form-input" value="3.5" min="0.01" step="0.01" oninput="calculate()">
+              <span class="unit">%</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">贷款期限</label>
+            <div class="term-group">
+              <input type="number" id="loanTerm" class="form-input" value="30" min="1" step="1" oninput="calculate()">
+              <select id="termUnit" class="form-select" style="width: 70px;" onchange="calculate()">
+                <option value="year" selected>年</option>
+                <option value="month">月</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="resultSection" style="display: none;">
+        <!-- 结果卡片 -->
+        <div class="result-grid" id="resultCards"></div>
+
+        <!-- 两种方式对比 -->
+        <div class="card">
+          <div class="card-title">📊 两种还款方式对比</div>
+          <div style="overflow-x: auto;">
+            <table class="comparison-table" id="comparisonTable">
+              <thead>
+                <tr><th>对比项</th><th>等额本息</th><th>等额本金</th><th>差额</th></tr>
+              </thead>
+              <tbody id="comparisonBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 还款计划表 -->
+        <div class="card">
+          <div class="card-title">📋 详细还款计划表（<span id="modeLabel"></span>）</div>
+          <div class="table-wrapper">
+            <table class="schedule-table" id="scheduleTable">
+              <thead>
+                <tr><th>期数</th><th>月供(元)</th><th>偿还本金(元)</th><th>偿还利息(元)</th><th>剩余本金(元)</th></tr>
+              </thead>
+              <tbody id="scheduleBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="copySchedule()">📋 复制还款计划</button>
+          <button class="btn btn-success" onclick="downloadCSV()">📥 下载CSV文件</button>
+          <button class="btn btn-secondary" onclick="copySummary()">📄 复制汇总信息</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    let currentMode = 'equal-principal-interest';
+    let currentSchedule = [];
+    let currentSummary = {};
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', (mode === 'equal-principal-interest' && i === 0) || (mode === 'equal-principal' && i === 1));
+      });
+      calculate();
+    }
+
+    function calculate() {
+      const amountWan = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const annualRate = parseFloat(document.getElementById('annualRate').value) || 0;
+      const termValue = parseFloat(document.getElementById('loanTerm').value) || 0;
+      const termUnit = document.getElementById('termUnit').value;
+      const totalMonths = termUnit === 'year' ? Math.round(termValue * 12) : Math.round(termValue);
+      const principal = amountWan * 10000; // 转为元
+
+      if (principal <= 0 || annualRate <= 0 || totalMonths <= 0) {
+        document.getElementById('resultSection').style.display = 'none';
+        return;
+      }
+
+      const monthlyRate = annualRate / 100 / 12;
+
+      // 计算两种方式
+      const epiResult = calcEqualPrincipalInterest(principal, monthlyRate, totalMonths);
+      const epResult = calcEqualPrincipal(principal, monthlyRate, totalMonths);
+
+      const current = currentMode === 'equal-principal-interest' ? epiResult : epResult;
+      currentSchedule = current.schedule;
+      currentSummary = {
+        epi: epiResult, ep: epResult, principal, totalMonths, annualRate, amountWan
+      };
+
+      // 结果卡片
+      document.getElementById('resultCards').innerHTML = `
+        <div class="result-card rc-monthly">
+          <div class="label">${currentMode === 'equal-principal-interest' ? '每月月供' : '首月月供'}</div>
+          <div class="value">¥${current.firstPayment.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
+        <div class="result-card rc-interest">
+          <div class="label">总利息</div>
+          <div class="value">¥${(current.totalInterest / 10000).toFixed(2)} 万</div>
+        </div>
+        <div class="result-card rc-total">
+          <div class="label">总还款额</div>
+          <div class="value">¥${(current.totalPayment / 10000).toFixed(2)} 万</div>
+        </div>
+      `;
+
+      // 对比表
+      const diff = Math.abs(epiResult.totalInterest - epResult.totalInterest);
+      document.getElementById('comparisonBody').innerHTML = `
+        <tr>
+          <td>每月月供</td>
+          <td>¥${epiResult.firstPayment.toFixed(2)}</td>
+          <td>¥${epResult.firstPayment.toFixed(2)} → ¥${epResult.lastPayment.toFixed(2)}</td>
+          <td class="${epiResult.firstPayment < epResult.firstPayment ? 'highlight' : ''}">递减还款</td>
+        </tr>
+        <tr>
+          <td>总利息</td>
+          <td>¥${epiResult.totalInterest.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+          <td>¥${epResult.totalInterest.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+          <td class="highlight">节省 ¥${diff.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+        </tr>
+        <tr>
+          <td>总还款额</td>
+          <td>¥${epiResult.totalPayment.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+          <td>¥${epResult.totalPayment.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+          <td>¥${Math.abs(epiResult.totalPayment - epResult.totalPayment).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+        </tr>
+      `;
+
+      // 还款计划表
+      document.getElementById('modeLabel').textContent = currentMode === 'equal-principal-interest' ? '等额本息' : '等额本金';
+      renderSchedule(current.schedule, totalMonths);
+
+      document.getElementById('resultSection').style.display = 'block';
+    }
+
+    function calcEqualPrincipalInterest(principal, monthlyRate, totalMonths) {
+      const monthlyPayment = principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+      const schedule = [];
+      let remaining = principal;
+      let totalInterest = 0;
+
+      for (let i = 1; i <= totalMonths; i++) {
+        const interest = remaining * monthlyRate;
+        const principalPart = monthlyPayment - interest;
+        remaining -= principalPart;
+        totalInterest += interest;
+        schedule.push({
+          month: i,
+          payment: monthlyPayment,
+          principal: principalPart,
+          interest: interest,
+          remaining: Math.max(0, remaining)
+        });
+      }
+
+      return {
+        firstPayment: monthlyPayment,
+        lastPayment: monthlyPayment,
+        totalInterest,
+        totalPayment: principal + totalInterest,
+        schedule
+      };
+    }
+
+    function calcEqualPrincipal(principal, monthlyRate, totalMonths) {
+      const monthlyPrincipal = principal / totalMonths;
+      const schedule = [];
+      let remaining = principal;
+      let totalInterest = 0;
+      let firstPayment = 0, lastPayment = 0;
+
+      for (let i = 1; i <= totalMonths; i++) {
+        const interest = remaining * monthlyRate;
+        const payment = monthlyPrincipal + interest;
+        remaining -= monthlyPrincipal;
+        totalInterest += interest;
+        if (i === 1) firstPayment = payment;
+        if (i === totalMonths) lastPayment = payment;
+        schedule.push({
+          month: i,
+          payment: payment,
+          principal: monthlyPrincipal,
+          interest: interest,
+          remaining: Math.max(0, remaining)
+        });
+      }
+
+      return {
+        firstPayment,
+        lastPayment,
+        totalInterest,
+        totalPayment: principal + totalInterest,
+        schedule
+      };
+    }
+
+    function renderSchedule(schedule, totalMonths) {
+      const tbody = document.getElementById('scheduleBody');
+      let html = '';
+
+      const renderRow = (item) => `
+        <tr>
+          <td>${item.month}</td>
+          <td>${item.payment.toFixed(2)}</td>
+          <td>${item.principal.toFixed(2)}</td>
+          <td>${item.interest.toFixed(2)}</td>
+          <td>${item.remaining.toFixed(2)}</td>
+        </tr>`;
+
+      if (totalMonths <= 24) {
+        schedule.forEach(item => { html += renderRow(item); });
+      } else {
+        // 前12个月
+        for (let i = 0; i < 12; i++) html += renderRow(schedule[i]);
+        // 省略行
+        html += `<tr class="ellipsis-row"><td colspan="5">··· 省略 ${totalMonths - 24} 期 ···</td></tr>`;
+        // 后12个月
+        for (let i = totalMonths - 12; i < totalMonths; i++) html += renderRow(schedule[i]);
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    function getScheduleText() {
+      let text = '期数\t月供(元)\t偿还本金(元)\t偿还利息(元)\t剩余本金(元)\n';
+      currentSchedule.forEach(item => {
+        text += `${item.month}\t${item.payment.toFixed(2)}\t${item.principal.toFixed(2)}\t${item.interest.toFixed(2)}\t${item.remaining.toFixed(2)}\n`;
+      });
+      return text;
+    }
+
+    async function copySchedule() {
+      const text = getScheduleText();
+      await copyToClipboard(text);
+      showMessage('success', '还款计划已复制到剪贴板');
+    }
+
+    async function copySummary() {
+      const s = currentSummary;
+      const mode = currentMode === 'equal-principal-interest' ? '等额本息' : '等额本金';
+      const epi = s.epi, ep = s.ep;
+      let text = `贷款计算器结果\n`;
+      text += `==================\n`;
+      text += `贷款金额：${s.amountWan} 万元\n`;
+      text += `年利率：${s.annualRate}%\n`;
+      text += `贷款期限：${s.totalMonths} 个月\n`;
+      text += `\n【${mode}】\n`;
+      text += `月供：¥${currentSchedule[0].payment.toFixed(2)}\n`;
+      text += `总利息：¥${(currentMode === 'equal-principal-interest' ? epi : ep).totalInterest.toFixed(2)}\n`;
+      text += `总还款额：¥${(currentMode === 'equal-principal-interest' ? epi : ep).totalPayment.toFixed(2)}\n`;
+      text += `\n【对比】\n`;
+      text += `等额本息总利息：¥${epi.totalInterest.toFixed(2)}\n`;
+      text += `等额本金总利息：¥${ep.totalInterest.toFixed(2)}\n`;
+      text += `差额：¥${Math.abs(epi.totalInterest - ep.totalInterest).toFixed(2)}\n`;
+      await copyToClipboard(text);
+      showMessage('success', '汇总信息已复制到剪贴板');
+    }
+
+    function downloadCSV() {
+      let csv = '\uFEFF期数,月供(元),偿还本金(元),偿还利息(元),剩余本金(元)\n';
+      currentSchedule.forEach(item => {
+        csv += `${item.month},${item.payment.toFixed(2)},${item.principal.toFixed(2)},${item.interest.toFixed(2)},${item.remaining.toFixed(2)}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `还款计划_${currentMode === 'equal-principal-interest' ? '等额本息' : '等额本金'}_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showMessage('success', 'CSV文件已下载');
+    }
+
+    calculate();
+  </script>
+</body>
+</html>

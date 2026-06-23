@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XML格式化/压缩 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:900px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.input-area{width:100%;min-height:200px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;resize:vertical;box-sizing:border-line}
+.output-area{width:100%;min-height:200px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;background:#f9f9f9;white-space:pre-wrap;word-break:break-all;overflow:auto;box-sizing:border-box}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;align-items:center}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+select{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">XML格式化/压缩</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>XML格式化/压缩</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">📄 XML格式化/压缩</h2>
+<p style="color:#666;font-size:14px">格式化XML使其易读，或压缩XML去除多余空白</p>
+
+<label style="margin-bottom:8px">输入XML：</label>
+<textarea id="inputXml" class="input-area" placeholder="请粘贴XML内容..."></textarea>
+
+<div class="btn-group">
+<button class="btn btn-primary" onclick="beautifyXml()">✨ 格式化</button>
+<button class="btn btn-outline" onclick="minifyXml()">📦 压缩</button>
+<div style="display:flex;align-items:center;gap:6px;margin-left:10px">
+<label>缩进：</label>
+<select id="indentSize">
+<option value="2">2空格</option>
+<option value="4">4空格</option>
+</select>
+</div>
+<button class="btn btn-success" onclick="copyOutput()" style="margin-left:auto">📋 复制结果</button>
+</div>
+
+<label style="margin-bottom:8px">输出结果：</label>
+<div id="outputArea" class="output-area">结果将显示在这里...</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+
+function copyOutput(){var text=document.getElementById('outputArea').textContent;if(!text||text==='结果将显示在这里...')return;navigator.clipboard.writeText(text).then(function(){showToast('已复制到剪贴板')}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板')})}
+
+function beautifyXml(){
+  var xml=document.getElementById('inputXml').value.trim();
+  if(!xml){showToast('请先输入XML内容');return}
+  var indent=parseInt(document.getElementById('indentSize').value);
+  var indentStr=' '.repeat(indent);
+  try{
+    var result=formatXml(xml,indentStr);
+    document.getElementById('outputArea').textContent=result;
+  }catch(e){
+    document.getElementById('outputArea').textContent='错误：XML格式不正确 - '+e.message;
+  }
+}
+
+function minifyXml(){
+  var xml=document.getElementById('inputXml').value.trim();
+  if(!xml){showToast('请先输入XML内容');return}
+  try{
+    var result=xml.replace(/>\s+</g,'><').replace(/\s+/g,' ').replace(/>\s+/g,'>').replace(/\s+</g,'<').trim();
+    document.getElementById('outputArea').textContent=result;
+  }catch(e){
+    document.getElementById('outputArea').textContent='错误：'+e.message;
+  }
+}
+
+function formatXml(xml,indentStr){
+  var formatted='';
+  var level=0;
+  // Parse XML using regex to handle elements, attributes, comments, CDATA, etc.
+  // Tokenize the XML
+  var tokens=[];
+  var i=0;
+  while(i<xml.length){
+    if(xml.substr(i,4)==='<!--'){
+      var end=xml.indexOf('-->',i);
+      if(end===-1)throw new Error('未闭合的注释');
+      tokens.push({type:'comment',value:xml.substring(i,end+3)});
+      i=end+3;
+    }else if(xml.substr(i,9)==='<![CDATA['){
+      var end=xml.indexOf(']]>',i);
+      if(end===-1)throw new Error('未闭合的CDATA');
+      tokens.push({type:'cdata',value:xml.substring(i,end+3)});
+      i=end+3;
+    }else if(xml.substr(i,2)==='<?'){
+      var end=xml.indexOf('?>',i);
+      if(end===-1)throw new Error('未闭合的处理指令');
+      tokens.push({type:'processing',value:xml.substring(i,end+2)});
+      i=end+2;
+    }else if(xml[i]==='<'){
+      var end=xml.indexOf('>',i);
+      if(end===-1)throw new Error('未闭合的标签');
+      var tagContent=xml.substring(i+1,end);
+      if(tagContent[0]==='/'){
+        tokens.push({type:'close',value:tagContent.substring(1).trim()});
+      }else if(tagContent[end-i-2]==='/'){
+        tokens.push({type:'selfclose',value:tagContent.substring(0,tagContent.length-1).trim()});
+      }else{
+        tokens.push({type:'open',value:tagContent.trim()});
+      }
+      i=end+1;
+    }else{
+      var next=xml.indexOf('<',i);
+      if(next===-1)next=xml.length;
+      var text=xml.substring(i,next).trim();
+      if(text)tokens.push({type:'text',value:text});
+      i=next;
+    }
+  }
+
+  for(var t=0;t<tokens.length;t++){
+    var tok=tokens[t];
+    if(tok.type==='close'){
+      level--;
+      if(level<0)level=0;
+      formatted+=indentStr.repeat(level)+'</'+tok.value+'>\n';
+    }else if(tok.type==='open'){
+      formatted+=indentStr.repeat(level)+'<'+tok.value+'>\n';
+      level++;
+    }else if(tok.type==='selfclose'){
+      formatted+=indentStr.repeat(level)+'<'+tok.value+'/>\n';
+    }else if(tok.type==='text'){
+      formatted+=indentStr.repeat(level)+tok.value+'\n';
+    }else if(tok.type==='comment'){
+      formatted+=indentStr.repeat(level)+tok.value+'\n';
+    }else if(tok.type==='cdata'){
+      formatted+=indentStr.repeat(level)+tok.value+'\n';
+    }else if(tok.type==='processing'){
+      formatted+=indentStr.repeat(level)+tok.value+'\n';
+    }
+  }
+  return formatted.trim();
+}
+</script>
+</body>
+</html>

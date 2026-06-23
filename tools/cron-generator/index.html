@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cron表达式可视化生成器 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tool-container{max-width:900px;margin:0 auto;padding:1rem}
+.breadcrumb{font-size:.85rem;color:#888;margin-bottom:1rem}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
+.card h3{margin-top:0;color:#333;border-bottom:2px solid #4a90d9;padding-bottom:.5rem}
+.cron-field{margin-bottom:1.2rem}
+.cron-field label{display:block;font-weight:bold;margin-bottom:.3rem;color:#333}
+.cron-field .field-help{font-size:.8rem;color:#888;margin-bottom:.3rem}
+select,input[type=number],input[type=text]{border:1px solid #ddd;border-radius:6px;padding:.5rem;font-size:.9rem}
+select{width:100%;max-width:300px}
+input[type=number]{width:80px}
+input[type=text]{width:100px}
+.preset-btns{display:flex;flex-wrap:wrap;gap:.4rem;margin:.3rem 0}
+.preset-btn{background:#f0f0f0;border:1px solid #ddd;border-radius:4px;padding:.3rem .6rem;cursor:pointer;font-size:.8rem;transition:all .2s}
+.preset-btn:hover{background:#4a90d9;color:#fff;border-color:#4a90d9}
+.preset-btn.active{background:#4a90d9;color:#fff;border-color:#4a90d9}
+.cron-display{background:#1a1a2e;color:#00ff41;font-family:monospace;font-size:1.8rem;text-align:center;padding:1.5rem;border-radius:8px;letter-spacing:2px;margin:1rem 0;word-break:break-all}
+.human-desc{background:#e8f4fd;border-radius:6px;padding:1rem;font-size:1rem;color:#333;text-align:center;margin:1rem 0}
+.quick-presets{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}
+.quick-btn{background:#fff;border:2px solid #4a90d9;border-radius:8px;padding:.5rem 1rem;cursor:pointer;font-size:.9rem;transition:all .2s}
+.quick-btn:hover{background:#4a90d9;color:#fff}
+.next-times{background:#f8f9fa;border-radius:6px;padding:1rem;margin-top:1rem}
+.next-times li{padding:.3rem 0;font-family:monospace;font-size:.9rem;border-bottom:1px solid #eee}
+.next-times li:last-child{border-bottom:none}
+.btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius:6px;cursor:pointer;font-size:.9rem;transition:background .2s}
+.btn:hover{background:#357abd}
+.btn-sm{padding:.3rem .7rem;font-size:.8rem}
+.btn-success{background:#27ae60}
+.btn-success:hover{background:#219a52}
+.field-group{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1rem 0}
+.footer{text-align:center;padding:2rem;color:#888;font-size:.8rem;margin-top:2rem;border-top:1px solid #eee}
+@media(max-width:768px){.tool-container{padding:.5rem}.card{padding:1rem}.field-group{grid-template-columns:1fr}.cron-display{font-size:1.2rem}}
+</style>
+</head>
+<body>
+<nav style="background:#2c3e50;color:#fff;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:bold;font-size:1.1rem">🛠 Web工具箱</a>
+</nav>
+<div class="tool-container">
+<div class="breadcrumb"><a href="../../index.html">首页</a> / Cron表达式可视化生成器</div>
+<div class="card">
+<h3>⏰ Cron表达式可视化生成器</h3>
+<p style="color:#666;font-size:.9rem">通过可视化界面生成Cron表达式，支持常用预设和自定义配置</p>
+
+<h4 style="margin-bottom:.5rem">🚀 常用预设</h4>
+<div class="quick-presets">
+<button class="quick-btn" onclick="applyPreset('* * * * *')">每分钟</button>
+<button class="quick-btn" onclick="applyPreset('0 * * * *')">每小时</button>
+<button class="quick-btn" onclick="applyPreset('0 0 * * *')">每天午夜</button>
+<button class="quick-btn" onclick="applyPreset('0 0 * * 1')">每周一</button>
+<button class="quick-btn" onclick="applyPreset('0 0 1 * *')">每月1号</button>
+<button class="quick-btn" onclick="applyPreset('0 0 1 1 *')">每年1月1日</button>
+<button class="quick-btn" onclick="applyPreset('*/5 * * * *')">每5分钟</button>
+<button class="quick-btn" onclick="applyPreset('0 9 * * 1-5')">工作日9点</button>
+</div>
+
+<div class="field-group">
+<div class="cron-field">
+<label>⏱ 分钟 (0-59)</label>
+<div class="field-help">每小时的第几分钟执行</div>
+<div class="preset-btns">
+<button class="preset-btn active" onclick="setField('minute','mode','*');updateAll()">每分钟 *</button>
+<button class="preset-btn" onclick="setField('minute','mode','specific');updateAll()">指定值</button>
+<button class="preset-btn" onclick="setField('minute','mode','range');updateAll()">范围</button>
+<button class="preset-btn" onclick="setField('minute','mode','step');updateAll()">步长 */N</button>
+</div>
+<div id="minute-inputs"></div>
+</div>
+
+<div class="cron-field">
+<label>🕐 小时 (0-23)</label>
+<div class="field-help">每天的第几小时执行</div>
+<div class="preset-btns">
+<button class="preset-btn active" onclick="setField('hour','mode','*');updateAll()">每小时 *</button>
+<button class="preset-btn" onclick="setField('hour','mode','specific');updateAll()">指定值</button>
+<button class="preset-btn" onclick="setField('hour','mode','range');updateAll()">范围</button>
+<button class="preset-btn" onclick="setField('hour','mode','step');updateAll()">步长 */N</button>
+</div>
+<div id="hour-inputs"></div>
+</div>
+
+<div class="cron-field">
+<label>📅 日期 (1-31)</label>
+<div class="field-help">每月的第几天执行</div>
+<div class="preset-btns">
+<button class="preset-btn active" onclick="setField('day','mode','*');updateAll()">每天 *</button>
+<button class="preset-btn" onclick="setField('day','mode','specific');updateAll()">指定值</button>
+<button class="preset-btn" onclick="setField('day','mode','range');updateAll()">范围</button>
+<button class="preset-btn" onclick="setField('day','mode','step');updateAll()">步长 */N</button>
+</div>
+<div id="day-inputs"></div>
+</div>
+
+<div class="cron-field">
+<label>📆 月份 (1-12)</label>
+<div class="field-help">每年的第几个月执行</div>
+<div class="preset-btns">
+<button class="preset-btn active" onclick="setField('month','mode','*');updateAll()">每月 *</button>
+<button class="preset-btn" onclick="setField('month','mode','specific');updateAll()">指定值</button>
+<button class="preset-btn" onclick="setField('month','mode','range');updateAll()">范围</button>
+<button class="preset-btn" onclick="setField('month','mode','step');updateAll()">步长 */N</button>
+</div>
+<div id="month-inputs"></div>
+</div>
+
+<div class="cron-field">
+<label>📆 星期 (0-6, 0=周日)</label>
+<div class="field-help">每周的星期几执行</div>
+<div class="preset-btns">
+<button class="preset-btn active" onclick="setField('weekday','mode','*');updateAll()">每天 *</button>
+<button class="preset-btn" onclick="setField('weekday','mode','specific');updateAll()">指定值</button>
+<button class="preset-btn" onclick="setField('weekday','mode','range');updateAll()">范围</button>
+<button class="preset-btn" onclick="setField('weekday','mode','step');updateAll()">步长 */N</button>
+</div>
+<div id="weekday-inputs"></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3>📋 生成的Cron表达式</h3>
+<div class="cron-display" id="cronExpr">* * * * *</div>
+<div style="text-align:center;margin-bottom:1rem">
+<button class="btn btn-success" onclick="copyCron()">📋 复制表达式</button>
+</div>
+<div class="human-desc" id="humanDesc">每分钟执行一次</div>
+</div>
+
+<div class="card">
+<h3>📅 未来10次执行时间</h3>
+<div class="next-times">
+<ol id="nextTimes"></ol>
+</div>
+</div>
+
+<div class="footer">Web工具箱 - Cron表达式可视化生成器 | 纯前端处理，数据不会上传服务器</div>
+</div>
+
+<script>
+const fields={minute:{mode:'*',value:'0',from:'0',to:'59',step:'5'},hour:{mode:'*',value:'0',from:'0',to:'23',step:'1'},day:{mode:'*',value:'1',from:'1',to:'31',step:'1'},month:{mode:'*',value:'1',from:'1',to:'12',step:'1'},weekday:{mode:'*',value:'0',from:'0',to:'6',step:'1'}};
+
+function setField(name,prop,val){
+fields[name][prop]=val;
+// Update active preset buttons
+const fieldDiv=document.getElementById(name+'-inputs')?.parentElement;
+if(fieldDiv){
+const btns=fieldDiv.querySelectorAll('.preset-btn');
+btns.forEach(b=>b.classList.remove('active'));
+const modes=['*','specific','range','step'];
+const idx=modes.indexOf(val);
+if(idx>=0&&btns[idx])btns[idx].classList.add('active');
+}
+updateAll();
+}
+
+function renderInputs(){
+for(const[name,f]of Object.entries(fields)){
+const el=document.getElementById(name+'-inputs');
+if(!el)continue;
+if(f.mode==='*'){
+el.innerHTML='';
+}else if(f.mode==='specific'){
+el.innerHTML=`<input type="number" min="${name==='month'?1:name==='weekday'?0:0}" max="${name==='month'?12:name==='weekday'?6:name==='day'?31:59}" value="${f.value}" onchange="fields.${name}.value=this.value;updateAll()" style="margin-top:.3rem">`;
+}else if(f.mode==='range'){
+el.innerHTML=`<div style="display:flex;align-items:center;gap:.5rem;margin-top:.3rem"><input type="number" min="0" max="${name==='month'?12:name==='weekday'?6:name==='day'?31:59}" value="${f.from}" onchange="fields.${name}.from=this.value;updateAll()" style="width:60px"> <span>到</span> <input type="number" min="0" max="${name==='month'?12:name==='weekday'?6:name==='day'?31:59}" value="${f.to}" onchange="fields.${name}.to=this.value;updateAll()" style="width:60px"></div>`;
+}else if(f.mode==='step'){
+el.innerHTML=`<div style="display:flex;align-items:center;gap:.5rem;margin-top:.3rem"><span>*/</span><input type="number" min="1" max="59" value="${f.step}" onchange="fields.${name}.step=this.value;updateAll()" style="width:60px"></div>`;
+}
+}
+}
+
+function buildExpression(){
+return['minute','hour','day','month','weekday'].map(name=>{
+const f=fields[name];
+if(f.mode==='*')return'*';
+if(f.mode==='specific')return f.value;
+if(f.mode==='range')return f.from+'-'+f.to;
+if(f.mode==='step')return'*/'+f.step;
+return'*';
+}).join(' ');
+}
+
+function getHumanDesc(){
+const parts=[];
+const f=fields;
+// Simple Chinese description
+if(f.minute.mode==='*'&&f.hour.mode==='*'&&f.day.mode==='*'&&f.month.mode==='*'&&f.weekday.mode==='*')
+return'每分钟执行一次';
+if(f.minute.mode==='step')parts.push(`每${f.minute.step}分钟`);
+else if(f.minute.mode==='specific')parts.push(`第${f.minute.value}分钟`);
+else if(f.minute.mode==='range')parts.push(`第${f.minute.from}-${f.minute.to}分钟`);
+else parts.push('每分钟');
+
+if(f.hour.mode==='step')parts.push(`每${f.hour.step}小时`);
+else if(f.hour.mode==='specific')parts.push(`${f.hour.value}时`);
+else if(f.hour.mode==='range')parts.push(`${f.hour.from}-${f.hour.to}时`);
+else if(f.hour.mode==='*'&&f.minute.mode!=='*')parts.push('每小时');
+
+if(f.day.mode==='specific')parts.push(`${f.day.value}号`);
+else if(f.day.mode==='range')parts.push(`${f.day.from}-${f.day.to}号`);
+
+if(f.month.mode==='specific')parts.push(`${f.month.value}月`);
+else if(f.month.mode==='range')parts.push(`${f.month.from}-${f.month.to}月`);
+
+if(f.weekday.mode==='specific'){
+const days=['周日','周一','周二','周三','周四','周五','周六'];
+parts.push(days[f.weekday.value]||f.weekday.value);
+}else if(f.weekday.mode==='range')parts.push(`周${f.weekday.from}-周${f.weekday.to}`);
+
+return parts.join('，')+'执行';
+}
+
+function getNextTimes(expr,count=10){
+const parts=expr.split(' ');
+if(parts.length!==5)return[];
+const[mi,ho,da,mo,we]=parts.map(parseField);
+const now=new Date();
+const results=[];
+let check=new Date(now);
+check.setSeconds(0);
+check.setMilliseconds(0);
+check.setMinutes(check.getMinutes()+1);
+const maxIter=525960;// ~1 year of minutes
+for(let i=0;i<maxIter&&results.length<count;i++){
+const m=check.getMinutes(),h=check.getHours(),d=check.getDate(),mo_=check.getMonth()+1,w=check.getDay();
+if(mi.has(m)&&ho.has(h)&&da.has(d)&&mo.has(mo_)&&we.has(w)){
+results.push(new Date(check));
+}
+check.setMinutes(check.getMinutes()+1);
+}
+return results;
+}
+
+function parseField(str){
+const set=new Set();
+if(str==='*'){for(let i=0;i<60;i++)set.add(i);return set;}
+str.split(',').forEach(part=>{
+if(part.includes('/')){
+const[base,step]=part.split('/').map(Number);
+const start=base==='*'||base===undefined?0:Number(base);
+for(let i=start;i<60;i+=step)set.add(i);
+}else if(part.includes('-')){
+const[from,to]=part.split('-').map(Number);
+for(let i=from;i<=to;i++)set.add(i);
+}else{
+set.add(Number(part));
+}
+});
+return set;
+}
+
+function updateAll(){
+renderInputs();
+const expr=buildExpression();
+document.getElementById('cronExpr').textContent=expr;
+document.getElementById('humanDesc').textContent=getHumanDesc();
+const times=getNextTimes(expr,10);
+const ol=document.getElementById('nextTimes');
+ol.innerHTML=times.map(t=>`<li>${t.toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short'})}</li>`).join('');
+}
+
+function applyPreset(expr){
+const parts=expr.split(' ');
+if(parts.length!==5)return;
+['minute','hour','day','month','weekday'].forEach((name,i)=>{
+const val=parts[i];
+if(val==='*'){fields[name].mode='*';}
+else if(val.startsWith('*/')){fields[name].mode='step';fields[name].step=val.slice(2);}
+else if(val.includes('-')){fields[name].mode='range';const[f,t]=val.split('-');fields[name].from=f;fields[name].to=t;}
+else{fields[name].mode='specific';fields[name].value=val;}
+});
+updateAll();
+}
+
+function copyCron(){
+const expr=document.getElementById('cronExpr').textContent;
+navigator.clipboard.writeText(expr).then(()=>showToast('已复制Cron表达式'));
+}
+
+function showToast(msg){
+const t=document.createElement('div');
+t.textContent=msg;
+t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:6px;z-index:9999;font-size:.9rem';
+document.body.appendChild(t);
+setTimeout(()=>t.remove(),2000);
+}
+
+window.addEventListener('DOMContentLoaded',updateAll);
+</script>
+</body>
+</html>

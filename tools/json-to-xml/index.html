@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON转XML - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<script src="../../assets/js/common.js"></script>
+<style>
+.tool-container{max-width:1000px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+textarea{width:100%;min-height:220px;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:'Courier New',monospace;font-size:14px;resize:vertical;box-sizing:border-box}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:#4a90d9;color:#fff}
+.btn-primary:hover{background:#357abd}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
+.btn-outline:hover{background:#f5f5f5}
+select,input[type=text]{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
+.options{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.error{color:#e74c3c;font-size:13px;margin-top:4px}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){.panels{grid-template-columns:1fr}}
+.panel-label{font-weight:600;font-size:15px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
+<span style="font-size:14px">JSON转XML</span>
+</nav>
+
+<div class="tool-container">
+<div class="breadcrumb">
+<a href="../../index.html">首页</a> &gt; <span>JSON转XML</span>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;font-size:20px">🔄 JSON ↔ XML 转换</h2>
+<p style="color:#666;font-size:14px">在JSON和XML格式之间互相转换，支持自定义根元素、缩进和属性模式</p>
+
+<div class="options">
+<label>根元素名：<input type="text" id="rootName" value="root" style="width:100px"></label>
+<label>缩进：<select id="indentSize"><option value="2">2空格</option><option value="4">4空格</option></select></label>
+<label><input type="checkbox" id="attrMode"> 属性模式（将简单值作为XML属性）</label>
+</div>
+
+<div class="panels">
+<div>
+<div class="panel-label">JSON 输入</div>
+<textarea id="jsonInput" placeholder='请输入JSON，例如：\n{"name":"张三","age":25,"hobbies":["读书","游泳"]}'></textarea>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="jsonToXml()">JSON → XML ▶</button>
+<button class="btn btn-success" onclick="copyText('xmlOutput')">📋 复制XML</button>
+</div>
+</div>
+<div>
+<div class="panel-label">XML 输出</div>
+<textarea id="xmlOutput" readonly placeholder="XML结果将显示在这里..."></textarea>
+</div>
+</div>
+
+<hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+
+<div class="panels">
+<div>
+<div class="panel-label">XML 输入</div>
+<textarea id="xmlInput" placeholder="请输入XML，例如：\n&lt;root&gt;\n  &lt;name&gt;张三&lt;/name&gt;\n  &lt;age&gt;25&lt;/age&gt;\n&lt;/root&gt;"></textarea>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="xmlToJson()">◀ XML → JSON</button>
+<button class="btn btn-success" onclick="copyText('jsonOutput')">📋 复制JSON</button>
+</div>
+</div>
+<div>
+<div class="panel-label">JSON 输出</div>
+<textarea id="jsonOutput" readonly placeholder="JSON结果将显示在这里..."></textarea>
+</div>
+</div>
+
+<div id="errorMsg" class="error"></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
+© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
+</footer>
+
+<script>
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
+function copyText(id){var text=document.getElementById(id).value;if(!text){showToast('没有内容可复制');return}navigator.clipboard.writeText(text).then(function(){showToast('已复制到剪贴板')}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板')})}
+
+function escapeXml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+
+function isValidXmlName(name){return /^[a-zA-Z_][a-zA-Z0-9_.-]*$/.test(name)}
+
+function jsonToXml(){
+  document.getElementById('errorMsg').textContent='';
+  var input=document.getElementById('jsonInput').value.trim();
+  if(!input){showToast('请先输入JSON');return}
+  var rootName=document.getElementById('rootName').value.trim()||'root';
+  var indent=parseInt(document.getElementById('indentSize').value);
+  var attrMode=document.getElementById('attrMode').checked;
+  try{
+    var obj=JSON.parse(input);
+    var xml=convertJsonToXml(obj,rootName,0,' '.repeat(indent),attrMode);
+    document.getElementById('xmlOutput').value=xml;
+  }catch(e){
+    document.getElementById('errorMsg').textContent='JSON解析错误：'+e.message;
+  }
+}
+
+function convertJsonToXml(obj,name,level,indentStr,attrMode){
+  var pad=indentStr.repeat(level);
+  var padChild=indentStr.repeat(level+1);
+  if(obj===null||obj===undefined)return pad+'<'+name+'/>\n';
+  if(typeof obj!=='object')return pad+'<'+name+'>'+escapeXml(obj)+'</'+name+'>\n';
+  if(Array.isArray(obj)){
+    var xml='';
+    for(var i=0;i<obj.length;i++){
+      xml+=convertJsonToXml(obj[i],name,level,indentStr,attrMode);
+    }
+    return xml;
+  }
+  var attrs='';
+  var children='';
+  var hasChildren=false;
+  var keys=Object.keys(obj);
+  for(var k=0;k<keys.length;k++){
+    var key=keys[k];
+    var val=obj[key];
+    var safeKey=isValidXmlName(key)?key:'item';
+    if(attrMode&&(typeof val==='string'||typeof val==='number'||typeof val==='boolean')){
+      attrs+=' '+safeKey+'="'+escapeXml(val)+'"';
+    }else if(Array.isArray(val)){
+      hasChildren=true;
+      for(var i=0;i<val.length;i++){
+        children+=convertJsonToXml(val[i],safeKey,level+1,indentStr,attrMode);
+      }
+    }else if(typeof val==='object'&&val!==null){
+      hasChildren=true;
+      children+=convertJsonToXml(val,safeKey,level+1,indentStr,attrMode);
+    }else{
+      hasChildren=true;
+      children+=padChild+'<'+safeKey+'>'+(val===null?'':escapeXml(val))+'</'+safeKey+'>\n';
+    }
+  }
+  if(!hasChildren&&attrs)return pad+'<'+name+attrs+'/>\n';
+  if(!hasChildren)return pad+'<'+name+'/>\n';
+  return pad+'<'+name+attrs+'>\n'+children+pad+'</'+name+'>\n';
+}
+
+function xmlToJson(){
+  document.getElementById('errorMsg').textContent='';
+  var input=document.getElementById('xmlInput').value.trim();
+  if(!input){showToast('请先输入XML');return}
+  try{
+    var parser=new DOMParser();
+    var doc=parser.parseFromString(input,'text/xml');
+    var errors=doc.getElementsByTagName('parsererror');
+    if(errors.length>0){
+      document.getElementById('errorMsg').textContent='XML解析错误：'+errors[0].textContent.substring(0,200);
+      return;
+    }
+    var result=xmlNodeToObj(doc.documentElement);
+    document.getElementById('jsonOutput').value=JSON.stringify(result,null,2);
+  }catch(e){
+    document.getElementById('errorMsg').textContent='错误：'+e.message;
+  }
+}
+
+function xmlNodeToObj(node){
+  var obj={};
+  // Handle attributes
+  if(node.attributes&&node.attributes.length>0){
+    for(var i=0;i<node.attributes.length;i++){
+      var attr=node.attributes[i];
+      obj['@'+attr.name]=attr.value;
+    }
+  }
+  // Handle child nodes
+  var children=node.childNodes;
+  var textContent='';
+  var hasElements=false;
+  for(var i=0;i<children.length;i++){
+    var child=children[i];
+    if(child.nodeType===1){// Element
+      hasElements=true;
+      var childName=child.nodeName;
+      var childVal=xmlNodeToObj(child);
+      if(obj[childName]!==undefined){
+        if(!Array.isArray(obj[childName]))obj[childName]=[obj[childName]];
+        obj[childName].push(childVal);
+      }else{
+        obj[childName]=childVal;
+      }
+    }else if(child.nodeType===3){// Text
+      textContent+=child.textContent;
+    }else if(child.nodeType===4){// CDATA
+      textContent+=child.textContent;
+    }
+  }
+  if(!hasElements&&Object.keys(obj).length===0){
+    return textContent.trim();
+  }
+  if(!hasElements&&textContent.trim()){
+    obj['#text']=textContent.trim();
+  }
+  return obj;
+}
+</script>
+</body>
+</html>

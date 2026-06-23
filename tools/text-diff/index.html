@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文本对比/差异比较 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tool-container{max-width:1200px;margin:0 auto;padding:1rem}
+.breadcrumb{font-size:.85rem;color:#888;margin-bottom:1rem}
+.breadcrumb a{color:#4a90d9;text-decoration:none}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
+.card h3{margin-top:0;color:#333;border-bottom:2px solid #4a90d9;padding-bottom:.5rem}
+textarea{width:100%;min-height:200px;border:1px solid #ddd;border-radius:6px;padding:.75rem;font-family:monospace;font-size:.9rem;resize:vertical;box-sizing:border-box}
+textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,.2)}
+.text-panels{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.text-panels .panel label{display:block;font-weight:bold;margin-bottom:.5rem;color:#333}
+.btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius:6px;cursor:pointer;font-size:.9rem;transition:background .2s}
+.btn:hover{background:#357abd}
+.btn-sm{padding:.3rem .7rem;font-size:.8rem}
+.btn-success{background:#27ae60}
+.btn-success:hover{background:#219a52}
+.btn-danger{background:#e74c3c}
+.btn-danger:hover{background:#c0392b}
+.stats-bar{display:flex;gap:1.5rem;flex-wrap:wrap;margin:1rem 0;padding:.8rem;background:#f8f9fa;border-radius:6px}
+.stat{display:flex;align-items:center;gap:.3rem;font-size:.9rem}
+.stat-dot{width:10px;height:10px;border-radius:50%}
+.stat-added .stat-dot{background:#27ae60}
+.stat-removed .stat-dot{background:#e74c3c}
+.stat-modified .stat-dot{background:#f39c12}
+.stat-unchanged .stat-dot{background:#95a5a6}
+.view-toggle{display:flex;gap:.5rem;margin:1rem 0}
+.view-btn{background:#f0f0f0;border:1px solid #ddd;border-radius:4px;padding:.4rem .8rem;cursor:pointer;font-size:.85rem}
+.view-btn.active{background:#4a90d9;color:#fff;border-color:#4a90d9}
+.diff-container{font-family:monospace;font-size:.85rem;border-radius:6px;overflow:auto;max-height:600px;border:1px solid #ddd}
+.diff-line{display:flex;border-bottom:1px solid #f0f0f0;min-height:1.4em;line-height:1.6}
+.diff-line:last-child{border-bottom:none}
+.line-num{width:40px;text-align:right;padding:0 .5rem;color:#999;background:#f8f8f8;border-right:1px solid #eee;user-select:none;flex-shrink:0}
+.line-content{padding:0 .75rem;white-space:pre;flex:1;overflow-x:auto}
+.diff-line.added{background:#e6ffed}
+.diff-line.removed{background:#ffeef0}
+.diff-line.modified{background:#fff8e1}
+.diff-line.added .line-num{background:#d4edda;color:#555}
+.diff-line.removed .line-num{background:#f8d7da;color:#555}
+.diff-line.modified .line-num{background:#fff3cd;color:#555}
+.line-marker{width:20px;text-align:center;flex-shrink:0;font-weight:bold}
+.diff-line.added .line-marker{color:#27ae60}
+.diff-line.removed .line-marker{color:#e74c3c}
+.diff-line.modified .line-marker{color:#f39c12}
+.side-by-side{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd;border-radius:6px;overflow:auto;max-height:600px}
+.side-col{border-right:1px solid #ddd}
+.side-col:last-child{border-right:none}
+.unified-legend{display:flex;gap:1rem;margin:.5rem 0;font-size:.8rem;color:#666}
+.unified-legend span{display:flex;align-items:center;gap:.3rem}
+.unified-legend .dot{width:12px;height:12px;border-radius:2px}
+.footer{text-align:center;padding:2rem;color:#888;font-size:.8rem;margin-top:2rem;border-top:1px solid #eee}
+@media(max-width:768px){.tool-container{padding:.5rem}.card{padding:1rem}.text-panels{grid-template-columns:1fr}.side-by-side{grid-template-columns:1fr}.stats-bar{gap:.8rem}}
+</style>
+</head>
+<body>
+<nav style="background:#2c3e50;color:#fff;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
+<a href="../../index.html" style="color:#fff;text-decoration:none;font-weight:bold;font-size:1.1rem">🛠 Web工具箱</a>
+</nav>
+<div class="tool-container">
+<div class="breadcrumb"><a href="../../index.html">首页</a> / 文本对比/差异比较</div>
+<div class="card">
+<h3>📝 文本对比/差异比较</h3>
+<p style="color:#666;font-size:.9rem">比较两段文本的差异，支持统一视图和并排视图</p>
+<div class="text-panels">
+<div class="panel">
+<label>📄 文本A（原始文本）</label>
+<textarea id="textA" placeholder="在此输入原始文本..."></textarea>
+</div>
+<div class="panel">
+<label>📄 文本B（对比文本）</label>
+<textarea id="textB" placeholder="在此输入对比文本..."></textarea>
+</div>
+</div>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem">
+<button class="btn" onclick="doDiff()">🔍 对比</button>
+<button class="btn" onclick="loadExample()">📝 加载示例</button>
+<button class="btn btn-success" onclick="copyDiff()">📋 复制差异</button>
+<button class="btn btn-danger" onclick="clearAll()">🗑 清空</button>
+</div>
+</div>
+
+<div id="resultArea" style="display:none">
+<div class="card">
+<h3>📊 统计信息</h3>
+<div class="stats-bar">
+<div class="stat stat-added"><span class="stat-dot"></span> 新增行: <strong id="statAdded">0</strong></div>
+<div class="stat stat-removed"><span class="stat-dot"></span> 删除行: <strong id="statRemoved">0</strong></div>
+<div class="stat stat-modified"><span class="stat-dot"></span> 修改行: <strong id="statModified">0</strong></div>
+<div class="stat stat-unchanged"><span class="stat-dot"></span> 未变化: <strong id="statUnchanged">0</strong></div>
+<div class="stat">总行数A: <strong id="statTotalA">0</strong> / 总行数B: <strong id="statTotalB">0</strong></div>
+</div>
+</div>
+
+<div class="card">
+<h3>📋 差异结果</h3>
+<div class="view-toggle">
+<button class="view-btn active" onclick="switchView('unified',this)">📄 统一视图</button>
+<button class="view-btn" onclick="switchView('sideBySide',this)">📊 并排视图</button>
+</div>
+<div class="unified-legend">
+<span><span class="dot" style="background:#e6ffed"></span> 新增</span>
+<span><span class="dot" style="background:#ffeef0"></span> 删除</span>
+<span><span class="dot" style="background:#fff8e1"></span> 修改</span>
+</div>
+<div id="diffOutput"></div>
+</div>
+</div>
+
+<div class="footer">Web工具箱 - 文本对比/差异比较 | 纯前端处理，数据不会上传服务器</div>
+</div>
+
+<script>
+let diffResult=[];
+let currentView='unified';
+
+function doDiff(){
+const textA=document.getElementById('textA').value;
+const textB=document.getElementById('textB').value;
+if(!textA&&!textB){alert('请输入至少一段文本');return;}
+const linesA=textA.split('\n');
+const linesB=textB.split('\n');
+diffResult=lcsDiff(linesA,linesB);
+updateStats(linesA,linesB);
+renderDiff();
+document.getElementById('resultArea').style.display='block';
+}
+
+function lcsDiff(a,b){
+const m=a.length,n=b.length;
+// Build LCS table
+const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+for(let i=1;i<=m;i++){
+for(let j=1;j<=n;j++){
+if(a[i-1]===b[j-1])dp[i][j]=dp[i-1][j-1]+1;
+else dp[i][j]=Math.max(dp[i-1][j],dp[i][j-1]);
+}
+}
+// Backtrack to find diff
+const result=[];
+let i=m,j=n;
+while(i>0||j>0){
+if(i>0&&j>0&&a[i-1]===b[j-1]){
+result.unshift({type:'unchanged',lineA:i,lineB:j,content:a[i-1]});
+i--;j--;
+}else if(j>0&&(i===0||dp[i][j-1]>=dp[i-1][j])){
+result.unshift({type:'added',lineB:j,content:b[j-1]});
+j--;
+}else{
+result.unshift({type:'removed',lineA:i,content:a[i-1]});
+i--;
+}
+}
+return result;
+}
+
+function updateStats(linesA,linesB){
+let added=0,removed=0,modified=0,unchanged=0;
+let i=0;
+while(i<diffResult.length){
+const d=diffResult[i];
+if(d.type==='unchanged'){unchanged++;i++;}
+else if(d.type==='added'){added++;i++;}
+else if(d.type==='removed'){
+// Check if next is added (modified pair)
+if(i+1<diffResult.length&&diffResult[i+1].type==='added'){
+modified++;i+=2;
+}else{removed++;i++;}
+}else{i++;}
+}
+document.getElementById('statAdded').textContent=added;
+document.getElementById('statRemoved').textContent=removed;
+document.getElementById('statModified').textContent=modified;
+document.getElementById('statUnchanged').textContent=unchanged;
+document.getElementById('statTotalA').textContent=linesA.length;
+document.getElementById('statTotalB').textContent=linesB.length;
+}
+
+function renderDiff(){
+if(currentView==='unified')renderUnified();
+else renderSideBySide();
+}
+
+function renderUnified(){
+const container=document.getElementById('diffOutput');
+const div=document.createElement('div');
+div.className='diff-container';
+let processed=[];
+let i=0;
+while(i<diffResult.length){
+const d=diffResult[i];
+if(d.type==='removed'&&i+1<diffResult.length&&diffResult[i+1].type==='added'){
+processed.push({type:'modified',lineA:d.lineA,lineB:diffResult[i+1].lineB,contentA:d.content,contentB:diffResult[i+1].content});
+i+=2;
+}else{
+processed.push(d);
+i++;
+}
+}
+container.innerHTML=processed.map(d=>{
+if(d.type==='unchanged')return`<div class="diff-line"><span class="line-num">${d.lineA}</span><span class="line-marker"> </span><span class="line-content">${escHtml(d.content)}</span></div>`;
+if(d.type==='modified')return`<div class="diff-line removed"><span class="line-num">${d.lineA}</span><span class="line-marker">-</span><span class="line-content">${escHtml(d.contentA)}</span></div><div class="diff-line added"><span class="line-num">${d.lineB}</span><span class="line-marker">+</span><span class="line-content">${escHtml(d.contentB)}</span></div>`;
+if(d.type==='added')return`<div class="diff-line added"><span class="line-num">${d.lineB||''}</span><span class="line-marker">+</span><span class="line-content">${escHtml(d.content)}</span></div>`;
+if(d.type==='removed')return`<div class="diff-line removed"><span class="line-num">${d.lineA}</span><span class="line-marker">-</span><span class="line-content">${escHtml(d.content)}</span></div>`;
+return'';
+}).join('');
+}
+
+function renderSideBySide(){
+const container=document.getElementById('diffOutput');
+const div=document.createElement('div');
+div.className='side-by-side';
+let processed=[];
+let i=0;
+while(i<diffResult.length){
+const d=diffResult[i];
+if(d.type==='removed'&&i+1<diffResult.length&&diffResult[i+1].type==='added'){
+processed.push({type:'modified',lineA:d.lineA,lineB:diffResult[i+1].lineB,contentA:d.content,contentB:diffResult[i+1].content});
+i+=2;
+}else if(d.type==='removed'){
+processed.push({type:'removed',lineA:d.lineA,contentA:d.content,contentB:null});
+i++;
+}else if(d.type==='added'){
+processed.push({type:'added',lineB:d.lineB,contentA:null,contentB:d.content});
+i++;
+}else{
+processed.push(d);
+i++;
+}
+}
+let left='',right='';
+processed.forEach(d=>{
+if(d.type==='unchanged'){
+left+=`<div class="diff-line"><span class="line-num">${d.lineA}</span><span class="line-content">${escHtml(d.content)}</span></div>`;
+right+=`<div class="diff-line"><span class="line-num">${d.lineA}</span><span class="line-content">${escHtml(d.content)}</span></div>`;
+}else if(d.type==='modified'){
+left+=`<div class="diff-line removed"><span class="line-num">${d.lineA}</span><span class="line-content">${escHtml(d.contentA)}</span></div>`;
+right+=`<div class="diff-line added"><span class="line-num">${d.lineB}</span><span class="line-content">${escHtml(d.contentB)}</span></div>`;
+}else if(d.type==='removed'){
+left+=`<div class="diff-line removed"><span class="line-num">${d.lineA}</span><span class="line-content">${escHtml(d.contentA)}</span></div>`;
+right+=`<div class="diff-line"><span class="line-num"></span><span class="line-content"></span></div>`;
+}else if(d.type==='added'){
+left+=`<div class="diff-line"><span class="line-num"></span><span class="line-content"></span></div>`;
+right+=`<div class="diff-line added"><span class="line-num">${d.lineB}</span><span class="line-content">${escHtml(d.contentB)}</span></div>`;
+}
+});
+div.innerHTML=`<div class="side-col diff-container">${left}</div><div class="side-col diff-container">${right}</div>`;
+container.innerHTML='';
+container.appendChild(div);
+}
+
+function switchView(view,btn){
+currentView=view;
+document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+if(diffResult.length)renderDiff();
+}
+
+function copyDiff(){
+const lines=diffResult.map(d=>{
+if(d.type==='unchanged')return'  '+d.content;
+if(d.type==='added')return'+ '+d.content;
+if(d.type==='removed')return'- '+d.content;
+return'';
+}).filter(Boolean);
+navigator.clipboard.writeText(lines.join('\n')).then(()=>showToast('已复制差异内容'));
+}
+
+function loadExample(){
+document.getElementById('textA').value=`function hello() {
+    console.log("Hello World");
+    return true;
+}
+
+function add(a, b) {
+    return a + b;
+}`;
+document.getElementById('textB').value=`function hello(name) {
+    console.log("Hello " + name);
+    return true;
+}
+
+function add(a, b, c) {
+    return a + b + c;
+}
+
+function multiply(a, b) {
+    return a * b;
+}`;
+}
+
+function clearAll(){
+document.getElementById('textA').value='';
+document.getElementById('textB').value='';
+document.getElementById('resultArea').style.display='none';
+}
+
+function escHtml(s){
+return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg){
+const t=document.createElement('div');
+t.textContent=msg;
+t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:6px;z-index:9999;font-size:.9rem';
+document.body.appendChild(t);
+setTimeout(()=>t.remove(),2000);
+}
+</script>
+</body>
+</html>
