@@ -1,96 +1,56 @@
 # Web Tools - 在线工具聚合站
 
-**💻 纯前端在线工具集合，数据不出浏览器，保护隐私**
-**🌐 访问地址：[https://smallyear.github.io/web_tools/](https://smallyear.github.io/web_tools/)**
-
----
-
-## 工具列表
-
-|| 工具 | 描述 | 状态 |
-||------|------|------|
-|| 🆔 **身份证水印生成器** | 上传身份证，一键添加防伪水印 | ✅ |
-|| 📝 **JSON格式化工具** | JSON格式化、压缩、语法校验、高亮 | ✅ |
-|| 📱 **二维码生成器** | 文本/链接生成二维码，自定义颜色 | ✅ |
-|| 🔤 **Base64编解码** | 文字编解码、图片转Base64 | ✅ |
-|| ✏️ **Markdown编辑器** | 实时预览，导出HTML/PDF | ✅ |
-|| 🗜️ **图片压缩工具** | JPG/PNG压缩，降低文件大小 | ✅ |
-|| ✂️ **图片裁剪工具** | 证件照尺寸裁剪，自由拖动 | ✅ |
-|| 🎨 **证件照背景更换** | 更换证件照背景，支持蓝/白/红底 | ✅ |
-|| 🔐 **密码生成器** | 高强度随机密码，自定义规则 | ✅ |
-|| 📅 **日期计算器** | 日期差/加减/工作日计算 | ✅ |
-|| 💱 **汇率计算器** | 实时汇率查询和货币转换 | ✅ |
-
----
-
-## 项目结构
-
-```
-web_tools/
-├── index.html              # 首页 - 工具导航卡片
-├── CNAME                   # 自定义域名 (Web Tools 在线工具)
-├── assets/
-│   ├── css/style.css       # 全局样式
-│   └── js/common.js        # 公共函数 (拖拽上传、消息提示等)
-├── tools/
-│   ├── id-watermark/       # 身份证水印生成器
-│   ├── json-formatter/     # JSON格式化工具
-│   ├── qrcode-generator/   # 二维码生成器
-│   ├── base64-converter/   # Base64编解码
-│   ├── markdown-editor/    # Markdown编辑器
-│   ├── image-compressor/   # 图片压缩工具
-│   ├── image-cropper/      # 图片裁剪工具
-│   ├── photo-background-changer/  # 证件照背景更换
-│   ├── password-generator/ # 密码生成器
-│   ├── date-calculator/    # 日期计算器
-│   └── currency-converter/ # 汇率计算器
-├── README.md               # 本文件
-├── DEPLOYMENT.md           # 部署说明
-├── DOMAIN_SETUP.md         # 域名+备案+CDN全流程
-└── CHECKLIST.md            # 开发清单
-```
-
----
-
-## 技术栈
-
-| 层面 | 技术 |
-|------|------|
-| 前端 | HTML5 + CSS3 + Vanilla JavaScript |
-| 样式 | 原生 CSS，CSS Variables 主题系统 |
-| 部署 | GitHub Pages + Cloudflare CDN |
-| 后端 | 无（所有工具纯前端运行）|
-| 依赖 | 无外部依赖，零构建步骤 |
-
----
-
-## 本地预览
-
-```bash
-cd /Users/grape/workspace/web_tools
-python3 -m http.server 8080
-# 访问 http://localhost:8080
-```
+🛠️ **115+ 实用在线工具**，纯前端运行，数据不出浏览器。
 
 ## 在线访问
 
 GitHub Pages 自动部署：https://smallyear.github.io/web_tools/
 
----
+## 工具分类（12大类）
+
+| 分类 | 数量 | 示例 |
+|------|------|------|
+| 开发者工具 | 20 | JSON格式化、代码格式化全家桶、正则测试、JWT解析 |
+| 文本工具 | 16 | 大小写转换、文本工作流、文本对比、词频统计 |
+| 图像工具 | 17 | 二维码生成/解码、图片压缩、PDF合并、GIF分割 |
+| 换算工具 | 13 | 进制、字节、长度、重量、温度、角度、速度、压力 |
+| 编码解码 | 11 | Base64、MD5/SHA、AES加密、UUID、URL编码 |
+| 便民查询 | 10 | 身份证解析、亲戚称谓、车牌查询、垃圾分类 |
+| 日期时间 | 8 | 时间戳、农历、工作日、秒表、保质期 |
+| 金融工具 | 6 | 贷款计算、个税、人民币大写、汇率 |
+| 趣味工具 | 6 | LED弹幕、抽奖转盘、随机点名、键盘测试 |
+| 语言工具 | 3 | 拼音转换、数字转英文、成语词典 |
+| 办公工具 | 3 | FID对比、PDF合并、图片转PDF |
+| 文档工具 | 1 | Markdown编辑器 |
+
+## 特色功能
+
+- 🔍 **搜索 + 分类筛选** — 快速找到需要的工具
+- 🌙 **暗黑模式** — 一键切换，偏好本地保存
+- ⚡ **文本工作流引擎** — 链式串联多个操作，流水线处理
+- 🔀 **JSON对比工具** — 结构化 diff 高亮
+- 💻 **代码格式化全家桶** — JSON/CSS/SQL/JS/HTML/XML/YAML
+- 📊 **工具使用统计** — 本地存储访问次数
+
+## 技术栈
+
+- 纯前端 HTML/CSS/JS，无框架、无构建
+- 各工具独立目录 `tools/<name>/index.html`
+- 共享样式 `assets/css/style.css` + 共享工具函数 `assets/js/common.js`
+- GitHub Pages 部署，自动发布
 
 ## 开发状态
 
-- [x] 第一批工具（10个）全部完成
+- [x] 115个工具全部完成
+- [x] 搜索 + 分类筛选
+- [x] 暗黑模式
 - [x] GitHub Pages 部署
-- [ ] 自定义域名配置（见 `DOMAIN_SETUP.md`）
+- [ ] 自定义域名配置
 - [ ] ICP 备案
-- [ ] Cloudflare CDN 配置
-
----
 
 ## 贡献
 
-本项目纯前端，各工具模块互相独立，每个工具在 `tools/<name>/index.html` 下单独目录开发。新增工具按现有结构添加卡片即可。
+本项目纯前端，各工具模块互相独立。新增工具按现有结构添加目录和卡片即可。
 
 ---
 

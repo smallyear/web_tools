@@ -217,6 +217,11 @@
             </div>
           </div>
 
+          <div class="checkbox-group">
+            <input type="checkbox" id="diffExcludeHolidays">
+            <label for="diffExcludeHolidays">排除法定节假日计算工作日差</label>
+          </div>
+
           <div class="btn-group-row">
             <button class="btn btn-primary" id="calcDiffBtn">✨ 计算</button>
             <button class="btn btn-secondary" id="swapDiffBtn">🔄 交换日期</button>
@@ -242,6 +247,14 @@
                 <span class="detail-label">结束日期是周几</span>
                 <span class="detail-value" id="endWeekday">-</span>
               </div>
+              <div class="detail-item" id="diffWorkdaysRow" style="display:none;">
+                <span class="detail-label">工作日差（排除节假日）</span>
+                <span class="detail-value" id="diffWorkdays">-</span>
+              </div>
+            </div>
+            <div id="diffHolidayListSection" style="display:none; margin-top:12px; text-align:left;">
+              <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">📋 范围内的法定节假日</div>
+              <div id="diffHolidayListItems" style="font-size:13px; color:var(--text);"></div>
             </div>
           </div>
         </div>
@@ -309,6 +322,10 @@
             <input type="checkbox" id="excludeWeekends" checked>
             <label for="excludeWeekends">排除周末（周六、周日）</label>
           </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="excludeHolidays">
+            <label for="excludeHolidays">排除法定节假日（元旦/春节/清明/劳动节/端午/中秋/国庆）</label>
+          </div>
 
           <div class="btn-group-row">
             <button class="btn btn-primary" id="calcWorkdaysBtn">✨ 计算</button>
@@ -327,9 +344,17 @@
                 <span class="detail-value" id="weekendDays">0 天</span>
               </div>
               <div class="detail-item">
+                <span class="detail-label">节假日天数</span>
+                <span class="detail-value" id="holidayDaysCount">0 天</span>
+              </div>
+              <div class="detail-item">
                 <span class="detail-label">平均每周工作日</span>
                 <span class="detail-value" id="avgWorkdaysPerWeek">-</span>
               </div>
+            </div>
+            <div id="holidayListSection" style="display:none; margin-top:12px; text-align:left;">
+              <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;">📋 范围内的法定节假日</div>
+              <div id="holidayListItems" style="font-size:13px; color:var(--text);"></div>
             </div>
           </div>
         </div>
@@ -435,6 +460,36 @@
         document.getElementById('startWeekday').textContent = formatWeekday(start);
         document.getElementById('endWeekday').textContent = formatWeekday(end);
 
+        // 节假日相关
+        const diffExcludeHolidays = document.getElementById('diffExcludeHolidays');
+        const diffWorkdaysRow = document.getElementById('diffWorkdaysRow');
+        const diffHolidayListSection = document.getElementById('diffHolidayListSection');
+        const diffHolidayListItems = document.getElementById('diffHolidayListItems');
+
+        const holidaysInRange = getHolidaysInRange(start, end);
+
+        if (holidaysInRange.length > 0) {
+          diffHolidayListSection.style.display = 'block';
+          diffHolidayListItems.innerHTML = holidaysInRange.map(h =>
+            `<div style="padding:3px 0;">📅 ${h.date} - ${h.name}</div>`
+          ).join('');
+        } else {
+          diffHolidayListSection.style.display = 'none';
+        }
+
+        if (diffExcludeHolidays.checked) {
+          const workStart = start < end ? start : end;
+          const workEnd = start < end ? end : start;
+          let workdays = 0;
+          for (let d = new Date(workStart); d <= workEnd; d.setDate(d.getDate() + 1)) {
+            if (!isWeekend(d) && !isHoliday(d)) workdays++;
+          }
+          document.getElementById('diffWorkdays').textContent = workdays + ' 天';
+          diffWorkdaysRow.style.display = 'flex';
+        } else {
+          diffWorkdaysRow.style.display = 'none';
+        }
+
         diffResult.style.display = 'block';
         showMessage('success', '计算完成');
       });
@@ -497,8 +552,69 @@
       const workStartDate = document.getElementById('workStartDate');
       const workEndDate = document.getElementById('workEndDate');
       const excludeWeekends = document.getElementById('excludeWeekends');
+      const excludeHolidays = document.getElementById('excludeHolidays');
       const calcWorkdaysBtn = document.getElementById('calcWorkdaysBtn');
       const workdaysResult = document.getElementById('workdaysResult');
+
+      // 中国法定节假日数据（2024-2026）
+      // 元旦1天, 春节3天, 清明1天, 劳动节1天, 端午1天, 中秋1天, 国庆3天
+      const HOLIDAYS = {
+        2024: [
+          { date: '2024-01-01', name: '元旦' },
+          { date: '2024-02-10', name: '春节' }, { date: '2024-02-11', name: '春节' }, { date: '2024-02-12', name: '春节' },
+          { date: '2024-04-04', name: '清明节' },
+          { date: '2024-05-01', name: '劳动节' },
+          { date: '2024-06-10', name: '端午节' },
+          { date: '2024-09-17', name: '中秋节' },
+          { date: '2024-10-01', name: '国庆节' }, { date: '2024-10-02', name: '国庆节' }, { date: '2024-10-03', name: '国庆节' }
+        ],
+        2025: [
+          { date: '2025-01-01', name: '元旦' },
+          { date: '2025-01-29', name: '春节' }, { date: '2025-01-30', name: '春节' }, { date: '2025-01-31', name: '春节' },
+          { date: '2025-04-04', name: '清明节' },
+          { date: '2025-05-01', name: '劳动节' },
+          { date: '2025-05-31', name: '端午节' },
+          { date: '2025-10-06', name: '中秋节' },
+          { date: '2025-10-01', name: '国庆节' }, { date: '2025-10-02', name: '国庆节' }, { date: '2025-10-03', name: '国庆节' }
+        ],
+        2026: [
+          { date: '2026-01-01', name: '元旦' },
+          { date: '2026-02-17', name: '春节' }, { date: '2026-02-18', name: '春节' }, { date: '2026-02-19', name: '春节' },
+          { date: '2026-04-05', name: '清明节' },
+          { date: '2026-05-01', name: '劳动节' },
+          { date: '2026-06-19', name: '端午节' },
+          { date: '2026-10-04', name: '中秋节' },
+          { date: '2026-10-01', name: '国庆节' }, { date: '2026-10-02', name: '国庆节' }, { date: '2026-10-03', name: '国庆节' }
+        ]
+      };
+
+      function getAllHolidays() {
+        const all = [];
+        for (const year of Object.keys(HOLIDAYS)) {
+          all.push(...HOLIDAYS[year]);
+        }
+        return all;
+      }
+
+      function getHolidaysInRange(start, end) {
+        const all = getAllHolidays();
+        const results = [];
+        const startTime = new Date(start); startTime.setHours(0,0,0,0);
+        const endTime = new Date(end); endTime.setHours(0,0,0,0);
+        for (const h of all) {
+          const hd = new Date(h.date + 'T00:00:00');
+          if (hd >= startTime && hd <= endTime) {
+            results.push(h);
+          }
+        }
+        return results;
+      }
+
+      function isHoliday(date) {
+        const ds = formatDate(date);
+        const all = getAllHolidays();
+        return all.some(h => h.date === ds);
+      }
 
       const monthAgo = new Date();
       monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -522,6 +638,7 @@
 
         let workdays = totalDays;
         let weekendDays = 0;
+        let holidayDays = 0;
 
         if (excludeWeekends.checked) {
           for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -532,12 +649,35 @@
           }
         }
 
+        if (excludeHolidays.checked) {
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            if (isHoliday(d) && !isWeekend(d)) {
+              holidayDays++;
+              workdays--;
+            }
+          }
+        }
+
         const avg = (workdays / (totalDays / 7)).toFixed(1);
 
         document.getElementById('workdaysCount').textContent = workdays;
         document.getElementById('totalDays').textContent = `${totalDays} 天`;
         document.getElementById('weekendDays').textContent = `${weekendDays} 天`;
+        document.getElementById('holidayDaysCount').textContent = `${holidayDays} 天`;
         document.getElementById('avgWorkdaysPerWeek').textContent = `${avg} 天/周`;
+
+        // 显示范围内的节假日
+        const holidaysInRange = getHolidaysInRange(start, end);
+        const holidayListSection = document.getElementById('holidayListSection');
+        const holidayListItems = document.getElementById('holidayListItems');
+        if (holidaysInRange.length > 0) {
+          holidayListSection.style.display = 'block';
+          holidayListItems.innerHTML = holidaysInRange.map(h =>
+            `<div style="padding:3px 0;">📅 ${h.date} - ${h.name}</div>`
+          ).join('');
+        } else {
+          holidayListSection.style.display = 'none';
+        }
 
         workdaysResult.style.display = 'block';
         showMessage('success', '计算完成');

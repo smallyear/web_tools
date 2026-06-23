@@ -142,3 +142,55 @@ function readFileAsArrayBuffer(file, callback) {
   reader.onerror = () => showMessage('error', '文件读取失败');
   reader.readAsArrayBuffer(file);
 }
+
+// 暗色模式切换
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+  updateDarkModeIcon(isDark);
+}
+
+function updateDarkModeIcon(isDark) {
+  const btn = document.querySelector('.dark-mode-toggle');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+
+function initDarkMode() {
+  const saved = localStorage.getItem('darkMode');
+  if (saved === 'true') {
+    document.body.classList.add('dark-mode');
+  }
+  updateDarkModeIcon(saved === 'true');
+}
+
+// 使用统计
+function trackVisit(toolName) {
+  if (!toolName) return;
+  const stats = JSON.parse(localStorage.getItem('toolStats') || '{}');
+  stats[toolName] = (stats[toolName] || 0) + 1;
+  localStorage.setItem('toolStats', JSON.stringify(stats));
+}
+
+function getTopTools(n) {
+  const stats = JSON.parse(localStorage.getItem('toolStats') || '{}');
+  return Object.entries(stats)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, n);
+}
+
+function getTotalVisits() {
+  const stats = JSON.parse(localStorage.getItem('toolStats') || '{}');
+  return Object.values(stats).reduce((sum, count) => sum + count, 0);
+}
+
+// 自动初始化：暗黑模式 + 访问统计（每个页面加载时自动执行）
+(function autoInit() {
+  // 暗黑模式
+  initDarkMode();
+  // 访问统计：从URL提取工具名
+  const match = window.location.pathname.match(/\/tools\/([^/]+)\//);
+  if (match) {
+    trackVisit(match[1]);
+  }
+})();
