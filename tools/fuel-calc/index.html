@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>油耗计算器 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:0;background:#f5f7fa;color:#333}
+.navbar{background:#2c3e50;padding:12px 20px;display:flex;align-items:center}
+.navbar a{color:#fff;text-decoration:none;font-size:18px;font-weight:bold}
+.breadcrumb{padding:10px 20px;font-size:14px;color:#666;background:#fff;border-bottom:1px solid #eee}
+.breadcrumb a{color:#3498db;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:700px;margin:20px auto;padding:0 15px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:30px;margin-bottom:20px}
+.card h2{margin-top:0;color:#2c3e50}
+.tabs{display:flex;margin-bottom:20px;border-bottom:2px solid #eee}
+.tab{flex:1;padding:12px;text-align:center;cursor:pointer;font-weight:600;color:#888;transition:all .2s;border-bottom:3px solid transparent}
+.tab.active{color:#3498db;border-bottom-color:#3498db}
+.tab:hover{color:#3498db}
+.tab-content{display:none}.tab-content.active{display:block}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;margin-bottom:6px;font-weight:600;color:#555}
+.form-group input{width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;box-sizing:border-box;transition:border .2s}
+.form-group input:focus{outline:none;border-color:#3498db}
+.btn{background:#3498db;color:#fff;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;transition:background .2s;width:100%}
+.btn:hover{background:#2980b9}
+.result-section{margin-top:20px;display:none}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.result-item{background:#f8f9fa;border-radius:8px;padding:14px;text-align:center;border-left:4px solid #e67e22}
+.result-item .label{font-size:13px;color:#888;margin-bottom:4px}
+.result-item .value{font-size:20px;font-weight:bold;color:#2c3e50}
+.result-item.full-width{grid-column:1/-1}
+.footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
+@media(max-width:600px){.result-grid{grid-template-columns:1fr}.container{padding:0 10px}.card{padding:20px}}
+</style>
+</head>
+<body>
+<div class="navbar"><a href="../../index.html">🧰 在线工具箱</a></div>
+<div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../../index.html">工具列表</a> / 油耗计算器</div>
+<div class="container">
+<div class="card">
+<h2>⛽ 油耗计算器</h2>
+<div class="tabs">
+<div class="tab active" onclick="switchTab(0)">正算：里程+加油量 → 油耗</div>
+<div class="tab" onclick="switchTab(1)">反算：油耗+里程 → 预估费用</div>
+</div>
+<div class="tab-content active" id="tab0">
+<div class="form-group">
+<label>行驶里程（km）</label>
+<input type="number" id="distance1" min="1" placeholder="例如：500">
+</div>
+<div class="form-group">
+<label>加油量（L）</label>
+<input type="number" id="fuel1" min="0.1" step="0.01" placeholder="例如：35">
+</div>
+<div class="form-group">
+<label>油价（元/L）</label>
+<input type="number" id="price1" min="0.1" step="0.01" value="7.5" placeholder="7.5">
+</div>
+<button class="btn" onclick="calcForward()">计算油耗</button>
+</div>
+<div class="tab-content" id="tab1">
+<div class="form-group">
+<label>百公里油耗（L/100km）</label>
+<input type="number" id="consumption2" min="0.1" step="0.1" placeholder="例如：8.5">
+</div>
+<div class="form-group">
+<label>预计行驶里程（km）</label>
+<input type="number" id="distance2" min="1" placeholder="例如：600">
+</div>
+<div class="form-group">
+<label>油价（元/L）</label>
+<input type="number" id="price2" min="0.1" step="0.01" value="7.5" placeholder="7.5">
+</div>
+<button class="btn" onclick="calcReverse()">预估费用</button>
+</div>
+<div class="result-section" id="results">
+<div class="result-grid">
+<div class="result-item full-width">
+<div class="label" id="r1Label">百公里油耗</div>
+<div class="value" id="r1Value">-</div>
+</div>
+<div class="result-item">
+<div class="label" id="r2Label">每公里油费</div>
+<div class="value" id="r2Value">-</div>
+</div>
+<div class="result-item">
+<div class="label" id="r3Label">每公里油量</div>
+<div class="value" id="r3Value">-</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">© 2026 在线工具箱 | 纯前端计算，数据不上传</div>
+<script src="../../assets/js/common.js"></script>
+<script>
+function switchTab(i){
+document.querySelectorAll('.tab').forEach((t,idx)=>t.classList.toggle('active',idx===i));
+document.querySelectorAll('.tab-content').forEach((t,idx)=>t.classList.toggle('active',idx===i));
+document.getElementById('results').style.display='none';
+}
+function calcForward(){
+const d=parseFloat(document.getElementById('distance1').value);
+const f=parseFloat(document.getElementById('fuel1').value);
+const p=parseFloat(document.getElementById('price1').value);
+if(!d||!f||!p||d<=0||f<=0){alert('请填写完整且有效的数值');return;}
+const consumption=f/d*100;
+const costPerKm=f*p/d;
+const fuelPerKm=f/d;
+document.getElementById('r1Label').textContent='百公里油耗';
+document.getElementById('r1Value').textContent=consumption.toFixed(2)+' L/100km';
+document.getElementById('r2Label').textContent='每公里油费';
+document.getElementById('r2Value').textContent='¥'+costPerKm.toFixed(2);
+document.getElementById('r3Label').textContent='每公里油量';
+document.getElementById('r3Value').textContent=(fuelPerKm*1000).toFixed(0)+' mL';
+document.getElementById('results').style.display='block';
+}
+function calcReverse(){
+const c=parseFloat(document.getElementById('consumption2').value);
+const d=parseFloat(document.getElementById('distance2').value);
+const p=parseFloat(document.getElementById('price2').value);
+if(!c||!d||!p||c<=0||d<=0){alert('请填写完整且有效的数值');return;}
+const totalFuel=c*d/100;
+const totalCost=totalFuel*p;
+document.getElementById('r1Label').textContent='所需加油量';
+document.getElementById('r1Value').textContent=totalFuel.toFixed(2)+' L';
+document.getElementById('r2Label').textContent='总油费';
+document.getElementById('r2Value').textContent='¥'+totalCost.toFixed(2);
+document.getElementById('r3Label').textContent='每公里油费';
+document.getElementById('r3Value').textContent='¥'+(totalCost/d).toFixed(2);
+document.getElementById('results').style.display='block';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>键盘测试 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:0;background:#f5f7fa;color:#333}
+.navbar{background:#2c3e50;padding:12px 20px;display:flex;align-items:center}
+.navbar a{color:#fff;text-decoration:none;font-size:18px;font-weight:bold}
+.breadcrumb{padding:10px 20px;font-size:14px;color:#666;background:#fff;border-bottom:1px solid #eee}
+.breadcrumb a{color:#3498db;text-decoration:none}
+.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:1000px;margin:20px auto;padding:0 15px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:20px;margin-bottom:20px}
+.card h2{margin-top:0;color:#2c3e50}
+.info-bar{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.info-item{background:#f0f4f8;border-radius:8px;padding:10px 16px;font-size:14px}
+.info-item span{font-weight:bold;color:#3498db}
+.keyboard{display:flex;flex-direction:column;gap:4px;user-select:none;overflow-x:auto;padding-bottom:8px}
+.row{display:flex;gap:4px}
+.key{min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f8f8f8,#e8e8e8);border:1px solid #ccc;border-radius:5px;font-size:12px;font-weight:600;color:#333;box-shadow:0 2px 0 #bbb;transition:all .05s;position:relative;flex-shrink:0}
+.key.active{background:linear-gradient(180deg,#3498db,#2980b9);color:#fff;border-color:#2471a3;box-shadow:0 0 10px rgba(52,152,219,.5);transform:translateY(2px)}
+.key.w1{width:40px}.key.w15{width:62px}.key.w2{width:84px}.key.w25{width:94px}.key.w3{width:120px}.key.w4{width:160px}.key.w5{width:200px}
+.key.w6{width:248px}.key.space{flex:1;min-width:200px}
+.btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btn{background:#e74c3c;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;transition:background .2s}
+.btn:hover{background:#c0392b}
+.btn.blue{background:#3498db}.btn.blue:hover{background:#2980b9}
+.footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:20px}
+@media(max-width:768px){.key{min-width:28px;height:32px;font-size:10px}.key.w1{width:28px}.key.w15{width:44px}.key.w2{width:58px}.key.w25{width:66px}.key.w3{width:84px}.key.w4{width:112px}.key.w5{width:140px}.key.w6{width:174px}.key.space{min-width:140px}.card{padding:12px}}
+</style>
+</head>
+<body>
+<div class="navbar"><a href="../../index.html">🧰 在线工具箱</a></div>
+<div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../../index.html">工具列表</a> / 键盘测试</div>
+<div class="container">
+<div class="card">
+<h2>⌨️ 键盘测试</h2>
+<div class="info-bar">
+<div class="info-item">按键名称：<span id="keyName">-</span></div>
+<div class="info-item">keyCode：<span id="keyCode">-</span></div>
+<div class="info-item">位置：<span id="keySide">-</span></div>
+<div class="info-item">按键次数：<span id="keyCount">0</span></div>
+</div>
+<div class="keyboard" id="keyboard"></div>
+<div class="btn-row">
+<button class="btn blue" onclick="resetAll()">🔄 重置</button>
+</div>
+</div>
+</div>
+<div class="footer">© 2026 在线工具箱 | 请在页面内按下任意键进行测试</div>
+<script src="../../assets/js/common.js"></script>
+<script>
+let pressCount=0;
+const keyMap={};
+const rows=[
+// Row 0: Function keys
+[{k:'Escape',w:'w1',l:'Esc'},{k:'F1',w:'w1',l:'F1'},{k:'F2',w:'w1',l:'F2'},{k:'F3',w:'w1',l:'F3'},{k:'F4',w:'w1',l:'F4'},{k:'_',w:'w15'},{k:'F5',w:'w1',l:'F5'},{k:'F6',w:'w1',l:'F6'},{k:'F7',w:'w1',l:'F7'},{k:'F8',w:'w1',l:'F8'},{k:'_',w:'w15'},{k:'F9',w:'w1',l:'F9'},{k:'F10',w:'w1',l:'F10'},{k:'F11',w:'w1',l:'F11'},{k:'F12',w:'w1',l:'F12'}],
+// Row 1
+[{k:'Backquote',w:'w1',l:'`'},{k:'Digit1',w:'w1',l:'1'},{k:'Digit2',w:'w1',l:'2'},{k:'Digit3',w:'w1',l:'3'},{k:'Digit4',w:'w1',l:'4'},{k:'Digit5',w:'w1',l:'5'},{k:'Digit6',w:'w1',l:'6'},{k:'Digit7',w:'w1',l:'7'},{k:'Digit8',w:'w1',l:'8'},{k:'Digit9',w:'w1',l:'9'},{k:'Digit0',w:'w1',l:'0'},{k:'Minus',w:'w1',l:'-'},{k:'Equal',w:'w1',l:'='},{k:'Backspace',w:'w2',l:'Backspace'}],
+// Row 2
+[{k:'Tab',w:'w15',l:'Tab'},{k:'KeyQ',w:'w1',l:'Q'},{k:'KeyW',w:'w1',l:'W'},{k:'KeyE',w:'w1',l:'E'},{k:'KeyR',w:'w1',l:'R'},{k:'KeyT',w:'w1',l:'T'},{k:'KeyY',w:'w1',l:'Y'},{k:'KeyU',w:'w1',l:'U'},{k:'KeyI',w:'w1',l:'I'},{k:'KeyO',w:'w1',l:'O'},{k:'KeyP',w:'w1',l:'P'},{k:'BracketLeft',w:'w1',l:'['},{k:'BracketRight',w:'w1',l:']'},{k:'Backslash',w:'w15',l:'\\'}],
+// Row 3
+[{k:'CapsLock',w:'w175',l:'Caps'},{k:'KeyA',w:'w1',l:'A'},{k:'KeyS',w:'w1',l:'S'},{k:'KeyD',w:'w1',l:'D'},{k:'KeyF',w:'w1',l:'F'},{k:'KeyG',w:'w1',l:'G'},{k:'KeyH',w:'w1',l:'H'},{k:'KeyJ',w:'w1',l:'J'},{k:'KeyK',w:'w1',l:'K'},{k:'KeyL',w:'w1',l:'L'},{k:'Semicolon',w:'w1',l:';'},{k:'Quote',w:'w1',l:"'"},{k:'Enter',w:'w225',l:'Enter'}],
+// Row 4
+[{k:'ShiftLeft',w:'w25',l:'Shift'},{k:'KeyZ',w:'w1',l:'Z'},{k:'KeyX',w:'w1',l:'X'},{k:'KeyC',w:'w1',l:'C'},{k:'KeyV',w:'w1',l:'V'},{k:'KeyB',w:'w1',l:'B'},{k:'KeyN',w:'w1',l:'N'},{k:'KeyM',w:'w1',l:'M'},{k:'Comma',w:'w1',l:','},{k:'Period',w:'w1',l:'.'},{k:'Slash',w:'w1',l:'/'},{k:'ShiftRight',w:'w25',l:'Shift'}],
+// Row 5
+[{k:'ControlLeft',w:'w15',l:'Ctrl'},{k:'MetaLeft',w:'w1',l:'Win'},{k:'AltLeft',w:'w15',l:'Alt'},{k:'Space',w:'space',l:''},{k:'AltRight',w:'w15',l:'Alt'},{k:'MetaRight',w:'w1',l:'Win'},{k:'ContextMenu',w:'w1',l:'Menu'},{k:'ControlRight',w:'w15',l:'Ctrl'}],
+// Row 6: Extra keys
+[{k:'PrintScreen',w:'w1',l:'PrtSc'},{k:'ScrollLock',w:'w1',l:'ScrLk'},{k:'Pause',w:'w1',l:'Pause'},{k:'_',w:'w1'},{k:'Insert',w:'w1',l:'Ins'},{k:'Home',w:'w1',l:'Home'},{k:'PageUp',w:'w1',l:'PgUp'},{k:'_',w:'w1'},{k:'NumLock',w:'w1',l:'NumLk'},{k:'NumpadDivide',w:'w1',l:'/'},{k:'NumpadMultiply',w:'w1',l:'*'},{k:'NumpadSubtract',w:'w1',l:'-'}],
+// Row 7
+[{k:'Delete',w:'w1',l:'Del'},{k:'End',w:'w1',l:'End'},{k:'PageDown',w:'w1',l:'PgDn'},{k:'_',w:'w1'},{k:'Numpad7',w:'w1',l:'7'},{k:'Numpad8',w:'w1',l:'8'},{k:'Numpad9',w:'w1',l:'9'},{k:'NumpadAdd',w:'w1',l:'+'}],
+// Row 8
+[{k:'_',w:'w3'},{k:'ArrowUp',w:'w1',l:'↑'},{k:'_',w:'w2'},{k:'Numpad4',w:'w1',l:'4'},{k:'Numpad5',w:'w1',l:'5'},{k:'Numpad6',w:'w1',l:'6'}],
+// Row 9
+[{k:'ArrowLeft',w:'w1',l:'←'},{k:'ArrowDown',w:'w1',l:'↓'},{k:'ArrowRight',w:'w1',l:'→'},{k:'_',w:'w1'},{k:'Numpad1',w:'w1',l:'1'},{k:'Numpad2',w:'w1',l:'2'},{k:'Numpad3',w:'w1',l:'3'},{k:'NumpadEnter',w:'w1',l:'Enter'}],
+// Row 10
+[{k:'_',w:'w2'},{k:'_',w:'w1'},{k:'_',w:'w1'},{k:'_',w:'w1'},{k:'Numpad0',w:'w2',l:'0'},{k:'NumpadDecimal',w:'w1',l:'.'}]
+];
+const keyboardEl=document.getElementById('keyboard');
+rows.forEach(row=>{
+const rowEl=document.createElement('div');
+rowEl.className='row';
+row.forEach(keyDef=>{
+const el=document.createElement('div');
+let cls='key '+keyDef.w;
+if(keyDef.w==='w175')cls='key w15';
+if(keyDef.w==='w225')cls='key w2';
+el.className=cls;
+el.textContent=keyDef.l||'';
+el.dataset.code=keyDef.k;
+if(keyDef.k!=='_')keyMap[keyDef.k]=el;
+rowEl.appendChild(el);
+});
+keyboardEl.appendChild(rowEl);
+});
+const nameMap={
+'Space':'空格','Escape':'Esc','Backspace':'退格','Tab':'Tab','Enter':'回车','CapsLock':'大写锁定',
+'ShiftLeft':'左Shift','ShiftRight':'右Shift','ControlLeft':'左Ctrl','ControlRight':'右Ctrl',
+'AltLeft':'左Alt','AltRight':'右Alt','MetaLeft':'左Win','MetaRight':'右Win','ContextMenu':'菜单',
+'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→',
+'PrintScreen':'截屏','ScrollLock':'滚动锁定','Pause':'暂停','Insert':'插入','Delete':'删除',
+'Home':'Home','End':'End','PageUp':'PageUp','PageDown':'PageDown',
+'NumLock':'数字锁定','NumpadDivide':'数字/','NumpadMultiply':'数字*','NumpadSubtract':'数字-','NumpadAdd':'数字+','NumpadDecimal':'数字.','NumpadEnter':'数字回车',
+'Numpad0':'数字0','Numpad1':'数字1','Numpad2':'数字2','Numpad3':'数字3','Numpad4':'数字4','Numpad5':'数字5','Numpad6':'数字6','Numpad7':'数字7','Numpad8':'数字8','Numpad9':'数字9',
+'Backquote':'`','Minus':'-','Equal','=','BracketLeft':'[','BracketRight':']','Backslash':'\\','Semicolon':';',"'":"'",'Comma':',','Period':'.','Slash':'/'
+};
+function getSide(code){
+if(code.endsWith('Left'))return '左侧';
+if(code.endsWith('Right'))return '右侧';
+return '主区域';
+}
+function getDisplayName(code){
+if(nameMap[code])return nameMap[code];
+if(code.startsWith('Key'))return code[3];
+if(code.startsWith('Digit'))return code[5];
+if(code.startsWith('F')&&/^F\d+$/.test(code))return code;
+return code;
+}
+document.addEventListener('keydown',e=>{
+e.preventDefault();
+pressCount++;
+const code=e.code;
+document.getElementById('keyName').textContent=getDisplayName(code);
+document.getElementById('keyCode').textContent=e.keyCode||e.which;
+document.getElementById('keySide').textContent=getSide(code);
+document.getElementById('keyCount').textContent=pressCount;
+const el=keyMap[code];
+if(el)el.classList.add('active');
+});
+document.addEventListener('keyup',e=>{
+const el=keyMap[e.code];
+if(el)el.classList.remove('active');
+});
+function resetAll(){
+pressCount=0;
+document.getElementById('keyName').textContent='-';
+document.getElementById('keyCode').textContent='-';
+document.getElementById('keySide').textContent='-';
+document.getElementById('keyCount').textContent='0';
+Object.values(keyMap).forEach(el=>el.classList.remove('active'));
+}
+</script>
+</body>
+</html>

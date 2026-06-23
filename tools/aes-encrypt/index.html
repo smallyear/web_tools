@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AES/DES加密解密 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tabs { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 16px; }
+.tab { padding: 10px 24px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; font-weight: 600; color: #6b7280; transition: .2s; }
+.tab.active { color: #4a6cf7; border-bottom-color: #4a6cf7; }
+.tab:hover { color: #4a6cf7; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+label { display: block; margin: 10px 0 4px; font-weight: 600; }
+textarea, input[type="text"], input[type="password"], select {
+    width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;
+}
+textarea { height: 100px; resize: vertical; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 150px; }
+.btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; color: #fff; }
+.btn-primary { background: #4a6cf7; }
+.btn-success { background: #22c55e; }
+.result-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-top: 12px; word-break: break-all; min-height: 40px; font-family: monospace; font-size: 14px; }
+.warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px 14px; margin-top: 12px; font-size: 13px; color: #92400e; }
+</style>
+</head>
+<body>
+<nav class="navbar"><a href="../../index.html" class="nav-brand">🛠️ 在线工具箱</a></nav>
+<div class="container">
+    <div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <span>AES/DES加密解密</span></div>
+    <div class="card">
+        <h2>AES/DES 加密解密</h2>
+        <div class="tabs">
+            <div class="tab active" data-tab="aes">AES 加密/解密</div>
+            <div class="tab" data-tab="des">DES 加密/解密</div>
+        </div>
+        <!-- AES -->
+        <div class="tab-content active" id="tab-aes">
+            <label>输入内容（明文或密文）</label>
+            <textarea id="aesInput" placeholder="请输入要加密或解密的内容"></textarea>
+            <div class="row">
+                <div><label>密钥 (Key)</label><input type="password" id="aesKey" placeholder="输入密钥"></div>
+                <div><label>偏移量 (IV)</label><input type="text" id="aesIV" placeholder="CBC模式需要IV"></div>
+            </div>
+            <div class="row">
+                <div><label>模式</label><select id="aesMode"><option value="CBC">CBC</option><option value="ECB">ECB</option></select></div>
+                <div><label>输出编码</label><select id="aesEnc"><option value="Base64">Base64</option><option value="Hex">Hex</option></select></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="doAES('encrypt')">🔒 加密</button>
+                <button class="btn btn-success" onclick="doAES('decrypt')">🔓 解密</button>
+            </div>
+            <div class="result-box" id="aesResult">结果将显示在这里...</div>
+            <button class="btn" style="background:#6b7280;margin-top:8px" onclick="copyText('aesResult')">📋 复制结果</button>
+        </div>
+        <!-- DES -->
+        <div class="tab-content" id="tab-des">
+            <label>输入内容（明文或密文）</label>
+            <textarea id="desInput" placeholder="请输入要加密或解密的内容"></textarea>
+            <div class="row">
+                <div><label>密钥 (Key)</label><input type="password" id="desKey" placeholder="输入密钥"></div>
+                <div><label>偏移量 (IV)</label><input type="text" id="desIV" placeholder="CBC模式需要IV"></div>
+            </div>
+            <div class="row">
+                <div><label>模式</label><select id="desMode"><option value="CBC">CBC</option><option value="ECB">ECB</option></select></div>
+                <div><label>输出编码</label><select id="desEnc"><option value="Base64">Base64</option><option value="Hex">Hex</option></select></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="doDES('encrypt')">🔒 加密</button>
+                <button class="btn btn-success" onclick="doDES('decrypt')">🔓 解密</button>
+            </div>
+            <div class="result-box" id="desResult">结果将显示在这里...</div>
+            <button class="btn" style="background:#6b7280;margin-top:8px" onclick="copyText('desResult')">📋 复制结果</button>
+        </div>
+        <div class="warning">⚠️ 安全提示：本工具在浏览器端执行加密解密，密钥在客户端处理。请注意密钥安全，不要在不信任的环境中处理敏感数据。</div>
+    </div>
+    <footer class="footer">© 2024 在线工具箱 | <a href="../../index.html">返回首页</a></footer>
+</div>
+<script src="../../assets/js/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function(){
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('tab-'+this.dataset.tab).classList.add('active');
+    });
+});
+
+function copyText(id){
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(()=>alert('已复制'));
+}
+
+function getCryptoOpts(mode, enc, key, iv){
+    const opts = { mode: CryptoJS.mode[mode], padding: CryptoJS.pad.Pkcs7 };
+    if(enc === 'Hex') opts.outputFormat = 'hex';
+    if(mode === 'CBC' && iv) opts.iv = CryptoJS.enc.Utf8.parse(iv);
+    return opts;
+}
+
+function doAES(action){
+    try {
+        const input = document.getElementById('aesInput').value;
+        const key = CryptoJS.enc.Utf8.parse(document.getElementById('aesKey').value);
+        const iv = document.getElementById('aesIV').value;
+        const mode = document.getElementById('aesMode').value;
+        const enc = document.getElementById('aesEnc').value;
+        const opts = getCryptoOpts(mode, enc, key, iv);
+        let result;
+        if(action === 'encrypt'){
+            result = CryptoJS.AES.encrypt(input, key, opts);
+            document.getElementById('aesResult').textContent = enc === 'Hex' ? result.ciphertext.toString(CryptoJS.enc.Hex) : result.toString();
+        } else {
+            let cipher;
+            if(enc === 'Hex'){
+                cipher = CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.enc.Hex.parse(input) });
+            } else {
+                cipher = input;
+            }
+            result = CryptoJS.AES.decrypt(cipher, key, opts);
+            document.getElementById('aesResult').textContent = result.toString(CryptoJS.enc.Utf8) || '解密失败（密钥或数据错误）';
+        }
+    } catch(e){ document.getElementById('aesResult').textContent = '错误：' + e.message; }
+}
+
+function doDES(action){
+    try {
+        const input = document.getElementById('desInput').value;
+        const key = CryptoJS.enc.Utf8.parse(document.getElementById('desKey').value);
+        const iv = document.getElementById('desIV').value;
+        const mode = document.getElementById('desMode').value;
+        const enc = document.getElementById('desEnc').value;
+        const opts = getCryptoOpts(mode, enc, key, iv);
+        let result;
+        if(action === 'encrypt'){
+            result = CryptoJS.DES.encrypt(input, key, opts);
+            document.getElementById('desResult').textContent = enc === 'Hex' ? result.ciphertext.toString(CryptoJS.enc.Hex) : result.toString();
+        } else {
+            let cipher;
+            if(enc === 'Hex'){
+                cipher = CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.enc.Hex.parse(input) });
+            } else {
+                cipher = input;
+            }
+            result = CryptoJS.DES.decrypt(cipher, key, opts);
+            document.getElementById('desResult').textContent = result.toString(CryptoJS.enc.Utf8) || '解密失败（密钥或数据错误）';
+        }
+    } catch(e){ document.getElementById('desResult').textContent = '错误：' + e.message; }
+}
+</script>
+</body>
+</html>
