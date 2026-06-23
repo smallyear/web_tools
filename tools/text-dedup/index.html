@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文本去重分隔工具 - Web Tools</title>
+  <meta name="description" content="文本去重、排序、自定义分隔符，支持多种分隔方式">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .io-grid { display: grid; gap: 16px; }
+    @media (min-width: 768px) { .io-grid { grid-template-columns: 1fr 1fr; } }
+    .text-area {
+      width: 100%; height: 240px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px; line-height: 1.5; padding: 12px;
+      border: 1px solid var(--border); border-radius: 6px; resize: vertical;
+    }
+    .text-area:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    .options-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .options-bar label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+    .options-bar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .stat-bar { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 文本去重分隔</div>
+      <h1>🔁 文本去重分隔工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">按行/逗号/自定义分隔去重、排序、统计</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>输入文本</span>
+        <button class="btn btn-secondary" id="pasteBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 粘贴</button>
+      </div>
+      <textarea class="text-area" id="inputArea" placeholder="粘贴文本，每行一个值或用逗号/分号等分隔..."></textarea>
+    </div>
+
+    <div class="options-bar">
+      <label>分隔符：
+        <select id="sepSelect" class="form-select" style="width:auto;height:32px;font-size:13px;padding:4px 8px;">
+          <option value="line">换行符</option>
+          <option value="comma">逗号 ,</option>
+          <option value="semicolon">分号 ;</option>
+          <option value="space">空格</option>
+          <option value="tab">制表符</option>
+          <option value="pipe">竖线 |</option>
+          <option value="custom">自定义</option>
+        </select>
+      </label>
+      <input type="text" id="customSep" placeholder="自定义分隔符" class="form-input" style="width:100px;height:32px;font-size:13px;padding:4px 8px;display:none;">
+      <label><input type="checkbox" id="doDedup" checked> 去重</label>
+      <label><input type="checkbox" id="doTrim" checked> 去除首尾空格</label>
+      <label><input type="checkbox" id="doSort"> 排序</label>
+      <label><input type="checkbox" id="doRemoveEmpty" checked> 去除空行</label>
+    </div>
+
+    <div class="options-bar">
+      <label>输出分隔：
+        <select id="outSepSelect" class="form-select" style="width:auto;height:32px;font-size:13px;padding:4px 8px;">
+          <option value="line">换行符</option>
+          <option value="comma">逗号 ,</option>
+          <option value="semicolon">分号 ;</option>
+          <option value="space">空格</option>
+          <option value="tab">制表符</option>
+          <option value="pipe">竖线 |</option>
+        </select>
+      </label>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" id="copyBtn">📋 复制结果</button>
+    </div>
+
+    <div class="stat-bar">
+      <span>原始: <strong id="origCount">0</strong> 项</span>
+      <span>→</span>
+      <span>处理后: <strong id="resultCount">0</strong> 项</span>
+      <span>去除: <strong id="removedCount">0</strong> 项</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">结果</div>
+      <div class="output-block" id="outputArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap;word-break:break-all;min-height:100px;max-height:400px;overflow:auto;user-select:all;"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const inputArea = document.getElementById('inputArea');
+      const sepSelect = document.getElementById('sepSelect');
+      const customSep = document.getElementById('customSep');
+      const outSepSelect = document.getElementById('outSepSelect');
+      const doDedup = document.getElementById('doDedup');
+      const doTrim = document.getElementById('doTrim');
+      const doSort = document.getElementById('doSort');
+      const doRemoveEmpty = document.getElementById('doRemoveEmpty');
+      const outputArea = document.getElementById('outputArea');
+      const origCount = document.getElementById('origCount');
+      const resultCount = document.getElementById('resultCount');
+      const removedCount = document.getElementById('removedCount');
+
+      const sepMap = { line: '\n', comma: ',', semicolon: ';', space: ' ', tab: '\t', pipe: '|' };
+
+      function getSep() {
+        const v = sepSelect.value;
+        if (v === 'custom') return customSep.value || '\n';
+        return sepMap[v];
+      }
+
+      function getOutSep() {
+        return sepMap[outSepSelect.value] || '\n';
+      }
+
+      sepSelect.addEventListener('change', () => {
+        customSep.style.display = sepSelect.value === 'custom' ? 'inline' : 'none';
+        render();
+      });
+
+      function render() {
+        const raw = inputArea.value;
+        if (!raw) { outputArea.textContent = ''; origCount.textContent = '0'; resultCount.textContent = '0'; removedCount.textContent = '0'; return; }
+
+        let items = raw.split(getSep());
+        if (doTrim.checked) items = items.map(s => s.trim());
+        if (doRemoveEmpty.checked) items = items.filter(s => s.length > 0);
+
+        const origLen = items.length;
+
+        if (doDedup.checked) items = [...new Set(items)];
+        if (doSort.checked) items.sort();
+
+        origCount.textContent = origLen;
+        resultCount.textContent = items.length;
+        removedCount.textContent = origLen - items.length;
+
+        outputArea.textContent = items.join(getOutSep());
+      }
+
+      inputArea.addEventListener('input', render);
+      [doDedup, doTrim, doSort, doRemoveEmpty].forEach(el => el.addEventListener('change', render));
+      outSepSelect.addEventListener('change', render);
+      customSep.addEventListener('input', render);
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try { inputArea.value = await navigator.clipboard.readText(); render(); showMessage('success', '已粘贴'); }
+        catch { showMessage('error', '无法读取剪贴板'); }
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', async () => {
+        const text = outputArea.textContent;
+        if (!text) { showMessage('error', '结果为空'); return; }
+        await copyToClipboard(text);
+        showMessage('success', '已复制到剪贴板');
+      });
+    })();
+  </script>
+</body>
+</html>

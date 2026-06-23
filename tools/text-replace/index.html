@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文本替换工具 - Web Tools</title>
+  <meta name="description" content="批量查找替换文本，支持正则表达式">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .io-grid { display: grid; gap: 16px; }
+    @media (min-width: 768px) { .io-grid { grid-template-columns: 1fr 1fr; } }
+    .text-area {
+      width: 100%; height: 300px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px; line-height: 1.5; padding: 12px;
+      border: 1px solid var(--border); border-radius: 6px; resize: vertical;
+    }
+    .text-area:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    .replace-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .replace-bar input[type="text"] {
+      flex: 1; min-width: 150px; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 6px; font-size: 14px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    }
+    .replace-bar input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    .replace-bar label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+    .match-info { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+    .highlight { background: #FFEB3B; padding: 0 2px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 文本替换</div>
+      <h1>🔄 文本替换工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">批量查找替换，支持正则表达式，实时预览</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>输入文本</span>
+        <button class="btn btn-secondary" id="pasteBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 粘贴</button>
+      </div>
+      <textarea class="text-area" id="inputArea" placeholder="在此输入或粘贴文本..."></textarea>
+    </div>
+
+    <div class="replace-bar">
+      <input type="text" id="findInput" placeholder="查找内容">
+      <input type="text" id="replaceInput" placeholder="替换为（留空则删除）">
+      <label><input type="checkbox" id="useRegex"> 正则</label>
+      <label><input type="checkbox" id="caseSensitive"> 区分大小写</label>
+      <button class="btn btn-primary" id="replaceBtn">🔄 替换</button>
+    </div>
+
+    <div class="match-info" id="matchInfo"></div>
+
+    <div class="io-grid">
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>原文（高亮匹配）</span>
+        </div>
+        <div id="previewArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>替换结果</span>
+          <button class="btn btn-secondary" id="copyBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 复制</button>
+        </div>
+        <div id="resultArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;user-select:all;"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const inputArea = document.getElementById('inputArea');
+      const findInput = document.getElementById('findInput');
+      const replaceInput = document.getElementById('replaceInput');
+      const useRegex = document.getElementById('useRegex');
+      const caseSensitive = document.getElementById('caseSensitive');
+      const previewArea = document.getElementById('previewArea');
+      const resultArea = document.getElementById('resultArea');
+      const matchInfo = document.getElementById('matchInfo');
+
+      function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function render() {
+        const text = inputArea.value;
+        const find = findInput.value;
+        if (!text || !find) {
+          previewArea.textContent = text;
+          resultArea.textContent = text;
+          matchInfo.textContent = '';
+          return;
+        }
+
+        let regex;
+        try {
+          if (useRegex.checked) {
+            const flags = caseSensitive.checked ? 'g' : 'gi';
+            regex = new RegExp(find, flags);
+          } else {
+            const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const flags = caseSensitive.checked ? 'g' : 'gi';
+            regex = new RegExp(escaped, flags);
+          }
+        } catch (e) {
+          matchInfo.textContent = '❌ 正则表达式语法错误: ' + e.message;
+          previewArea.textContent = text;
+          resultArea.textContent = text;
+          return;
+        }
+
+        // Count matches
+        const matches = text.match(regex);
+        const count = matches ? matches.length : 0;
+        matchInfo.textContent = count > 0 ? `✅ 找到 ${count} 处匹配` : '⚠️ 未找到匹配';
+
+        // Preview with highlights
+        previewArea.innerHTML = escapeHtml(text).replace(
+          useRegex.checked ? new RegExp(regex.source, regex.flags.includes('i') ? 'gi' : 'g') :
+          new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), caseSensitive.checked ? 'g' : 'gi'),
+          '<span class="highlight">$&</span>'
+        );
+
+        // Result
+        const replaceVal = replaceInput.value;
+        resultArea.textContent = text.replace(regex, replaceVal);
+      }
+
+      inputArea.addEventListener('input', render);
+      findInput.addEventListener('input', render);
+      replaceInput.addEventListener('input', render);
+      useRegex.addEventListener('change', render);
+      caseSensitive.addEventListener('change', render);
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try { inputArea.value = await navigator.clipboard.readText(); render(); showMessage('success', '已粘贴'); }
+        catch { showMessage('error', '无法读取剪贴板'); }
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', async () => {
+        const text = resultArea.textContent;
+        if (!text) { showMessage('error', '结果为空'); return; }
+        await copyToClipboard(text);
+        showMessage('success', '已复制到剪贴板');
+      });
+
+      document.getElementById('replaceBtn').addEventListener('click', () => {
+        if (resultArea.textContent) {
+          inputArea.value = resultArea.textContent;
+          findInput.value = '';
+          replaceInput.value = '';
+          render();
+          showMessage('success', '已替换并更新输入');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="在线CSS格式化和压缩工具，支持代码美化和压缩，可自定义缩进空格数。">
+    <title>CSS格式化/压缩工具 - Web Tools</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        .tool-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .tool-controls label {
+            font-weight: 500;
+            color: var(--text);
+        }
+        .form-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+        .textarea-wrapper {
+            margin-bottom: 15px;
+        }
+        .textarea-wrapper textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .output-area {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 200px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text);
+            position: relative;
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .output-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover { opacity: 0.8; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+            <div class="navbar-links">
+                <a href="../../index.html" class="navbar-link">首页</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tool-header">
+            <nav class="breadcrumb">
+                <a href="../../index.html">首页</a>
+                <span>/</span>
+                <span>CSS格式化/压缩</span>
+            </nav>
+            <h1>CSS格式化/压缩工具</h1>
+            <p>在线CSS代码美化和压缩，支持自定义缩进大小</p>
+        </div>
+
+        <div class="card">
+            <div class="textarea-wrapper">
+                <label for="cssInput"><strong>输入CSS代码：</strong></label>
+                <textarea id="cssInput" placeholder="在此粘贴你的CSS代码..."></textarea>
+            </div>
+
+            <div class="tool-controls">
+                <label for="indentSize">缩进大小：</label>
+                <select id="indentSize" class="form-select">
+                    <option value="2">2个空格</option>
+                    <option value="4" selected>4个空格</option>
+                </select>
+                <button class="btn btn-primary" onclick="beautifyCSS()">格式化</button>
+                <button class="btn btn-secondary" onclick="minifyCSS()">压缩</button>
+                <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="output-header">
+                <h3>输出结果</h3>
+                <button class="btn btn-secondary btn-sm" onclick="copyOutput()">📋 复制</button>
+            </div>
+            <div class="output-area" id="cssOutput">结果将显示在这里...</div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Web Tools. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="../../assets/js/common.js"></script>
+    <script>
+        function beautifyCSS() {
+            var input = document.getElementById('cssInput').value.trim();
+            if (!input) {
+                showMessage('error', '请输入CSS代码');
+                return;
+            }
+            var indentSize = parseInt(document.getElementById('indentSize').value);
+            var indent = ' '.repeat(indentSize);
+            var result = '';
+            var level = 0;
+            var inString = false;
+            var stringChar = '';
+
+            // Remove comments
+            input = input.replace(/\/\*[\s\S]*?\*\//g, '');
+            // Normalize whitespace
+            input = input.replace(/\s+/g, ' ').trim();
+
+            var i = 0;
+            while (i < input.length) {
+                var ch = input[i];
+
+                if (inString) {
+                    result += ch;
+                    if (ch === stringChar && input[i - 1] !== '\\') {
+                        inString = false;
+                    }
+                    i++;
+                    continue;
+                }
+
+                if (ch === '"' || ch === "'") {
+                    inString = true;
+                    stringChar = ch;
+                    result += ch;
+                    i++;
+                    continue;
+                }
+
+                if (ch === '{') {
+                    result = result.trimEnd() + ' {\n';
+                    level++;
+                    result += indent.repeat(level);
+                    i++;
+                    // skip spaces after {
+                    while (i < input.length && input[i] === ' ') i++;
+                    continue;
+                }
+
+                if (ch === '}') {
+                    level--;
+                    result = result.trimEnd() + '\n' + indent.repeat(level) + '}\n';
+                    if (level === 0) result += '\n';
+                    result += indent.repeat(level);
+                    i++;
+                    // skip spaces after }
+                    while (i < input.length && input[i] === ' ') i++;
+                    continue;
+                }
+
+                if (ch === ';') {
+                    result = result.trimEnd() + ';\n';
+                    result += indent.repeat(level);
+                    i++;
+                    while (i < input.length && input[i] === ' ') i++;
+                    continue;
+                }
+
+                if (ch === ':') {
+                    result = result.trimEnd() + ': ';
+                    i++;
+                    while (i < input.length && input[i] === ' ') i++;
+                    continue;
+                }
+
+                result += ch;
+                i++;
+            }
+
+            // Clean up
+            result = result.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+            document.getElementById('cssOutput').textContent = result;
+            showMessage('success', 'CSS格式化完成');
+        }
+
+        function minifyCSS() {
+            var input = document.getElementById('cssInput').value.trim();
+            if (!input) {
+                showMessage('error', '请输入CSS代码');
+                return;
+            }
+            // Remove comments
+            var result = input.replace(/\/\*[\s\S]*?\*\//g, '');
+            // Remove newlines
+            result = result.replace(/\n/g, '');
+            // Collapse whitespace
+            result = result.replace(/\s+/g, ' ');
+            // Remove spaces around special chars
+            result = result.replace(/\s*([{}:;,>~+])\s*/g, '$1');
+            // Remove trailing semicolons before }
+            result = result.replace(/;}/g, '}');
+            // Remove leading/trailing spaces
+            result = result.trim();
+
+            document.getElementById('cssOutput').textContent = result;
+            showMessage('success', 'CSS压缩完成');
+        }
+
+        function clearAll() {
+            document.getElementById('cssInput').value = '';
+            document.getElementById('cssOutput').textContent = '结果将显示在这里...';
+        }
+
+        function copyOutput() {
+            var text = document.getElementById('cssOutput').textContent;
+            if (!text || text === '结果将显示在这里...') {
+                showMessage('error', '没有可复制的内容');
+                return;
+            }
+            copyToClipboard(text);
+            showMessage('success', '已复制到剪贴板');
+        }
+    </script>
+</body>
+</html>

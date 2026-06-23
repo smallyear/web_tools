@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="在线URL编码解码工具，支持encodeURI和encodeURIComponent两种编码方式。">
+    <title>URL编码解码工具 - Web Tools</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        .two-panel {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .two-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+        }
+        .textarea-wrapper {
+            margin-bottom: 15px;
+        }
+        .textarea-wrapper textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .tool-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .output-area {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 100px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text);
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .output-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+            word-break: break-all;
+        }
+        .comparison-table th {
+            background: var(--bg);
+            color: var(--text);
+            font-weight: 600;
+        }
+        .comparison-table td {
+            color: var(--text-secondary);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover { opacity: 0.8; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+            <div class="navbar-links">
+                <a href="../../index.html" class="navbar-link">首页</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tool-header">
+            <nav class="breadcrumb">
+                <a href="../../index.html">首页</a>
+                <span>/</span>
+                <span>URL编码解码</span>
+            </nav>
+            <h1>URL编码解码工具</h1>
+            <p>在线URL编码和解码，支持encodeURI和encodeURIComponent两种方式</p>
+        </div>
+
+        <div class="two-panel">
+            <!-- Encode Panel -->
+            <div class="card">
+                <h2 class="panel-title">🔗 URL编码</h2>
+                <div class="textarea-wrapper">
+                    <label for="encodeInput"><strong>输入文本：</strong></label>
+                    <textarea id="encodeInput" placeholder="输入要编码的文本或URL...&#10;例如: https://example.com/path?q=你好&lang=中文"></textarea>
+                </div>
+                <div class="tool-controls">
+                    <button class="btn btn-primary" onclick="doEncode()">编码</button>
+                    <button class="btn btn-secondary" onclick="doEncodeAll()">编码全部</button>
+                    <button class="btn btn-secondary btn-sm" onclick="copyEncodeOutput()">📋 复制</button>
+                </div>
+                <div class="output-header">
+                    <h3>encodeURIComponent 结果</h3>
+                </div>
+                <div class="output-area" id="encodeOutput">编码结果将显示在这里...</div>
+                <div class="output-header" style="margin-top:15px">
+                    <h3>encodeURI 结果</h3>
+                </div>
+                <div class="output-area" id="encodeUriOutput">编码结果将显示在这里...</div>
+            </div>
+
+            <!-- Decode Panel -->
+            <div class="card">
+                <h2 class="panel-title">🔓 URL解码</h2>
+                <div class="textarea-wrapper">
+                    <label for="decodeInput"><strong>输入编码文本：</strong></label>
+                    <textarea id="decodeInput" placeholder="输入要解码的URL编码文本...&#10;例如: https%3A%2F%2Fexample.com%2Fpath%3Fq%3D%E4%BD%A0%E5%A5%BD"></textarea>
+                </div>
+                <div class="tool-controls">
+                    <button class="btn btn-primary" onclick="doDecode()">解码</button>
+                    <button class="btn btn-secondary btn-sm" onclick="copyDecodeOutput()">📋 复制</button>
+                </div>
+                <div class="output-header">
+                    <h3>解码结果</h3>
+                </div>
+                <div class="output-area" id="decodeOutput">解码结果将显示在这里...</div>
+            </div>
+        </div>
+
+        <!-- Comparison Card -->
+        <div class="card">
+            <h2 style="font-size:16px; font-weight:600; margin:0 0 15px;">📊 encodeURI vs encodeURIComponent 对比</h2>
+            <p style="color:var(--text-secondary); margin-bottom:15px; font-size:14px;">
+                两种编码方式的主要区别在于对URI特殊字符的处理。encodeURI保留URI结构字符，encodeURIComponent会编码所有特殊字符。
+            </p>
+            <div style="overflow-x:auto;">
+                <table class="comparison-table" id="comparisonTable">
+                    <thead>
+                        <tr>
+                            <th>字符</th>
+                            <th>encodeURI</th>
+                            <th>encodeURIComponent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Web Tools. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="../../assets/js/common.js"></script>
+    <script>
+        // Populate comparison table
+        (function() {
+            var specialChars = [
+                { char: ':', name: '冒号' },
+                { char: '/', name: '斜杠' },
+                { char: '?', name: '问号' },
+                { char: '#', name: '井号' },
+                { char: '[', name: '方括号' },
+                { char: ']', name: '方括号' },
+                { char: '@', name: '@符号' },
+                { char: '!', name: '感叹号' },
+                { char: '$', name: '美元符' },
+                { char: '&', name: '和号' },
+                { char: "'", name: '单引号' },
+                { char: '(', name: '圆括号' },
+                { char: ')', name: '圆括号' },
+                { char: '*', name: '星号' },
+                { char: '+', name: '加号' },
+                { char: ',', name: '逗号' },
+                { char: ';', name: '分号' },
+                { char: '=', name: '等号' },
+                { char: ' ', name: '空格' },
+                { char: '中', name: '中文字符' }
+            ];
+
+            var tbody = document.querySelector('#comparisonTable tbody');
+            var html = '';
+            for (var i = 0; i < specialChars.length; i++) {
+                var c = specialChars[i].char;
+                html += '<tr>';
+                html += '<td><strong>' + specialChars[i].name + '</strong> (<code>' + c + '</code>)</td>';
+                html += '<td>' + encodeURI(c) + '</td>';
+                html += '<td>' + encodeURIComponent(c) + '</td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+        })();
+
+        function doEncode() {
+            var input = document.getElementById('encodeInput').value;
+            if (!input) {
+                showMessage('error', '请输入要编码的文本');
+                return;
+            }
+            document.getElementById('encodeOutput').textContent = encodeURIComponent(input);
+            document.getElementById('encodeUriOutput').textContent = encodeURI(input);
+            showMessage('success', '编码完成');
+        }
+
+        function doEncodeAll() {
+            var input = document.getElementById('encodeInput').value;
+            if (!input) {
+                showMessage('error', '请输入要编码的文本');
+                return;
+            }
+            // Encode absolutely everything including ASCII
+            var result = '';
+            for (var i = 0; i < input.length; i++) {
+                var code = input.charCodeAt(i);
+                if (code < 128) {
+                    result += '%' + ('0' + code.toString(16).toUpperCase()).slice(-2);
+                } else {
+                    result += encodeURIComponent(input[i]);
+                }
+            }
+            document.getElementById('encodeOutput').textContent = result;
+            document.getElementById('encodeUriOutput').textContent = encodeURI(input);
+            showMessage('success', '完全编码完成');
+        }
+
+        function doDecode() {
+            var input = document.getElementById('decodeInput').value;
+            if (!input) {
+                showMessage('error', '请输入要解码的文本');
+                return;
+            }
+            try {
+                var result = decodeURIComponent(input);
+                document.getElementById('decodeOutput').textContent = result;
+                showMessage('success', '解码完成');
+            } catch (e) {
+                showMessage('error', '解码失败：输入的编码格式不正确');
+                document.getElementById('decodeOutput').textContent = '解码错误：' + e.message;
+            }
+        }
+
+        function copyEncodeOutput() {
+            var text = document.getElementById('encodeOutput').textContent;
+            if (!text || text === '编码结果将显示在这里...') {
+                showMessage('error', '没有可复制的内容');
+                return;
+            }
+            copyToClipboard(text);
+            showMessage('success', '已复制到剪贴板');
+        }
+
+        function copyDecodeOutput() {
+            var text = document.getElementById('decodeOutput').textContent;
+            if (!text || text === '解码结果将显示在这里...') {
+                showMessage('error', '没有可复制的内容');
+                return;
+            }
+            copyToClipboard(text);
+            showMessage('success', '已复制到剪贴板');
+        }
+    </script>
+</body>
+</html>

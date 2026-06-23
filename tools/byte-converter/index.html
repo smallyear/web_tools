@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>字节单位换算器 - Web Tools</title>
+  <meta name="description" content="在线字节单位换算工具，支持B、KB、MB、GB、TB、PB互转，同时显示比特换算">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 140px; }
+    .section-title { font-size: 15px; font-weight: 600; color: var(--primary-dark); margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+    .result-item {
+      padding: 12px 14px; background: #FAFAFA; border: 1px solid var(--border);
+      border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .result-item .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+    .result-item .value {
+      font-family: 'Monaco','Menlo','Consolas',monospace; font-size: 14px;
+      word-break: break-all; font-weight: 500;
+    }
+    .copy-btn {
+      background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px;
+      color: var(--text-secondary); flex-shrink: 0; margin-left: 8px;
+    }
+    .copy-btn:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 字节单位换算器</div>
+      <h1>💾 字节单位换算器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">支持 B、KB、MB、GB、TB、PB 互转，1024进制，同时显示比特换算</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">输入数值</div>
+      <div class="input-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">数值</label>
+          <input type="number" class="form-input" id="numInput" placeholder="输入数值" min="0" step="any" />
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">单位</label>
+          <select class="form-select" id="unitSelect">
+            <option value="0">B (字节)</option>
+            <option value="1">KB (千字节)</option>
+            <option value="2" selected>MB (兆字节)</option>
+            <option value="3">GB (吉字节)</option>
+            <option value="4">TB (太字节)</option>
+            <option value="5">PB (拍字节)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">字节单位换算</div>
+      <div class="result-grid" id="byteResults"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">比特单位换算</div>
+      <div class="result-grid" id="bitResults"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const numInput = document.getElementById('numInput');
+      const unitSelect = document.getElementById('unitSelect');
+      const byteResults = document.getElementById('byteResults');
+      const bitResults = document.getElementById('bitResults');
+
+      const byteUnits = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+      const bitUnits = ['bit', 'Kbit', 'Mbit', 'Gbit', 'Tbit', 'Pbit'];
+
+      function formatNum(n) {
+        if (n === 0) return '0';
+        if (Math.abs(n) < 0.000001) return n.toExponential(6);
+        if (Math.abs(n) >= 1e15) return n.toExponential(6);
+        // Show up to 6 decimal places, remove trailing zeros
+        return parseFloat(n.toFixed(6)).toString();
+      }
+
+      function makeItem(label, value, unit) {
+        const text = value === '-' ? '-' : `${value} ${unit}`;
+        return `<div class="result-item">
+          <div><div class="label">${label}</div><div class="value">${text}</div></div>
+          <button class="copy-btn" data-copy="${text}" title="复制">📋</button>
+        </div>`;
+      }
+
+      function convert() {
+        const raw = parseFloat(numInput.value);
+        const unitIdx = parseInt(unitSelect.value);
+
+        if (isNaN(raw) || raw < 0) {
+          byteResults.innerHTML = byteUnits.map((u, i) => makeItem(u, '-', u)).join('');
+          bitResults.innerHTML = bitUnits.map((u, i) => makeItem(u, '-', u)).join('');
+          return;
+        }
+
+        // Convert to bytes first
+        const bytes = raw * Math.pow(1024, unitIdx);
+
+        // Byte conversions
+        byteResults.innerHTML = byteUnits.map((u, i) => {
+          const val = bytes / Math.pow(1024, i);
+          return makeItem(u, formatNum(val), u);
+        }).join('');
+
+        // Bit conversions (1 byte = 8 bits)
+        const bits = bytes * 8;
+        bitResults.innerHTML = bitUnits.map((u, i) => {
+          const val = bits / Math.pow(1024, i);
+          return makeItem(u, formatNum(val), u);
+        }).join('');
+      }
+
+      numInput.addEventListener('input', convert);
+      unitSelect.addEventListener('change', convert);
+
+      // Delegate copy button clicks
+      document.addEventListener('click', e => {
+        const btn = e.target.closest('.copy-btn');
+        if (!btn) return;
+        const text = btn.getAttribute('data-copy');
+        if (!text || text === '-') { showMessage('error', '结果为空'); return; }
+        copyToClipboard(text).then(() => showMessage('success', '已复制'));
+      });
+
+      convert();
+    })();
+  </script>
+</body>
+</html>

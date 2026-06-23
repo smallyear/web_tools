@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>进制转换器 - Web Tools</title>
+  <meta name="description" content="在线进制转换工具，支持2-36进制互转，实时转换，一键复制">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 140px; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+    @media (max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+    .result-item {
+      padding: 14px 16px; background: #FAFAFA; border: 1px solid var(--border);
+      border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .result-item .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .result-item .value {
+      font-family: 'Monaco','Menlo','Consolas',monospace; font-size: 15px;
+      word-break: break-all; font-weight: 500; color: var(--text);
+    }
+    .result-item .copy-btn {
+      background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px;
+      color: var(--text-secondary); flex-shrink: 0; margin-left: 8px;
+    }
+    .result-item .copy-btn:hover { color: var(--primary); }
+    .custom-base-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .error-text { color: var(--error); font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 进制转换器</div>
+      <h1>🔢 进制转换器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">支持2-36进制互转，实时转换，一键复制结果</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">输入数值</div>
+      <div class="input-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">数值</label>
+          <input type="text" class="form-input" id="numInput" placeholder="输入数值，如 255、FF、11111111" />
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">输入进制</label>
+          <select class="form-select" id="baseSelect">
+            <option value="2">2 进制（二进制）</option>
+            <option value="8">8 进制（八进制）</option>
+            <option value="10" selected>10 进制（十进制）</option>
+            <option value="16">16 进制（十六进制）</option>
+            <option value="3">3 进制</option>
+            <option value="4">4 进制</option>
+            <option value="5">5 进制</option>
+            <option value="6">6 进制</option>
+            <option value="7">7 进制</option>
+            <option value="9">9 进制</option>
+            <option value="11">11 进制</option>
+            <option value="12">12 进制</option>
+            <option value="13">13 进制</option>
+            <option value="14">14 进制</option>
+            <option value="15">15 进制</option>
+            <option value="17">17 进制</option>
+            <option value="18">18 进制</option>
+            <option value="19">19 进制</option>
+            <option value="20">20 进制</option>
+            <option value="32">32 进制</option>
+            <option value="36">36 进制</option>
+          </select>
+        </div>
+      </div>
+      <div class="error-text" id="errorMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">转换结果</div>
+      <div class="result-grid" id="results">
+        <div class="result-item"><div><div class="label">二进制 (Base 2)</div><div class="value" id="res2">-</div></div><button class="copy-btn" onclick="copy('res2')">📋</button></div>
+        <div class="result-item"><div><div class="label">八进制 (Base 8)</div><div class="value" id="res8">-</div></div><button class="copy-btn" onclick="copy('res8')">📋</button></div>
+        <div class="result-item"><div><div class="label">十进制 (Base 10)</div><div class="value" id="res10">-</div></div><button class="copy-btn" onclick="copy('res10')">📋</button></div>
+        <div class="result-item"><div><div class="label">十六进制 (Base 16)</div><div class="value" id="res16">-</div></div><button class="copy-btn" onclick="copy('res16')">📋</button></div>
+        <div class="result-item"><div><div class="label">三十二进制 (Base 32)</div><div class="value" id="res32">-</div></div><button class="copy-btn" onclick="copy('res32')">📋</button></div>
+        <div class="result-item"><div><div class="label">三十六进制 (Base 36)</div><div class="value" id="res36">-</div></div><button class="copy-btn" onclick="copy('res36')">📋</button></div>
+      </div>
+
+      <div class="custom-base-section">
+        <div class="input-row">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">自定义进制输出 (2-36)</label>
+            <input type="number" class="form-input" id="customBase" min="2" max="36" value="7" />
+          </div>
+          <div class="form-group" style="flex:2;">
+            <label class="form-label">结果</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="value" id="resCustom" style="flex:1;font-family:'Monaco','Menlo','Consolas',monospace;font-size:15px;padding:10px 0;">-</div>
+              <button class="copy-btn" onclick="copy('resCustom')" style="background:none;border:none;cursor:pointer;font-size:16px;">📋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    function copy(id) {
+      const text = document.getElementById(id).textContent;
+      if (text === '-') { showMessage('error', '结果为空'); return; }
+      copyToClipboard(text).then(() => showMessage('success', '已复制'));
+    }
+
+    (function() {
+      const numInput = document.getElementById('numInput');
+      const baseSelect = document.getElementById('baseSelect');
+      const customBase = document.getElementById('customBase');
+      const errorMsg = document.getElementById('errorMsg');
+
+      function convert() {
+        const raw = numInput.value.trim();
+        errorMsg.textContent = '';
+
+        if (!raw) {
+          ['res2','res8','res10','res16','res32','res36','resCustom'].forEach(id => {
+            document.getElementById(id).textContent = '-';
+          });
+          return;
+        }
+
+        const srcBase = parseInt(baseSelect.value);
+        const num = parseInt(raw, srcBase);
+
+        if (isNaN(num)) {
+          errorMsg.textContent = '❌ 无效的输入，请检查数值和进制是否匹配';
+          ['res2','res8','res10','res16','res32','res36','resCustom'].forEach(id => {
+            document.getElementById(id).textContent = '-';
+          });
+          return;
+        }
+
+        document.getElementById('res2').textContent = num.toString(2);
+        document.getElementById('res8').textContent = num.toString(8);
+        document.getElementById('res10').textContent = num.toString(10);
+        document.getElementById('res16').textContent = num.toString(16).toUpperCase();
+        document.getElementById('res32').textContent = num.toString(32).toUpperCase();
+        document.getElementById('res36').textContent = num.toString(36).toUpperCase();
+
+        const cBase = parseInt(customBase.value);
+        if (cBase >= 2 && cBase <= 36) {
+          document.getElementById('resCustom').textContent = num.toString(cBase).toUpperCase();
+        } else {
+          document.getElementById('resCustom').textContent = '-';
+        }
+      }
+
+      numInput.addEventListener('input', convert);
+      baseSelect.addEventListener('change', convert);
+      customBase.addEventListener('input', convert);
+    })();
+  </script>
+</body>
+</html>

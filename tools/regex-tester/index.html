@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>正则表达式测试工具 - Web Tools</title>
+  <meta name="description" content="在线正则表达式测试，实时匹配高亮，分组展示">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .regex-bar {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .regex-bar .regex-delimiter { color: var(--text-secondary); font-size: 20px; font-weight: 300; }
+    .regex-input {
+      flex: 1; min-width: 120px; padding: 10px 12px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 14px;
+      border: 1px solid var(--border); border-radius: 6px;
+    }
+    .regex-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    .flags-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .flags-bar label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+    .text-area {
+      width: 100%; height: 200px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px; line-height: 1.6; padding: 12px;
+      border: 1px solid var(--border); border-radius: 6px; resize: vertical;
+    }
+    .text-area:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    .highlight { background: #FFEB3B; padding: 1px 0; border-radius: 2px; }
+    .highlight-odd { background: #80DEEA; padding: 1px 0; border-radius: 2px; }
+    .match-list { margin-top: 16px; }
+    .match-item {
+      padding: 8px 12px; margin-bottom: 4px;
+      background: #FAFAFA; border: 1px solid var(--border); border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 13px;
+    }
+    .match-item .match-idx { color: var(--primary); font-weight: 600; margin-right: 8px; }
+    .match-item .match-pos { color: var(--text-secondary); font-size: 11px; margin-left: 8px; }
+    .group-item { margin-left: 20px; color: var(--text-secondary); }
+    .group-item .group-name { color: var(--warning); font-weight: 500; }
+    .info-bar { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+    .error-msg { color: var(--error); font-size: 13px; margin-bottom: 8px; }
+    .quick-regex { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .quick-regex button {
+      padding: 4px 10px; font-size: 12px; height: 28px;
+      background: white; border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    }
+    .quick-regex button:hover { border-color: var(--primary); color: var(--primary); }
+    .result-output {
+      width: 100%; min-height: 80px; max-height: 200px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 13px;
+      line-height: 1.6; padding: 12px; background: #FAFAFA;
+      border: 1px solid var(--border); border-radius: 6px;
+      white-space: pre-wrap; word-break: break-all; overflow: auto; user-select: all;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 正则表达式测试</div>
+      <h1>🔍 正则表达式测试工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">实时匹配高亮，分组展示，常用正则模板</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">正则表达式</div>
+      <div class="regex-bar">
+        <span class="regex-delimiter">/</span>
+        <input type="text" class="regex-input" id="regexInput" placeholder="输入正则表达式">
+        <span class="regex-delimiter">/</span>
+        <input type="text" class="regex-input" id="flagsInput" value="g" style="width:60px;flex:none;" placeholder="flags">
+      </div>
+      <div class="flags-bar">
+        <label><input type="checkbox" id="flagG" checked> g 全局</label>
+        <label><input type="checkbox" id="flagI"> i 忽略大小写</label>
+        <label><input type="checkbox" id="flagM"> m 多行</label>
+        <label><input type="checkbox" id="flagS"> s 点号匹配换行</label>
+      </div>
+      <div class="quick-regex">
+        <span style="font-size:12px;color:var(--text-secondary);line-height:28px;">常用：</span>
+        <button data-regex="[\\w.-]+@[\\w.-]+\\.\\w+">邮箱</button>
+        <button data-regex="1[3-9]\\d{9}">手机号</button>
+        <button data-regex="https?://[^\\s]+">URL</button>
+        <button data-regex="\\d{4}-\\d{2}-\\d{2}">日期</button>
+        <button data-regex="<[^>]+>">HTML标签</button>
+        <button data-regex="\\b\\d+\\.\\d+\\b">小数</button>
+        <button data-regex="[\\u4e00-\\u9fa5]+">中文</button>
+        <button data-regex="^.{6,20}$">6-20位</button>
+      </div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>测试文本</span>
+        <button class="btn btn-secondary" id="pasteBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 粘贴</button>
+      </div>
+      <textarea class="text-area" id="testArea" placeholder="输入要测试的文本..."></textarea>
+    </div>
+
+    <div class="info-bar">
+      <span>匹配数: <strong id="matchCount">0</strong></span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">高亮预览</div>
+      <div id="previewArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap;word-break:break-all;min-height:60px;max-height:300px;overflow:auto;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>匹配结果详情</span>
+        <button class="btn btn-secondary" id="copyMatchesBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 复制匹配</button>
+      </div>
+      <div class="match-list" id="matchList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>提取结果（每行一个）</span>
+        <button class="btn btn-secondary" id="copyExtractBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 复制</button>
+      </div>
+      <div class="result-output" id="extractResult"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const regexInput = document.getElementById('regexInput');
+      const flagsInput = document.getElementById('flagsInput');
+      const testArea = document.getElementById('testArea');
+      const previewArea = document.getElementById('previewArea');
+      const matchList = document.getElementById('matchList');
+      const matchCount = document.getElementById('matchCount');
+      const errorMsg = document.getElementById('errorMsg');
+      const extractResult = document.getElementById('extractResult');
+
+      const flagCheckboxes = { g: document.getElementById('flagG'), i: document.getElementById('flagI'), m: document.getElementById('flagM'), s: document.getElementById('flagS') };
+
+      function syncFlags() {
+        let f = '';
+        if (flagCheckboxes.g.checked) f += 'g';
+        if (flagCheckboxes.i.checked) f += 'i';
+        if (flagCheckboxes.m.checked) f += 'm';
+        if (flagCheckboxes.s.checked) f += 's';
+        flagsInput.value = f;
+      }
+
+      function syncCheckboxes() {
+        const f = flagsInput.value;
+        flagCheckboxes.g.checked = f.includes('g');
+        flagCheckboxes.i.checked = f.includes('i');
+        flagCheckboxes.m.checked = f.includes('m');
+        flagCheckboxes.s.checked = f.includes('s');
+      }
+
+      Object.values(flagCheckboxes).forEach(cb => cb.addEventListener('change', () => { syncFlags(); render(); }));
+      flagsInput.addEventListener('input', () => { syncCheckboxes(); render(); });
+
+      function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      function render() {
+        const pattern = regexInput.value;
+        const text = testArea.value;
+        const flags = flagsInput.value;
+
+        if (!pattern || !text) {
+          previewArea.textContent = text;
+          matchList.innerHTML = '';
+          matchCount.textContent = '0';
+          extractResult.textContent = '';
+          errorMsg.textContent = '';
+          return;
+        }
+
+        let regex;
+        try {
+          regex = new RegExp(pattern, flags);
+          errorMsg.textContent = '';
+        } catch (e) {
+          errorMsg.textContent = '❌ ' + e.message;
+          previewArea.textContent = text;
+          matchList.innerHTML = '';
+          matchCount.textContent = '0';
+          return;
+        }
+
+        // Find all matches
+        const globalRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
+        const matches = [];
+        let m;
+        while ((m = globalRegex.exec(text)) !== null) {
+          matches.push({ value: m[0], index: m.index, groups: m.slice(1) });
+          if (!flags.includes('g')) break;
+          if (m[0].length === 0) globalRegex.lastIndex++;
+        }
+
+        matchCount.textContent = matches.length;
+
+        // Highlight preview
+        let html = '';
+        let lastIdx = 0;
+        const nonGlobalRegex = new RegExp(pattern, flags.replace('g', ''));
+        const highlightRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
+        let hm;
+        let hi = 0;
+        const textCopy = text;
+        while ((hm = highlightRegex.exec(textCopy)) !== null) {
+          html += escapeHtml(textCopy.slice(lastIdx, hm.index));
+          html += `<span class="${hi % 2 === 0 ? 'highlight' : 'highlight-odd'}">${escapeHtml(hm[0])}</span>`;
+          lastIdx = hm.index + hm[0].length;
+          hi++;
+          if (!flags.includes('g')) break;
+          if (hm[0].length === 0) highlightRegex.lastIndex++;
+        }
+        html += escapeHtml(textCopy.slice(lastIdx));
+        previewArea.innerHTML = html;
+
+        // Match details
+        matchList.innerHTML = matches.map((m, i) => {
+          let groups = '';
+          if (m.groups.length > 0) {
+            groups = m.groups.map((g, gi) =>
+              `<div class="group-item"><span class="group-name">Group ${gi + 1}:</span> ${escapeHtml(g || '(empty)')}</div>`
+            ).join('');
+          }
+          return `<div class="match-item">
+            <span class="match-idx">#${i + 1}</span>
+            <code>${escapeHtml(m.value)}</code>
+            <span class="match-pos">index: ${m.index}</span>
+            ${groups}
+          </div>`;
+        }).join('');
+
+        // Extract result
+        extractResult.textContent = matches.map(m => m.value).join('\n');
+      }
+
+      regexInput.addEventListener('input', render);
+      testArea.addEventListener('input', render);
+
+      // Quick regex buttons
+      document.querySelectorAll('.quick-regex button[data-regex]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          regexInput.value = btn.getAttribute('data-regex');
+          render();
+        });
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try { testArea.value = await navigator.clipboard.readText(); render(); showMessage('success', '已粘贴'); }
+        catch { showMessage('error', '无法读取剪贴板'); }
+      });
+
+      document.getElementById('copyMatchesBtn').addEventListener('click', async () => {
+        const text = document.querySelectorAll('.match-item code');
+        if (!text.length) { showMessage('error', '无匹配'); return; }
+        await copyToClipboard([...text].map(el => el.textContent).join('\n'));
+        showMessage('success', '已复制匹配内容');
+      });
+
+      document.getElementById('copyExtractBtn').addEventListener('click', async () => {
+        const text = extractResult.textContent;
+        if (!text) { showMessage('error', '结果为空'); return; }
+        await copyToClipboard(text);
+        showMessage('success', '已复制');
+      });
+
+      syncFlags();
+    })();
+  </script>
+</body>
+</html>

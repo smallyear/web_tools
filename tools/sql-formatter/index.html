@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="在线SQL格式化和压缩工具，支持SQL代码美化、关键字大写、压缩等操作。">
+    <title>SQL格式化/压缩工具 - Web Tools</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        .tool-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .textarea-wrapper {
+            margin-bottom: 15px;
+        }
+        .textarea-wrapper textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .output-area {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 200px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text);
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .output-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover { opacity: 0.8; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+            <div class="navbar-links">
+                <a href="../../index.html" class="navbar-link">首页</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tool-header">
+            <nav class="breadcrumb">
+                <a href="../../index.html">首页</a>
+                <span>/</span>
+                <span>SQL格式化/压缩</span>
+            </nav>
+            <h1>SQL格式化/压缩工具</h1>
+            <p>在线SQL代码美化和压缩，支持关键字大写转换</p>
+        </div>
+
+        <div class="card">
+            <div class="textarea-wrapper">
+                <label for="sqlInput"><strong>输入SQL语句：</strong></label>
+                <textarea id="sqlInput" placeholder="在此粘贴你的SQL语句...&#10;例如: select * from users where id = 1 and name = 'test'"></textarea>
+            </div>
+
+            <div class="tool-controls">
+                <button class="btn btn-primary" onclick="beautifySQL()">格式化</button>
+                <button class="btn btn-secondary" onclick="minifySQL()">压缩</button>
+                <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="output-header">
+                <h3>输出结果</h3>
+                <button class="btn btn-secondary btn-sm" onclick="copyOutput()">📋 复制</button>
+            </div>
+            <div class="output-area" id="sqlOutput">结果将显示在这里...</div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Web Tools. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="../../assets/js/common.js"></script>
+    <script>
+        var SQL_KEYWORDS = [
+            'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'JOIN', 'LEFT', 'RIGHT',
+            'INNER', 'OUTER', 'CROSS', 'ON', 'INSERT', 'UPDATE', 'DELETE',
+            'CREATE', 'ALTER', 'DROP', 'TABLE', 'INDEX', 'VALUES', 'SET',
+            'INTO', 'ORDER BY', 'GROUP BY', 'HAVING', 'LIMIT', 'OFFSET',
+            'UNION', 'AS', 'IN', 'NOT', 'NULL', 'IS', 'BETWEEN', 'LIKE',
+            'EXISTS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'DISTINCT',
+            'COUNT', 'SUM', 'AVG', 'MAX', 'MIN', 'ASC', 'DESC', 'WITH',
+            'REPLACE', 'TRUNCATE', 'PRIMARY KEY', 'FOREIGN KEY', 'REFERENCES',
+            'DEFAULT', 'AUTO_INCREMENT', 'VARCHAR', 'INT', 'INTEGER',
+            'BOOLEAN', 'TEXT', 'DATE', 'TIMESTAMP', 'FLOAT', 'DOUBLE'
+        ];
+
+        // Keywords that start a new major clause on a new line
+        var MAJOR_KEYWORDS = [
+            'SELECT', 'FROM', 'WHERE', 'ORDER BY', 'GROUP BY', 'HAVING',
+            'LIMIT', 'OFFSET', 'UNION', 'INSERT', 'UPDATE', 'DELETE',
+            'SET', 'VALUES', 'INTO', 'LEFT JOIN', 'RIGHT JOIN',
+            'INNER JOIN', 'OUTER JOIN', 'CROSS JOIN', 'JOIN', 'ON',
+            'WHERE', 'AND', 'OR', 'WITH', 'CREATE', 'ALTER', 'DROP'
+        ];
+
+        var INDENT_KEYWORDS = ['SELECT', 'WHERE', 'SET', 'VALUES', 'ORDER BY', 'GROUP BY', 'HAVING'];
+        var SUBQUERY_OPEN = '(';
+        var SUBQUERY_CLOSE = ')';
+
+        function beautifySQL() {
+            var input = document.getElementById('sqlInput').value.trim();
+            if (!input) {
+                showMessage('error', '请输入SQL语句');
+                return;
+            }
+
+            // Normalize whitespace first
+            var sql = input.replace(/\s+/g, ' ').trim();
+
+            // Uppercase keywords - sort by length descending to match longer ones first
+            var sortedKeywords = SQL_KEYWORDS.slice().sort(function(a, b) {
+                return b.length - a.length;
+            });
+            for (var k = 0; k < sortedKeywords.length; k++) {
+                var kw = sortedKeywords[k];
+                var regex = new RegExp('\\b' + kw.replace(/\s+/g, '\\s+') + '\\b', 'gi');
+                sql = sql.replace(regex, kw);
+            }
+
+            // Add newlines around parentheses
+            sql = sql.replace(/\(/g, ' ( ');
+            sql = sql.replace(/\)/g, ' ) ');
+            sql = sql.replace(/\s+/g, ' ').trim();
+
+            // Split into tokens
+            var tokens = [];
+            var current = '';
+            var inStr = false;
+            var strChar = '';
+
+            for (var i = 0; i < sql.length; i++) {
+                var ch = sql[i];
+                if (inStr) {
+                    current += ch;
+                    if (ch === strChar) inStr = false;
+                    continue;
+                }
+                if (ch === "'" || ch === '"') {
+                    inStr = true;
+                    strChar = ch;
+                    current += ch;
+                    continue;
+                }
+                if (ch === ' ') {
+                    if (current) {
+                        tokens.push(current);
+                        current = '';
+                    }
+                    continue;
+                }
+                if (ch === '(' || ch === ')' || ch === ',' || ch === ';') {
+                    if (current) {
+                        tokens.push(current);
+                        current = '';
+                    }
+                    tokens.push(ch);
+                    continue;
+                }
+                current += ch;
+            }
+            if (current) tokens.push(current);
+
+            // Rebuild with formatting
+            var indent = 0;
+            var indentStr = '    ';
+            var result = '';
+            var newLine = true;
+
+            // Multi-word keyword detection
+            for (var t = 0; t < tokens.length; t++) {
+                var token = tokens[t];
+                var upper = token.toUpperCase();
+                var addNewLineBefore = false;
+                var addNewLineAfter = false;
+                var indentThis = false;
+                var dedentBefore = false;
+
+                // Check for multi-word keywords
+                if (upper === 'ORDER' && t + 1 < tokens.length && tokens[t + 1].toUpperCase() === 'BY') {
+                    token = tokens[t] + ' ' + tokens[t + 1];
+                    upper = 'ORDER BY';
+                    tokens.splice(t + 1, 1);
+                } else if (upper === 'GROUP' && t + 1 < tokens.length && tokens[t + 1].toUpperCase() === 'BY') {
+                    token = tokens[t] + ' ' + tokens[t + 1];
+                    upper = 'GROUP BY';
+                    tokens.splice(t + 1, 1);
+                } else if (upper === 'ORDER' || upper === 'GROUP') {
+                    // Skip if next isn't BY (shouldn't happen after normalization)
+                }
+
+                if (token === ',') {
+                    result = result.trimEnd() + ',\n';
+                    result += indentStr.repeat(indent + 1);
+                    newLine = true;
+                    continue;
+                }
+
+                if (token === '(') {
+                    indent++;
+                    result = result.trimEnd() + ' (\n';
+                    result += indentStr.repeat(indent);
+                    newLine = true;
+                    continue;
+                }
+
+                if (token === ')') {
+                    indent = Math.max(0, indent - 1);
+                    result = result.trimEnd() + '\n';
+                    result += indentStr.repeat(indent) + ')';
+                    newLine = false;
+                    continue;
+                }
+
+                if (token === ';') {
+                    result = result.trimEnd() + ';\n';
+                    newLine = true;
+                    continue;
+                }
+
+                // Determine if this keyword needs a new line
+                if (MAJOR_KEYWORDS.indexOf(upper) !== -1) {
+                    if (!newLine && upper !== 'AND' && upper !== 'OR' && upper !== 'ON') {
+                        result = result.trimEnd() + '\n';
+                        result += indentStr.repeat(indent);
+                    } else if (!newLine && (upper === 'AND' || upper === 'OR')) {
+                        result = result.trimEnd() + '\n';
+                        result += indentStr.repeat(indent);
+                    }
+                    result += token + ' ';
+                    newLine = false;
+                } else {
+                    if (newLine) {
+                        result += indentStr.repeat(indent);
+                        newLine = false;
+                    }
+                    result += token + ' ';
+                }
+            }
+
+            result = result.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+            document.getElementById('sqlOutput').textContent = result;
+            showMessage('success', 'SQL格式化完成');
+        }
+
+        function minifySQL() {
+            var input = document.getElementById('sqlInput').value.trim();
+            if (!input) {
+                showMessage('error', '请输入SQL语句');
+                return;
+            }
+            // Remove comments
+            var result = input.replace(/--[^\n]*/g, '');
+            result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+            // Collapse whitespace
+            result = result.replace(/\s+/g, ' ');
+            // Remove spaces around special chars
+            result = result.replace(/\s*([(),;])\s*/g, '$1');
+            result = result.trim();
+
+            document.getElementById('sqlOutput').textContent = result;
+            showMessage('success', 'SQL压缩完成');
+        }
+
+        function clearAll() {
+            document.getElementById('sqlInput').value = '';
+            document.getElementById('sqlOutput').textContent = '结果将显示在这里...';
+        }
+
+        function copyOutput() {
+            var text = document.getElementById('sqlOutput').textContent;
+            if (!text || text === '结果将显示在这里...') {
+                showMessage('error', '没有可复制的内容');
+                return;
+            }
+            copyToClipboard(text);
+            showMessage('success', '已复制到剪贴板');
+        }
+    </script>
+</body>
+</html>

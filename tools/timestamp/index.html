@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时间戳转换工具 - Web Tools</title>
+  <meta name="description" content="在线时间戳转换，支持秒级和毫秒级时间戳与日期字符串互转，显示多种格式">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .current-ts {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .current-ts .ts-label { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
+    .current-ts .ts-value { font-size: 36px; font-weight: 700; font-family: 'Monaco','Menlo','Consolas',monospace; letter-spacing: 1px; }
+    .current-ts .ts-date { font-size: 14px; opacity: 0.85; margin-top: 8px; }
+    .input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+    .input-row .form-group { flex: 1; min-width: 200px; }
+    .direction-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .direction-tabs button {
+      flex: 1; padding: 12px; border: 2px solid var(--border); background: white;
+      border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;
+    }
+    .direction-tabs button.active { border-color: var(--primary); background: #E3F2FD; color: var(--primary-dark); }
+    .direction-tabs button:hover:not(.active) { border-color: var(--primary-light); }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+    .result-item {
+      padding: 12px 16px; background: #FAFAFA; border: 1px solid var(--border);
+      border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .result-item .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .result-item .value { font-family: 'Monaco','Menlo','Consolas',monospace; font-size: 14px; word-break: break-all; }
+    .result-item .copy-btn {
+      background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px;
+      color: var(--text-secondary); flex-shrink: 0; margin-left: 8px;
+    }
+    .result-item .copy-btn:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 时间戳转换</div>
+      <h1>⏱️ 时间戳转换工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">支持秒级/毫秒级时间戳与日期字符串互转，多种格式输出</p>
+    </div>
+
+    <div class="current-ts" id="currentTs">
+      <div class="ts-label">当前时间戳（秒）</div>
+      <div class="ts-value" id="currentTsValue">--</div>
+      <div class="ts-date" id="currentTsDate">--</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">时间戳 → 日期</div>
+      <div class="input-row">
+        <div class="form-group">
+          <label class="form-label">输入时间戳</label>
+          <input type="text" class="form-input" id="tsInput" placeholder="输入秒级或毫秒级时间戳，如 1700000000" />
+        </div>
+        <div class="form-group" style="flex:none;">
+          <button class="btn btn-primary" id="tsConvertBtn" style="margin-top:24px;">转换</button>
+        </div>
+      </div>
+      <div class="result-grid" id="tsResults" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">日期 → 时间戳</div>
+      <div class="input-row">
+        <div class="form-group">
+          <label class="form-label">输入日期时间</label>
+          <input type="datetime-local" class="form-input" id="dateInput" step="1" />
+        </div>
+        <div class="form-group" style="flex:none;">
+          <button class="btn btn-primary" id="dateConvertBtn" style="margin-top:24px;">转换</button>
+        </div>
+      </div>
+      <div class="result-grid" id="dateResults" style="display:none;"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      // Current timestamp ticker
+      function updateCurrentTs() {
+        const now = Math.floor(Date.now() / 1000);
+        document.getElementById('currentTsValue').textContent = now;
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('currentTsDate').textContent =
+          `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+      updateCurrentTs();
+      setInterval(updateCurrentTs, 1000);
+
+      function getRelativeTime(date) {
+        const now = Date.now();
+        const diff = now - date.getTime();
+        const absDiff = Math.abs(diff);
+        const future = diff < 0;
+        const suffix = future ? '后' : '前';
+        if (absDiff < 1000) return '刚刚';
+        if (absDiff < 60000) return Math.floor(absDiff / 1000) + '秒' + suffix;
+        if (absDiff < 3600000) return Math.floor(absDiff / 60000) + '分钟' + suffix;
+        if (absDiff < 86400000) return Math.floor(absDiff / 3600000) + '小时' + suffix;
+        if (absDiff < 2592000000) return Math.floor(absDiff / 86400000) + '天' + suffix;
+        if (absDiff < 31536000000) return Math.floor(absDiff / 2592000000) + '个月' + suffix;
+        return Math.floor(absDiff / 31536000000) + '年' + suffix;
+      }
+
+      function makeCopyBtn(text) {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = '📋';
+        btn.title = '复制';
+        btn.onclick = async () => { await copyToClipboard(text); showMessage('success', '已复制'); };
+        return btn;
+      }
+
+      function renderTsResult(date) {
+        const pad = n => String(n).padStart(2, '0');
+        const chinese = `${date.getFullYear()}年${pad(date.getMonth()+1)}月${pad(date.getDate())}日 ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        const iso = date.toISOString();
+        const unix_s = Math.floor(date.getTime() / 1000);
+        const unix_ms = date.getTime();
+        const relative = getRelativeTime(date);
+        const weekDays = ['日','一','二','三','四','五','六'];
+        const weekDay = '星期' + weekDays[date.getDay()];
+
+        const items = [
+          { label: '中文格式', value: chinese + ' ' + weekDay },
+          { label: 'ISO 8601', value: iso },
+          { label: 'Unix 时间戳（秒）', value: String(unix_s) },
+          { label: 'Unix 时间戳（毫秒）', value: String(unix_ms) },
+          { label: '相对时间', value: relative },
+          { label: 'UTC 格式', value: date.toUTCString() },
+        ];
+
+        const container = document.getElementById('tsResults');
+        container.style.display = 'grid';
+        container.innerHTML = '';
+        items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<div><div class="label">${item.label}</div><div class="value">${item.value}</div></div>`;
+          div.appendChild(makeCopyBtn(item.value));
+          container.appendChild(div);
+        });
+      }
+
+      // Timestamp → Date
+      document.getElementById('tsConvertBtn').addEventListener('click', () => {
+        const raw = document.getElementById('tsInput').value.trim();
+        if (!raw || isNaN(raw)) { showMessage('error', '请输入有效的时间戳数字'); return; }
+        let ts = Number(raw);
+        // Auto-detect: if > 1e12, treat as milliseconds
+        if (ts > 1e12) {
+          // milliseconds
+        } else {
+          ts = ts * 1000;
+        }
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) { showMessage('error', '无效的时间戳'); return; }
+        renderTsResult(date);
+      });
+
+      document.getElementById('tsInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('tsConvertBtn').click();
+      });
+
+      // Date → Timestamp
+      document.getElementById('dateConvertBtn').addEventListener('click', () => {
+        const val = document.getElementById('dateInput').value;
+        if (!val) { showMessage('error', '请选择日期时间'); return; }
+        const date = new Date(val);
+        if (isNaN(date.getTime())) { showMessage('error', '无效的日期'); return; }
+        const unix_s = Math.floor(date.getTime() / 1000);
+        const unix_ms = date.getTime();
+
+        const items = [
+          { label: 'Unix 时间戳（秒）', value: String(unix_s) },
+          { label: 'Unix 时间戳（毫秒）', value: String(unix_ms) },
+          { label: 'ISO 8601', value: date.toISOString() },
+          { label: '相对时间', value: getRelativeTime(date) },
+        ];
+
+        const container = document.getElementById('dateResults');
+        container.style.display = 'grid';
+        container.innerHTML = '';
+        items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<div><div class="label">${item.label}</div><div class="value">${item.value}</div></div>`;
+          div.appendChild(makeCopyBtn(item.value));
+          container.appendChild(div);
+        });
+      });
+
+      // Set default datetime-local value to now
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      document.getElementById('dateInput').value =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    })();
+  </script>
+</body>
+</html>

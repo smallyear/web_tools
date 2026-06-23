@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人民币大写转换器 - Web Tools</title>
+  <meta name="description" content="在线人民币大写金额转换工具，将阿拉伯数字金额转为中文大写，支持万亿级别">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .result-box {
+      background: #FAFAFA; border: 2px solid var(--primary); border-radius: 8px;
+      padding: 20px 24px; margin-top: 16px;
+    }
+    .result-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+    .result-value {
+      font-size: 20px; font-weight: 600; color: var(--primary-dark);
+      line-height: 1.6; word-break: break-all;
+    }
+    .result-arabic {
+      font-size: 14px; color: var(--text-secondary); margin-top: 12px;
+      padding-top: 12px; border-top: 1px dashed var(--border);
+      font-family: 'Monaco','Menlo','Consolas',monospace;
+    }
+    .copy-row { margin-top: 16px; display: flex; gap: 8px; }
+    .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+    .examples button {
+      padding: 4px 10px; font-size: 12px; height: 28px;
+      background: white; border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    }
+    .examples button:hover { border-color: var(--primary); color: var(--primary); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb"><a href="../../index.html">首页</a> / 人民币大写转换</div>
+      <h1>💰 人民币大写转换器</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">将阿拉伯数字金额转为中文大写，支持万亿级别，自动处理零和整</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">输入金额</div>
+      <div class="form-group">
+        <label class="form-label">阿拉伯数字金额</label>
+        <input type="text" class="form-input" id="amountInput" placeholder="输入金额，如 12345.67" />
+      </div>
+      <div class="examples">
+        <span style="font-size:12px;color:var(--text-secondary);line-height:28px;">示例：</span>
+        <button data-val="0">0</button>
+        <button data-val="100">100</button>
+        <button data-val="1001">1001</button>
+        <button data-val="12345.67">12345.67</button>
+        <button data-val="100000">10万</button>
+        <button data-val="100000000">1亿</button>
+        <button data-val="1000000000000">1万亿</button>
+        <button data-val="1234567890.12">12亿</button>
+      </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>转换结果</span>
+        <button class="btn btn-secondary" id="copyBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 复制大写</button>
+      </div>
+      <div class="result-box">
+        <div class="result-label">金额大写</div>
+        <div class="result-value" id="resultValue">-</div>
+        <div class="result-arabic" id="resultArabic">-</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const amountInput = document.getElementById('amountInput');
+      const resultCard = document.getElementById('resultCard');
+      const resultValue = document.getElementById('resultValue');
+      const resultArabic = document.getElementById('resultArabic');
+
+      const CN_NUM = ['零','壹','贰','叁','肆','伍','陆','柒','捌','玖'];
+      const CN_INT_RADICE = ['','拾','佰','仟'];
+      const CN_INT_UNITS = ['','万','亿','万亿'];
+
+      function convertToChinese(amount) {
+        if (amount === 0) return '零元整';
+
+        // Handle negative
+        let prefix = '';
+        if (amount < 0) {
+          prefix = '负';
+          amount = Math.abs(amount);
+        }
+
+        // Split integer and decimal
+        const str = amount.toString();
+
+        // Check for precision issues
+        if (str.includes('e') || str.includes('E')) {
+          // Scientific notation - convert carefully
+          const parts = parseFloat(amount.toFixed(2)).toString().split('.');
+          return prefix + processParts(parts);
+        }
+
+        const parts = str.split('.');
+        return prefix + processParts(parts);
+      }
+
+      function processParts(parts) {
+        const intStr = parts[0];
+        let decStr = parts.length > 1 ? parts[1] : '';
+
+        // Limit decimal to 2 places (角分)
+        if (decStr.length > 2) {
+          decStr = decStr.substring(0, 2);
+        }
+
+        let result = '';
+
+        // Process integer part
+        const intNum = parseInt(intStr);
+        if (intNum === 0) {
+          // Don't add anything for integer 0
+        } else {
+          result = formatInteger(intStr);
+          result += '元';
+        }
+
+        // Process decimal part
+        if (decStr.length === 0 || parseInt(decStr) === 0) {
+          if (intNum !== 0) {
+            result += '整';
+          }
+        } else {
+          const jiao = parseInt(decStr[0] || '0');
+          const fen = decStr.length > 1 ? parseInt(decStr[1]) : 0;
+
+          if (jiao > 0) {
+            result += CN_NUM[jiao] + '角';
+          } else if (fen > 0) {
+            result += '零';
+          }
+          if (fen > 0) {
+            result += CN_NUM[fen] + '分';
+          }
+        }
+
+        return result || '零元整';
+      }
+
+      function formatInteger(intStr) {
+        let result = '';
+        const len = intStr.length;
+        let zeroFlag = false;
+
+        // Process every 4 digits from right
+        const groups = [];
+        for (let i = len; i > 0; i -= 4) {
+          groups.unshift(intStr.substring(Math.max(0, i - 4), i));
+        }
+
+        for (let g = 0; g < groups.length; g++) {
+          const group = groups[g];
+          const groupIdx = groups.length - 1 - g; // 0=个, 1=万, 2=亿, 3=万亿
+          let groupResult = '';
+          let groupZero = false;
+
+          for (let i = 0; i < group.length; i++) {
+            const digit = parseInt(group[i]);
+            const posIdx = group.length - 1 - i; // 0=个, 1=十, 2=百, 3=千
+
+            if (digit === 0) {
+              groupZero = true;
+            } else {
+              if (groupZero) {
+                groupResult += '零';
+                groupZero = false;
+              }
+              groupResult += CN_NUM[digit] + CN_INT_RADICE[posIdx];
+            }
+          }
+
+          if (groupResult) {
+            if (zeroFlag && groupResult[0] !== '零') {
+              result += '零';
+            }
+            result += groupResult + CN_INT_UNITS[groupIdx];
+            zeroFlag = false;
+          } else {
+            zeroFlag = true;
+          }
+        }
+
+        return result;
+      }
+
+      function doConvert() {
+        const raw = amountInput.value.trim();
+        if (!raw) { resultCard.style.display = 'none'; return; }
+
+        // Remove commas and spaces
+        const cleaned = raw.replace(/[,，\s]/g, '');
+        const num = parseFloat(cleaned);
+
+        if (isNaN(num)) {
+          showMessage('error', '请输入有效的数字');
+          resultCard.style.display = 'none';
+          return;
+        }
+
+        // Limit to 万亿 level (1e12) and reasonable precision
+        if (Math.abs(num) >= 1e16) {
+          showMessage('error', '数值过大，最大支持万亿级别');
+          resultCard.style.display = 'none';
+          return;
+        }
+
+        const chinese = convertToChinese(num);
+        resultValue.textContent = chinese;
+
+        // Format arabic display
+        const fixed = parseFloat(num.toFixed(2));
+        resultArabic.textContent = '阿拉伯数字：¥ ' + fixed.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        resultCard.style.display = 'block';
+      }
+
+      amountInput.addEventListener('input', doConvert);
+
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        const text = resultValue.textContent;
+        if (!text || text === '-') { showMessage('error', '结果为空'); return; }
+        copyToClipboard(text).then(() => showMessage('success', '已复制大写金额'));
+      });
+
+      // Example buttons
+      document.querySelectorAll('.examples button[data-val]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          amountInput.value = btn.getAttribute('data-val');
+          doConvert();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
