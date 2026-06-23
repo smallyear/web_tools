@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF合并/分割 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tabs{display:flex;border-bottom:2px solid #e0e0e0;margin-bottom:20px}
+.tab-btn{padding:10px 24px;border:none;background:none;cursor:pointer;font-size:15px;font-weight:600;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn.active{color:#1E88E5;border-bottom-color:#1E88E5}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.file-list{list-style:none;padding:0}
+.file-item{display:flex;align-items:center;gap:12px;padding:12px;background:#f9f9f9;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:8px;cursor:grab}
+.file-item.dragging{opacity:.4;border-style:dashed}
+.file-item .name{flex:1;font-weight:500;font-size:14px}
+.file-item .pages{font-size:13px;color:#666;white-space:nowrap}
+.file-item .del-btn{background:none;border:none;cursor:pointer;font-size:18px;color:#999;padding:4px 8px}
+.file-item .del-btn:hover{color:#F44336}
+.grip{color:#bbb;font-size:16px;cursor:grab}
+.progress-wrap{display:none;margin:16px 0}
+.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:#1E88E5;border-radius:4px;width:0;transition:width .3s}
+.progress-text{font-size:13px;color:#666;margin-top:6px}
+.range-input{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.range-hint{font-size:12px;color:#888;margin-top:4px}
+.btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+@media(max-width:600px){.file-item{flex-wrap:wrap}.tab-btn{padding:8px 14px;font-size:13px}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>PDF合并/分割工具</span></div>
+<div class="card tool-header"><h1>📄 PDF合并/分割工具</h1><p>支持多个PDF文件合并为一个，或将一个PDF按页码范围拆分导出</p></div>
+<div class="card">
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('merge')">📎 PDF合并</button>
+<button class="tab-btn" onclick="switchTab('split')">✂️ PDF分割</button>
+</div>
+<div id="tab-merge" class="tab-panel active">
+<div class="upload-area" id="mergeDropArea">
+<div class="upload-icon">📁</div>
+<div class="upload-text">点击或拖拽上传多个PDF文件</div>
+<div class="upload-hint">支持同时选择多个文件</div>
+<input type="file" id="mergeFileInput" accept=".pdf" multiple style="display:none">
+</div>
+<ul class="file-list" id="mergeFileList"></ul>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="mergePDFs()">🔗 合并并下载</button>
+<button class="btn btn-secondary" onclick="clearMergeFiles()">清空列表</button>
+</div>
+<div class="progress-wrap" id="mergeProgress">
+<div class="progress-bar"><div class="progress-fill" id="mergeProgressFill"></div></div>
+<div class="progress-text" id="mergeProgressText">处理中...</div>
+</div>
+</div>
+<div id="tab-split" class="tab-panel">
+<div class="upload-area" id="splitDropArea">
+<div class="upload-icon">📄</div>
+<div class="upload-text">点击或拖拽上传PDF文件</div>
+<div class="upload-hint">选择要分割的PDF</div>
+<input type="file" id="splitFileInput" accept=".pdf" style="display:none">
+</div>
+<div id="splitFileInfo" style="display:none;margin-bottom:16px"></div>
+<div class="form-group">
+<label class="form-label">页码范围</label>
+<input type="text" id="pageRange" class="range-input" placeholder="例如: 1-3, 5, 7-10">
+<div class="range-hint">用逗号分隔多个范围，如 1-3, 5, 7-10</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="splitPDF()">✂️ 分割并下载</button>
+<button class="btn btn-secondary" onclick="clearSplitFile()">清除</button>
+</div>
+<div class="progress-wrap" id="splitProgress">
+<div class="progress-bar"><div class="progress-fill" id="splitProgressFill"></div></div>
+<div class="progress-text" id="splitProgressText">处理中...</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+var mergeFiles=[];
+var splitFile=null;
+var splitPageCount=0;
+
+function switchTab(t){
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',(t==='merge'?0:1)===i)});
+  document.getElementById('tab-merge').classList.toggle('active',t==='merge');
+  document.getElementById('tab-split').classList.toggle('active',t==='split');
+}
+
+function showProgress(id,pct,text){
+  var w=document.getElementById(id);w.style.display='block';
+  document.getElementById(id.replace('Progress','ProgressFill')).style.width=pct+'%';
+  document.getElementById(id.replace('Progress','ProgressText'))[typeof text!=='undefined'?'textContent':'textContent']=text||'处理中...';
+}
+function hideProgress(id){document.getElementById(id).style.display='none';}
+
+function renderMergeList(){
+  var ul=document.getElementById('mergeFileList');ul.innerHTML='';
+  mergeFiles.forEach(function(f,i){
+    var li=document.createElement('li');li.className='file-item';li.draggable=true;li.dataset.index=i;
+    li.innerHTML='<span class="grip">⠿</span><span class="name">'+f.name+'</span><span class="pages">'+f.pageCount+'页 ('+formatFileSize(f.size)+')</span><button class="del-btn" onclick="removeMergeFile('+i+')">&times;</button>';
+    li.addEventListener('dragstart',function(e){e.dataTransfer.setData('text/plain',i);li.classList.add('dragging')});
+    li.addEventListener('dragend',function(){li.classList.remove('dragging')});
+    li.addEventListener('dragover',function(e){e.preventDefault();li.style.borderTop='2px solid #1E88E5'});
+    li.addEventListener('dragleave',function(){li.style.borderTop=''});
+    li.addEventListener('drop',function(e){
+      e.preventDefault();li.style.borderTop='';
+      var from=parseInt(e.dataTransfer.getData('text/plain'));
+      if(from!==i){var item=mergeFiles.splice(from,1)[0];mergeFiles.splice(i,0,item);renderMergeList();}
+    });
+    ul.appendChild(li);
+  });
+}
+function removeMergeFile(i){mergeFiles.splice(i,1);renderMergeList();}
+function clearMergeFiles(){mergeFiles=[];renderMergeList();}
+
+// Merge file input handling
+document.getElementById('mergeFileInput').addEventListener('change',async function(e){
+  var files=Array.from(e.target.files);
+  for(var i=0;i<files.length;i++){
+    if(files[i].type!=='application/pdf'){showMessage('error',files[i].name+' 不是PDF文件');continue;}
+    try{
+      var buf=await files[i].arrayBuffer();
+      var doc=await PDFLib.PDFDocument.load(buf);
+      mergeFiles.push({name:files[i].name,size:files[i].size,buffer:buf,pageCount:doc.getPageCount()});
+    }catch(err){showMessage('error','无法读取 '+files[i].name);}
+  }
+  renderMergeList();e.target.value='';
+});
+document.getElementById('mergeDropArea').addEventListener('click',function(){document.getElementById('mergeFileInput').click()});
+document.getElementById('mergeDropArea').addEventListener('dragover',function(e){e.preventDefault();this.classList.add('dragover')});
+document.getElementById('mergeDropArea').addEventListener('dragleave',function(e){e.preventDefault();this.classList.remove('dragover')});
+document.getElementById('mergeDropArea').addEventListener('drop',async function(e){
+  e.preventDefault();this.classList.remove('dragover');
+  var files=Array.from(e.dataTransfer.files).filter(function(f){return f.type==='application/pdf'});
+  for(var i=0;i<files.length;i++){
+    var buf=await files[i].arrayBuffer();
+    var doc=await PDFLib.PDFDocument.load(buf);
+    mergeFiles.push({name:files[i].name,size:files[i].size,buffer:buf,pageCount:doc.getPageCount()});
+  }
+  renderMergeList();
+});
+
+async function mergePDFs(){
+  if(mergeFiles.length<2){showMessage('error','请至少添加2个PDF文件');return;}
+  showProgress('mergeProgress',0,'正在合并...');
+  try{
+    var merged=await PDFLib.PDFDocument.create();
+    for(var i=0;i<mergeFiles.length;i++){
+      var doc=await PDFLib.PDFDocument.load(mergeFiles[i].buffer);
+      var pages=await merged.copyPages(doc,doc.getPageIndices());
+      pages.forEach(function(p){merged.addPage(p)});
+      showProgress('mergeProgress',Math.round((i+1)/mergeFiles.length*100),'正在合并 ('+(i+1)+'/'+mergeFiles.length+')');
+    }
+    var bytes=await merged.save();
+    var blob=new Blob([bytes],{type:'application/pdf'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='merged.pdf';a.click();
+    showProgress('mergeProgress',100,'合并完成！');setTimeout(function(){hideProgress('mergeProgress')},2000);
+    showMessage('success','PDF合并成功');
+  }catch(err){showMessage('error','合并失败：'+err.message);hideProgress('mergeProgress');}
+}
+
+// Split file handling
+document.getElementById('splitFileInput').addEventListener('change',async function(e){
+  var file=e.target.files[0];if(!file)return;
+  if(file.type!=='application/pdf'){showMessage('error','请选择PDF文件');return;}
+  try{
+    splitFile=await file.arrayBuffer();
+    var doc=await PDFLib.PDFDocument.load(splitFile);
+    splitPageCount=doc.getPageCount();
+    document.getElementById('splitFileInfo').style.display='block';
+    document.getElementById('splitFileInfo').innerHTML='<div class="message message-success">📄 '+file.name+' — 共 '+splitPageCount+' 页 ('+formatFileSize(file.size)+')</div>';
+  }catch(err){showMessage('error','无法读取PDF：'+err.message);}
+  e.target.value='';
+});
+document.getElementById('splitDropArea').addEventListener('click',function(){document.getElementById('splitFileInput').click()});
+document.getElementById('splitDropArea').addEventListener('dragover',function(e){e.preventDefault();this.classList.add('dragover')});
+document.getElementById('splitDropArea').addEventListener('dragleave',function(e){e.preventDefault();this.classList.remove('dragover')});
+document.getElementById('splitDropArea').addEventListener('drop',async function(e){
+  e.preventDefault();this.classList.remove('dragover');
+  var file=e.dataTransfer.files[0];if(!file||file.type!=='application/pdf'){showMessage('error','请选择PDF文件');return;}
+  try{
+    splitFile=await file.arrayBuffer();
+    var doc=await PDFLib.PDFDocument.load(splitFile);
+    splitPageCount=doc.getPageCount();
+    document.getElementById('splitFileInfo').style.display='block';
+    document.getElementById('splitFileInfo').innerHTML='<div class="message message-success">📄 '+file.name+' — 共 '+splitPageCount+' 页 ('+formatFileSize(file.size)+')</div>';
+  }catch(err){showMessage('error','无法读取PDF：'+err.message);}
+});
+function clearSplitFile(){splitFile=null;splitPageCount=0;document.getElementById('splitFileInfo').style.display='none';document.getElementById('pageRange').value='';}
+
+function parseRanges(str,max){
+  var pages=[];
+  str.split(',').forEach(function(part){
+    part=part.trim();
+    if(!part)return;
+    if(part.indexOf('-')!==-1){
+      var p=part.split('-');var a=parseInt(p[0]),b=parseInt(p[1]);
+      if(isNaN(a)||isNaN(b)){return;}
+      a=Math.max(1,a);b=Math.min(max,b);
+      for(var i=a;i<=b;i++){if(pages.indexOf(i)===-1)pages.push(i);}
+    }else{
+      var n=parseInt(part);
+      if(!isNaN(n)&&n>=1&&n<=max&&pages.indexOf(n)===-1)pages.push(n);
+    }
+  });
+  return pages.sort(function(a,b){return a-b});
+}
+
+async function splitPDF(){
+  if(!splitFile){showMessage('error','请先上传PDF文件');return;}
+  var rangeStr=document.getElementById('pageRange').value.trim();
+  if(!rangeStr){showMessage('error','请输入页码范围');return;}
+  var pages=parseRanges(rangeStr,splitPageCount);
+  if(pages.length===0){showMessage('error','无效的页码范围');return;}
+  showProgress('splitProgress',0,'正在分割...');
+  try{
+    var src=await PDFLib.PDFDocument.load(splitFile);
+    var newDoc=await PDFLib.PDFDocument.create();
+    var indices=pages.map(function(p){return p-1});
+    var copied=await newDoc.copyPages(src,indices);
+    copied.forEach(function(p){newDoc.addPage(p)});
+    showProgress('splitProgress',80,'正在生成文件...');
+    var bytes=await newDoc.save();
+    var blob=new Blob([bytes],{type:'application/pdf'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='split_pages.pdf';a.click();
+    showProgress('splitProgress',100,'分割完成！');setTimeout(function(){hideProgress('splitProgress')},2000);
+    showMessage('success','已提取 '+pages.length+' 页');
+  }catch(err){showMessage('error','分割失败：'+err.message);hideProgress('splitProgress');}
+}
+</script>
+</body>
+</html>

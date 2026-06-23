@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>条形码生成器 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.tool-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end}
+.tool-options .opt-group{display:flex;flex-direction:column;gap:4px}
+.tool-options label{font-weight:600;font-size:13px;color:#555}
+.tool-options input[type=number],.tool-options select,.tool-options input[type=color]{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.tool-options input[type=number]{width:80px}
+.tool-options input[type=color]{width:50px;height:34px;padding:2px;cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.preview-box{background:#fff;border:1px solid #eee;border-radius:8px;padding:24px;display:flex;align-items:center;justify-content:center;min-height:160px;overflow-x:auto}
+.preview-box svg{max-width:100%;height:auto}
+.toggle-wrap{display:flex;align-items:center;gap:6px;margin-top:6px}
+.toggle-wrap input[type=checkbox]{width:16px;height:16px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s;font-size:14px}
+.toast.show{opacity:1}
+@media(max-width:768px){.tool-options{flex-direction:column;gap:10px}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>条形码生成器</span></div>
+<div class="card tool-header"><h1>📊 条形码生成器</h1><p>支持 CODE128、EAN13、EAN8、UPC、CODE39、ITF14 等格式，实时预览并导出 SVG/PNG</p></div>
+<div class="card">
+<div class="form-group">
+<label class="form-label">编码内容</label>
+<input type="text" id="barcodeValue" class="form-input" placeholder="请输入要编码的文本或数字..." value="123456789012">
+</div>
+<div class="tool-options">
+<div class="opt-group"><label>条形码格式</label><select id="format">
+<option value="CODE128">CODE128</option>
+<option value="EAN13">EAN13</option>
+<option value="EAN8">EAN8</option>
+<option value="UPC">UPC</option>
+<option value="CODE39">CODE39</option>
+<option value="ITF14">ITF14</option>
+</select></div>
+<div class="opt-group"><label>线条宽度</label><input type="number" id="lineWidth" min="1" max="5" value="2"></div>
+<div class="opt-group"><label>高度</label><input type="number" id="barHeight" min="20" max="300" value="100"></div>
+<div class="opt-group"><label>字号</label><input type="number" id="fontSize" min="10" max="40" value="16"></div>
+<div class="opt-group"><label>文字位置</label><select id="textPosition"><option value="bottom">底部</option><option value="top">顶部</option></select></div>
+<div class="opt-group"><label>条码颜色</label><input type="color" id="lineColor" value="#000000"></div>
+<div class="opt-group"><label>背景色</label><input type="color" id="bgColor" value="#ffffff"></div>
+<div class="opt-group"><label>字体</label><select id="font"><option value="monospace">monospace</option><option value="Arial">Arial</option><option value="sans-serif">sans-serif</option></select></div>
+</div>
+<div class="toggle-wrap"><input type="checkbox" id="showText" checked><label for="showText">显示文本</label></div>
+</div>
+<div class="card">
+<div class="btn-row">
+<button class="btn btn-primary" onclick="generateBarcode()">🔄 生成条形码</button>
+<button class="btn btn-success" onclick="downloadSVG()">⬇ 下载 SVG</button>
+<button class="btn btn-success" onclick="downloadPNG()">⬇ 下载 PNG</button>
+<button class="btn btn-secondary" onclick="copySVG()">📋 复制 SVG</button>
+</div>
+<div class="preview-box"><svg id="barcode"></svg></div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+function getOptions(){
+  return {
+    format: document.getElementById('format').value,
+    width: parseInt(document.getElementById('lineWidth').value)||2,
+    height: parseInt(document.getElementById('barHeight').value)||100,
+    displayValue: document.getElementById('showText').checked,
+    fontSize: parseInt(document.getElementById('fontSize').value)||16,
+    textPosition: document.getElementById('textPosition').value,
+    lineColor: document.getElementById('lineColor').value,
+    background: document.getElementById('bgColor').value,
+    font: document.getElementById('font').value,
+    margin: 10
+  };
+}
+function generateBarcode(){
+  var val=document.getElementById('barcodeValue').value.trim();
+  if(!val){showMessage('error','请输入编码内容');return;}
+  try{
+    JsBarcode('#barcode', val, getOptions());
+  }catch(e){
+    showMessage('error','生成失败：'+e.message);
+  }
+}
+function downloadSVG(){
+  var svg=document.getElementById('barcode');
+  if(!svg.querySelector('rect')){showMessage('warning','请先生成条形码');return;}
+  var data=new XMLSerializer().serializeToString(svg);
+  var blob=new Blob([data],{type:'image/svg+xml'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='barcode.svg';a.click();
+}
+function downloadPNG(){
+  var svg=document.getElementById('barcode');
+  if(!svg.querySelector('rect')){showMessage('warning','请先生成条形码');return;}
+  var data=new XMLSerializer().serializeToString(svg);
+  var canvas=document.createElement('canvas');
+  var ctx=canvas.getContext('2d');
+  var img=new Image();
+  img.onload=function(){
+    canvas.width=img.width;canvas.height=img.height;
+    ctx.fillStyle=getOptions().background;ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='barcode.png';a.click();
+  };
+  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(data)));
+}
+function copySVG(){
+  var svg=document.getElementById('barcode');
+  if(!svg.querySelector('rect')){showMessage('warning','请先生成条形码');return;}
+  var data=new XMLSerializer().serializeToString(svg);
+  copyToClipboard(data);
+  showMessage('success','SVG代码已复制到剪贴板');
+}
+['barcodeValue','format','lineWidth','barHeight','showText','fontSize','textPosition','lineColor','bgColor','font'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',generateBarcode);
+  document.getElementById(id).addEventListener('change',generateBarcode);
+});
+generateBarcode();
+</script>
+</body>
+</html>

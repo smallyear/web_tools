@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片加水印 - Web工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+.upload-area{border:2px dashed #ccc;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .3s,background .3s;margin-bottom:16px}
+.upload-area:hover,.upload-area.dragover{border-color:#4a90d9;background:#f0f6ff}
+.upload-area .icon{font-size:48px;margin-bottom:12px}
+.upload-area p{color:#666;font-size:14px;margin:4px 0}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.options-grid .form-group{margin-bottom:0}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:160px}
+.pos-grid label{display:flex;align-items:center;justify-content:center;padding:8px;border:2px solid #ddd;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s}
+.pos-grid input{display:none}
+.pos-grid input:checked+span{color:var(--primary);font-weight:600}
+.pos-grid label:has(input:checked){border-color:var(--primary);background:#e3f2fd}
+.range-wrap{display:flex;align-items:center;gap:8px}
+.range-wrap input[type=range]{flex:1}
+.range-val{min-width:44px;font-size:13px;color:#555}
+.canvas-wrap{text-align:center;margin-bottom:16px;background:#f5f5f5;border-radius:8px;padding:12px;overflow:auto}
+.canvas-wrap canvas{max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.hidden{display:none}
+@media(max-width:768px){.options-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>图片加水印</span></div>
+<div class="card tool-header"><h1>💧 图片加水印</h1><p>上传图片，添加自定义文字水印</p></div>
+<div class="card">
+<div class="upload-area" id="dropZone">
+<div class="icon">📤</div>
+<p><strong>点击上传</strong> 或 拖拽图片到此处</p>
+<p style="color:#999;font-size:12px">支持 PNG、JPEG、WebP 等常见格式</p>
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+</div>
+<div id="optionsSection" class="hidden">
+<div class="options-grid">
+<div class="form-group">
+<label class="form-label">水印文字</label>
+<input type="text" id="wmText" class="form-input" placeholder="请输入水印文字" value="水印文字">
+</div>
+<div class="form-group">
+<label class="form-label">字体大小</label>
+<div class="range-wrap">
+<input type="range" id="fontSize" min="12" max="200" value="40">
+<span class="range-val" id="fontSizeVal">40px</span>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">文字颜色</label>
+<input type="color" id="fontColor" value="#ffffff" style="width:100%;height:40px;border:1px solid #ddd;border-radius:6px;cursor:pointer">
+</div>
+<div class="form-group">
+<label class="form-label">透明度</label>
+<div class="range-wrap">
+<input type="range" id="opacity" min="0" max="1" step="0.05" value="0.5">
+<span class="range-val" id="opacityVal">0.50</span>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">旋转角度</label>
+<div class="range-wrap">
+<input type="range" id="rotation" min="-180" max="180" value="-30">
+<span class="range-val" id="rotationVal">-30°</span>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">水印位置</label>
+<div class="pos-grid">
+<label><input type="radio" name="pos" value="top-left"><span>↖</span></label>
+<label><input type="radio" name="pos" value="top-center"><span>↑</span></label>
+<label><input type="radio" name="pos" value="top-right"><span>↗</span></label>
+<label><input type="radio" name="pos" value="center-left"><span>←</span></label>
+<label><input type="radio" name="pos" value="center" checked><span>●</span></label>
+<label><input type="radio" name="pos" value="center-right"><span>→</span></label>
+<label><input type="radio" name="pos" value="bottom-left"><span>↙</span></label>
+<label><input type="radio" name="pos" value="bottom-center"><span>↓</span></label>
+<label><input type="radio" name="pos" value="bottom-right"><span>↘</span></label>
+</div>
+</div>
+</div>
+</div>
+<div id="previewSection" class="hidden">
+<div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+<div class="btn-row">
+<button class="btn btn-success" onclick="downloadImage()">📥 下载水印图片</button>
+<button class="btn btn-secondary" onclick="resetAll()">🔄 重新上传</button>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Web工具箱 © 2024</p></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let originalImg=null,originalFile=null;
+
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
+dropZone.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0])});
+
+// Live update bindings
+['wmText','fontSize','fontColor','opacity','rotation'].forEach(id=>{
+document.getElementById(id).addEventListener('input',()=>{
+document.getElementById('fontSizeVal').textContent=document.getElementById('fontSize').value+'px';
+document.getElementById('opacityVal').textContent=parseFloat(document.getElementById('opacity').value).toFixed(2);
+document.getElementById('rotationVal').textContent=document.getElementById('rotation').value+'°';
+if(originalImg)drawWatermark();
+});
+});
+document.querySelectorAll('input[name=pos]').forEach(r=>r.addEventListener('change',()=>{if(originalImg)drawWatermark()}));
+
+function handleFile(file){
+if(!file||!file.type.startsWith('image/')){showMessage('error','请选择图片文件');return}
+originalFile=file;
+const reader=new FileReader();
+reader.onload=function(e){
+originalImg=new Image();
+originalImg.onload=function(){
+canvas.width=originalImg.width;
+canvas.height=originalImg.height;
+document.getElementById('optionsSection').classList.remove('hidden');
+document.getElementById('previewSection').classList.remove('hidden');
+drawWatermark();
+};
+originalImg.src=e.target.result;
+};
+reader.readAsDataURL(file);
+}
+
+function drawWatermark(){
+if(!originalImg)return;
+canvas.width=originalImg.width;
+canvas.height=originalImg.height;
+ctx.drawImage(originalImg,0,0);
+const text=document.getElementById('wmText').value||'水印';
+const size=parseInt(document.getElementById('fontSize').value);
+const color=document.getElementById('fontColor').value;
+const alpha=parseFloat(document.getElementById('opacity').value);
+const angle=parseInt(document.getElementById('rotation').value);
+const pos=document.querySelector('input[name=pos]:checked').value;
+
+ctx.save();
+ctx.globalAlpha=alpha;
+ctx.fillStyle=color;
+ctx.font=`bold ${size}px sans-serif`;
+ctx.textAlign='center';
+ctx.textBaseline='middle';
+
+// Calculate position
+let x,y;
+const pad=20;
+const tw=ctx.measureText(text).width;
+switch(pos){
+case'top-left':x=pad+tw/2;y=pad+size/2;break;
+case'top-center':x=canvas.width/2;y=pad+size/2;break;
+case'top-right':x=canvas.width-pad-tw/2;y=pad+size/2;break;
+case'center-left':x=pad+tw/2;y=canvas.height/2;break;
+case'center':x=canvas.width/2;y=canvas.height/2;break;
+case'center-right':x=canvas.width-pad-tw/2;y=canvas.height/2;break;
+case'bottom-left':x=pad+tw/2;y=canvas.height-pad-size/2;break;
+case'bottom-center':x=canvas.width/2;y=canvas.height-pad-size/2;break;
+case'bottom-right':x=canvas.width-pad-tw/2;y=canvas.height-pad-size/2;break;
+}
+
+ctx.translate(x,y);
+ctx.rotate(angle*Math.PI/180);
+ctx.fillText(text,0,0);
+ctx.restore();
+}
+
+function downloadImage(){
+if(!originalImg)return;
+const a=document.createElement('a');
+a.href=canvas.toDataURL('image/png');
+a.download=(originalFile.name.replace(/\.[^.]+$/,'')||'image')+'_watermark.png';
+a.click();
+}
+
+function resetAll(){
+originalImg=null;originalFile=null;fileInput.value='';
+document.getElementById('optionsSection').classList.add('hidden');
+document.getElementById('previewSection').classList.add('hidden');
+ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+</script>
+</body>
+</html>
