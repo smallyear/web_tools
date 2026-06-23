@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中英文排版纠正 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 0;position:sticky;top:0;z-index:100}
+.navbar .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+.navbar .logo{font-size:1.3rem;font-weight:700;color:#4a6cf7;text-decoration:none}
+.breadcrumb{max-width:1200px;margin:16px auto;padding:0 20px;font-size:.9rem;color:#666}
+.breadcrumb a{color:#4a6cf7;text-decoration:none}.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:28px;margin:20px auto;max-width:900px}
+.card h2{font-size:1.4rem;margin-bottom:20px;color:#333}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#555}
+textarea{width:100%;min-height:140px;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical}
+textarea:focus{outline:none;border-color:#4a6cf7;box-shadow:0 0 0 3px rgba(74,108,247,.15)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#4a6cf7;color:#fff}.btn-primary:hover{background:#3a5ce5}
+.btn-copy{background:#10b981;color:#fff}.btn-copy:hover{background:#059669}
+.btn-group{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.checkbox-group{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.checkbox-group label{display:flex;align-items:center;gap:6px;font-size:.95rem;cursor:pointer}
+.preview-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.preview-box{background:#f8f9fc;border-radius:8px;padding:16px;min-height:120px;font-size:.95rem;white-space:pre-wrap;word-break:break-all;border:1px solid #eee}
+.preview-box h4{margin-bottom:10px;color:#555;font-size:.9rem}
+.highlight{background:#fef08a;padding:1px 2px;border-radius:3px}
+.results{margin-top:20px;display:none}
+.stat-row{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.stat-badge{background:#eef2ff;color:#4a6cf7;padding:6px 14px;border-radius:20px;font-size:.85rem;font-weight:600}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
+@media(max-width:600px){.preview-area{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../index.html" class="logo">🛠 在线工具箱</a></div></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../../index.html">文本工具</a> / 中英文排版纠正</div>
+<div class="container">
+<div class="card">
+<h2>✏️ 中英文排版纠正</h2>
+<div class="form-group"><label>排版规则</label>
+<div class="checkbox-group">
+<label><input type="checkbox" id="rule1" checked> 中英文间加空格</label>
+<label><input type="checkbox" id="rule2" checked> 中文数字间加空格</label>
+<label><input type="checkbox" id="rule3" checked> 去除多余空格</label>
+</div>
+</div>
+<div class="form-group"><label for="inputText">输入文本</label><textarea id="inputText" placeholder="请输入需要排版纠正的文本..."></textarea></div>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="fixTypography()">🔧 开始纠正</button>
+<button class="btn btn-copy" onclick="copyResult()">📋 复制结果</button>
+</div>
+<div class="results" id="results">
+<div class="stat-row">
+<span class="stat-badge" id="changesBadge">修改了 0 处</span>
+</div>
+<div class="preview-area">
+<div class="preview-box"><h4>原文</h4><div id="beforePreview"></div></div>
+<div class="preview-box"><h4>纠正后</h4><div id="afterPreview"></div></div>
+</div>
+</div>
+</div>
+</div>
+<footer>© 2026 在线工具箱 | 中英文排版纠正</footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+let resultText='';
+function fixTypography(){
+const text=document.getElementById('inputText').value;
+if(!text){return}
+const r1=document.getElementById('rule1').checked;
+const r2=document.getElementById('rule2').checked;
+const r3=document.getElementById('rule3').checked;
+let result=text;
+let changes=0;
+const cn='\\u4e00-\\u9fff';
+const before=result;
+if(r1){
+// Chinese to English/number
+result=result.replace(new RegExp(`([${cn}])([A-Za-z0-9])`,'g'),'$1 $2');
+result=result.replace(new RegExp(`([A-Za-z0-9])([${cn}])`,'g'),'$1 $2');
+}
+if(r2){
+result=result.replace(new RegExp(`([${cn}])([0-9])`,'g'),'$1 $2');
+result=result.replace(new RegExp(`([0-9])([${cn}])`,'g'),'$1 $2');
+}
+if(r3){
+result=result.replace(/[ \t]+/g,' ');
+result=result.replace(/[ \t]+\n/g,'\n');
+result=result.replace(/\n[ \t]+/g,'\n');
+}
+// count changes by diffing
+const a=before.split(''),b=result.split('');
+// simple: count differing positions
+let diff=0;
+const maxLen=Math.max(a.length,b.length);
+for(let i=0;i<maxLen;i++){if(a[i]!==b[i])diff++}
+changes=Math.max(1,Math.round(diff/2));
+resultText=result;
+document.getElementById('changesBadge').textContent=`修改了约 ${changes} 处`;
+document.getElementById('beforePreview').innerHTML=highlightDiff(before,result);
+document.getElementById('afterPreview').innerHTML=esc(result);
+document.getElementById('results').style.display='block';
+}
+function highlightDiff(original,fixed){
+// Simple highlight: mark segments that changed
+let html='';
+const oLines=original.split('\n');
+const fLines=fixed.split('\n');
+for(let i=0;i<Math.max(oLines.length,fLines.length);i++){
+const o=oLines[i]||'';const f=fLines[i]||'';
+if(o===f){html+=esc(o)+'\n'}
+else{
+// highlight changed parts in original
+html+='<span class="highlight">'+esc(o)+'</span>\n';
+}
+}
+return html;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function copyResult(){
+if(typeof copyToClipboard==='function')copyToClipboard(resultText);else{navigator.clipboard.writeText(resultText);showMessage('已复制');}}
+</script>
+</body>
+</html>

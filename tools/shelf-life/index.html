@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保质期计算器 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  .mode-toggle { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color, #e2e8f0); }
+  .mode-btn { flex: 1; padding: 10px 16px; border: none; background: var(--card-bg, #fff); cursor: pointer; font-size: 0.95rem; color: var(--text-secondary, #475569); transition: all 0.2s; }
+  .mode-btn.active { background: var(--primary-color, #3b82f6); color: #fff; }
+  .input-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .input-group label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--text-secondary, #475569); flex: 1; min-width: 180px; }
+  .input-group input, .input-group select { padding: 10px 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; font-size: 1rem; }
+  .btn-calc { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 8px; padding: 12px 32px; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 8px; }
+  .btn-calc:hover { opacity: 0.9; }
+  .result-box { margin-top: 20px; padding: 24px; border-radius: 12px; text-align: center; display: none; }
+  .result-box.ok { background: #ecfdf5; border: 2px solid #10b981; }
+  .result-box.warning { background: #fffbeb; border: 2px solid #f59e0b; }
+  .result-box.expired { background: #fef2f2; border: 2px solid #ef4444; }
+  .result-status { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
+  .result-detail { font-size: 1.1rem; color: var(--text-secondary, #475569); }
+  .result-detail span { font-weight: 600; color: var(--text-primary, #1e293b); }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container nav-container">
+    <a href="../../index.html" class="nav-brand">🧰 在线工具箱</a>
+  </div>
+</nav>
+<main class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <span>保质期计算器</span></div>
+  <div class="card">
+    <h1>🕐 保质期计算器</h1>
+    <p class="description">根据生产日期和保质期计算到期日，或反向推算生产日期。</p>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btnForward" onclick="setMode('forward')">生产日期 → 到期日</button>
+      <button class="mode-btn" id="btnReverse" onclick="setMode('reverse')">到期日 → 生产日期</button>
+    </div>
+    <div id="forwardInputs">
+      <div class="input-group">
+        <label>生产日期<input type="date" id="prodDate" /></label>
+        <label>保质期
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="shelfNum" min="1" value="12" style="flex:1;" />
+            <select id="shelfUnit"><option value="day">天</option><option value="month" selected>月</option><option value="year">年</option></select>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div id="reverseInputs" style="display:none;">
+      <div class="input-group">
+        <label>到期日期<input type="date" id="expDate" /></label>
+        <label>保质期
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="shelfNum2" min="1" value="12" style="flex:1;" />
+            <select id="shelfUnit2"><option value="day">天</option><option value="month" selected>月</option><option value="year">年</option></select>
+          </div>
+        </label>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">计算</button>
+    <div class="result-box" id="resultBox">
+      <div class="result-status" id="resultStatus"></div>
+      <div class="result-detail" id="resultDetail"></div>
+    </div>
+  </div>
+</main>
+<footer class="footer"><div class="container">© 2024 在线工具箱</div></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+let mode = 'forward';
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnForward').classList.toggle('active', m === 'forward');
+  document.getElementById('btnReverse').classList.toggle('active', m === 'reverse');
+  document.getElementById('forwardInputs').style.display = m === 'forward' ? '' : 'none';
+  document.getElementById('reverseInputs').style.display = m === 'reverse' ? '' : 'none';
+  document.getElementById('resultBox').style.display = 'none';
+}
+
+function addDays(d, days) { const r = new Date(d); r.setDate(r.getDate() + days); return r; }
+function addMonths(d, months) { const r = new Date(d); r.setMonth(r.getMonth() + months); return r; }
+function addYears(d, years) { const r = new Date(d); r.setFullYear(r.getFullYear() + years); return r; }
+function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+
+function addShelfLife(date, num, unit) {
+  switch(unit) {
+    case 'day': return addDays(date, num);
+    case 'month': return addMonths(date, num);
+    case 'year': return addYears(date, num);
+  }
+}
+function subShelfLife(date, num, unit) {
+  switch(unit) {
+    case 'day': return addDays(date, -num);
+    case 'month': return addMonths(date, -num);
+    case 'year': return addYears(date, -num);
+  }
+}
+
+function fmt(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+function calculate() {
+  const box = document.getElementById('resultBox');
+  const now = new Date(); now.setHours(0,0,0,0);
+  let expiryDate, prodDate;
+
+  if (mode === 'forward') {
+    const pd = document.getElementById('prodDate').value;
+    if (!pd) { alert('请选择生产日期'); return; }
+    prodDate = new Date(pd + 'T00:00:00');
+    const num = parseInt(document.getElementById('shelfNum').value) || 0;
+    const unit = document.getElementById('shelfUnit').value;
+    if (num <= 0) { alert('请输入有效的保质期'); return; }
+    expiryDate = addShelfLife(prodDate, num, unit);
+  } else {
+    const ed = document.getElementById('expDate').value;
+    if (!ed) { alert('请选择到期日期'); return; }
+    expiryDate = new Date(ed + 'T00:00:00');
+    const num = parseInt(document.getElementById('shelfNum2').value) || 0;
+    const unit = document.getElementById('shelfUnit2').value;
+    if (num <= 0) { alert('请输入有效的保质期'); return; }
+    prodDate = subShelfLife(expiryDate, num, unit);
+  }
+
+  const daysLeft = daysBetween(now, expiryDate);
+  let statusText, cls;
+
+  if (mode === 'forward') {
+    if (daysLeft < 0) { statusText = '🔴 已过期'; cls = 'expired'; }
+    else if (daysLeft <= 30) { statusText = '🟡 即将过期'; cls = 'warning'; }
+    else { statusText = '🟢 未过期'; cls = 'ok'; }
+    document.getElementById('resultStatus').textContent = statusText;
+    document.getElementById('resultDetail').innerHTML =
+      '到期日期：<span>' + fmt(expiryDate) + '</span><br>' +
+      '剩余天数：<span>' + daysLeft + ' 天</span>' +
+      (daysLeft < 0 ? '（已过期 ' + Math.abs(daysLeft) + ' 天）' : '');
+  } else {
+    document.getElementById('resultStatus').textContent = '📋 推算结果';
+    cls = 'ok';
+    document.getElementById('resultDetail').innerHTML =
+      '推算生产日期：<span>' + fmt(prodDate) + '</span><br>' +
+      '到期日期：<span>' + fmt(expiryDate) + '</span><br>' +
+      '距离今天：<span>' + daysLeft + ' 天</span>';
+  }
+
+  box.className = 'result-box ' + cls;
+  box.style.display = 'block';
+}
+
+// Set default dates
+const today = new Date();
+document.getElementById('prodDate').value = fmt(today);
+document.getElementById('expDate').value = fmt(today);
+</script>
+</body>
+</html>

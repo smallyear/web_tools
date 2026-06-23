@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>体积单位换算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 16px; align-items: end; margin-bottom: 24px; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 150px; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .result-card { background: var(--bg); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .result-card .label { color: var(--text-secondary); font-size: 14px; }
+    .result-card .value { font-weight: 600; font-size: 16px; color: var(--primary-dark); }
+    .copy-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; opacity: 0.6; transition: opacity 0.2s; }
+    .copy-btn:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>体积单位换算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">🧪 体积单位换算器</h1>
+        <p style="color: var(--text-secondary);">快速换算各种体积/容积单位，实时计算结果</p>
+      </div>
+
+      <div class="card">
+        <div class="input-row">
+          <div class="form-group">
+            <label class="form-label">数值</label>
+            <input type="number" id="inputValue" class="form-input" value="1" oninput="convert()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">单位</label>
+            <select id="inputUnit" class="form-select" onchange="convert()">
+              <option value="l">升 (L)</option>
+              <option value="ml">毫升 (mL)</option>
+              <option value="cbm">立方米 (m³)</option>
+              <option value="cbcm">立方厘米 (cm³)</option>
+              <option value="gal_us">加仑(美) (gal)</option>
+              <option value="gal_uk">加仑(英) (gal)</option>
+              <option value="cbft">立方英尺 (ft³)</option>
+              <option value="cbin">立方英寸 (in³)</option>
+              <option value="floz">液盎司 (fl oz)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="result-grid" id="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const units = {
+      l:      { name: '升', symbol: 'L', factor: 1 },
+      ml:     { name: '毫升', symbol: 'mL', factor: 0.001 },
+      cbm:    { name: '立方米', symbol: 'm³', factor: 1000 },
+      cbcm:   { name: '立方厘米', symbol: 'cm³', factor: 0.001 },
+      gal_us: { name: '加仑(美)', symbol: 'gal(US)', factor: 3.785411784 },
+      gal_uk: { name: '加仑(英)', symbol: 'gal(UK)', factor: 4.54609 },
+      cbft:   { name: '立方英尺', symbol: 'ft³', factor: 28.316846592 },
+      cbin:   { name: '立方英寸', symbol: 'in³', factor: 0.016387064 },
+      floz:   { name: '液盎司', symbol: 'fl oz', factor: 0.0295735295625 }
+    };
+
+    function formatNum(n) {
+      if (Math.abs(n) < 0.000001 && n !== 0) return n.toExponential(6);
+      if (Math.abs(n) >= 1e10) return n.toExponential(6);
+      return parseFloat(n.toPrecision(10)).toString();
+    }
+
+    function convert() {
+      const val = parseFloat(document.getElementById('inputValue').value);
+      const fromUnit = document.getElementById('inputUnit').value;
+      if (isNaN(val)) { document.getElementById('results').innerHTML = ''; return; }
+
+      const liters = val * units[fromUnit].factor;
+      const results = Object.entries(units)
+        .filter(([k]) => k !== fromUnit)
+        .map(([key, u]) => {
+          const result = liters / u.factor;
+          const formatted = formatNum(result);
+          return `
+            <div class="result-card">
+              <div>
+                <div class="label">${u.name} (${u.symbol})</div>
+                <div class="value">${formatted}</div>
+              </div>
+              <button class="copy-btn" onclick="copyToClipboard('${formatted}');showMessage('success','已复制')">📋</button>
+            </div>`;
+        }).join('');
+      document.getElementById('results').innerHTML = results;
+    }
+
+    convert();
+  </script>
+</body>
+</html>

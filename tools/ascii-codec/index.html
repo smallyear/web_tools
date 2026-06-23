@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII/Unicode编码转换 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  .codec-grid { display: grid; gap: 16px; margin-top: 16px; }
+  .codec-panel { background: var(--bg-secondary, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 10px; padding: 16px; }
+  .codec-panel h3 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-primary, #1e293b); }
+  .codec-panel textarea { width: 100%; min-height: 100px; padding: 10px 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.95rem; resize: vertical; box-sizing: border-box; }
+  .codec-panel textarea:focus { outline: none; border-color: var(--primary-color, #3b82f6); }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-encode { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 0.9rem; }
+  .btn-decode { background: var(--accent-color, #10b981); color: #fff; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 0.9rem; }
+  .btn-copy-sm { background: var(--text-secondary, #475569); color: #fff; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 0.9rem; }
+  .arrow-col { display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--text-secondary, #475569); padding: 8px 0; }
+  @media (min-width: 768px) {
+    .codec-grid { grid-template-columns: 1fr auto 1fr; align-items: start; }
+    .arrow-col { writing-mode: horizontal-tb; }
+  }
+  .tab-bar { display: flex; gap: 0; margin-bottom: 16px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color, #e2e8f0); }
+  .tab-btn { flex: 1; padding: 10px 12px; border: none; background: var(--card-bg, #fff); cursor: pointer; font-size: 0.9rem; color: var(--text-secondary, #475569); transition: all 0.2s; text-align: center; }
+  .tab-btn.active { background: var(--primary-color, #3b82f6); color: #fff; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container nav-container">
+    <a href="../../index.html" class="nav-brand">🧰 在线工具箱</a>
+  </div>
+</nav>
+<main class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <span>ASCII/Unicode编码转换</span></div>
+  <div class="card">
+    <h1>🔤 ASCII/Unicode 编码转换</h1>
+    <p class="description">在原文与各种编码格式之间互相转换。</p>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="setFormat('unicode')">Unicode \\uXXXX</button>
+      <button class="tab-btn" onclick="setFormat('html')">HTML 实体</button>
+      <button class="tab-btn" onclick="setFormat('hex')">Hex \\xNN</button>
+    </div>
+    <div class="codec-grid">
+      <div class="codec-panel">
+        <h3>📝 原文</h3>
+        <textarea id="inputText" placeholder="输入要编码的文本..."></textarea>
+        <div class="btn-row">
+          <button class="btn-encode" onclick="encodeText()">编码 →</button>
+          <button class="btn-copy-sm" onclick="copyArea('inputText')">复制</button>
+          <button class="btn-copy-sm" onclick="clearArea('inputText')">清空</button>
+        </div>
+      </div>
+      <div class="arrow-col">⇄</div>
+      <div class="codec-panel">
+        <h3>🔒 编码结果</h3>
+        <textarea id="outputText" placeholder="编码结果或粘贴已编码文本..."></textarea>
+        <div class="btn-row">
+          <button class="btn-decode" onclick="decodeText()">← 解码</button>
+          <button class="btn-copy-sm" onclick="copyArea('outputText')">复制</button>
+          <button class="btn-copy-sm" onclick="clearArea('outputText')">清空</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="footer"><div class="container">© 2024 在线工具箱</div></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+let format = 'unicode';
+
+function setFormat(f) {
+  format = f;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', ['unicode','html','hex'][i] === f);
+  });
+}
+
+function encodeText() {
+  const text = document.getElementById('inputText').value;
+  if (!text) return;
+  let result = '';
+  if (format === 'unicode') {
+    for (const ch of text) {
+      const code = ch.codePointAt(0);
+      if (code > 0xFFFF) {
+        result += '\\u{' + code.toString(16).toUpperCase() + '}';
+      } else {
+        result += '\\u' + code.toString(16).toUpperCase().padStart(4, '0');
+      }
+    }
+  } else if (format === 'html') {
+    for (const ch of text) {
+      const code = ch.codePointAt(0);
+      result += '&#' + code + ';';
+    }
+  } else if (format === 'hex') {
+    const bytes = new TextEncoder().encode(text);
+    for (const b of bytes) {
+      result += '\\x' + b.toString(16).toUpperCase().padStart(2, '0');
+    }
+  }
+  document.getElementById('outputText').value = result;
+}
+
+function decodeText() {
+  const text = document.getElementById('outputText').value;
+  if (!text) return;
+  let result = '';
+  try {
+    if (format === 'unicode') {
+      result = text.replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+                    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    } else if (format === 'html') {
+      const tmp = document.createElement('textarea');
+      tmp.innerHTML = text;
+      result = tmp.value;
+    } else if (format === 'hex') {
+      const hexes = text.match(/\\x([0-9a-fA-F]{2})/g);
+      if (hexes) {
+        const bytes = new Uint8Array(hexes.map(h => parseInt(h.slice(2), 16)));
+        result = new TextDecoder().decode(bytes);
+      }
+    }
+  } catch (e) {
+    result = '解码错误：' + e.message;
+  }
+  document.getElementById('inputText').value = result;
+}
+
+function copyArea(id) {
+  const text = document.getElementById(id).value;
+  if (!text) return;
+  if (typeof copyToClipboard === 'function') { copyToClipboard(text); showMessage('success', '已复制！'); }
+  else { navigator.clipboard.writeText(text).then(() => showMessage('success', '已复制！')); }
+}
+
+function clearArea(id) { document.getElementById(id).value = ''; }
+</script>
+</body>
+</html>

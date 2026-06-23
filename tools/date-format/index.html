@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英文日期格式转换 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  .format-list { display: grid; gap: 12px; margin-top: 16px; }
+  .format-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg, #fff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 12px 16px; }
+  .format-label { font-weight: 600; color: var(--text-primary, #1e293b); min-width: 120px; font-size: 0.9rem; }
+  .format-value { flex: 1; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--text-secondary, #475569); word-break: break-all; }
+  .btn-copy { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; margin-left: 12px; }
+  .btn-copy:hover { opacity: 0.85; }
+  .btn-today { background: var(--accent-color, #10b981); color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 0.9rem; margin-left: 8px; }
+  .input-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .input-row input[type="text"], .input-row input[type="date"] { flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; font-size: 1rem; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container nav-container">
+    <a href="../../index.html" class="nav-brand">🧰 在线工具箱</a>
+  </div>
+</nav>
+<main class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <span>英文日期格式转换</span></div>
+  <div class="card">
+    <h1>📅 英文日期格式转换</h1>
+    <p class="description">选择一个日期，获取各种英文日期格式，点击即可复制。</p>
+    <div class="input-row" style="margin-bottom:16px;">
+      <input type="date" id="dateInput" />
+      <input type="text" id="dateTextInput" placeholder="或输入日期，如 2024-01-15" />
+      <button class="btn-today" onclick="setToday()">今天</button>
+    </div>
+    <div class="format-list" id="formatList">
+      <div class="format-item"><span class="format-label">ISO 8601</span><span class="format-value" id="f-iso">-</span><button class="btn-copy" onclick="copyVal('f-iso')">复制</button></div>
+      <div class="format-item"><span class="format-label">美国格式</span><span class="format-value" id="f-us">-</span><button class="btn-copy" onclick="copyVal('f-us')">复制</button></div>
+      <div class="format-item"><span class="format-label">英国格式</span><span class="format-value" id="f-uk">-</span><button class="btn-copy" onclick="copyVal('f-uk')">复制</button></div>
+      <div class="format-item"><span class="format-label">英文长格式</span><span class="format-value" id="f-long">-</span><button class="btn-copy" onclick="copyVal('f-long')">复制</button></div>
+      <div class="format-item"><span class="format-label">英文短格式</span><span class="format-value" id="f-short">-</span><button class="btn-copy" onclick="copyVal('f-short')">复制</button></div>
+      <div class="format-item"><span class="format-label">含星期</span><span class="format-value" id="f-weekday">-</span><button class="btn-copy" onclick="copyVal('f-weekday')">复制</button></div>
+      <div class="format-item"><span class="format-label">RFC 2822</span><span class="format-value" id="f-rfc">-</span><button class="btn-copy" onclick="copyVal('f-rfc')">复制</button></div>
+      <div class="format-item"><span class="format-label">Unix 时间戳</span><span class="format-value" id="f-unix">-</span><button class="btn-copy" onclick="copyVal('f-unix')">复制</button></div>
+    </div>
+  </div>
+</main>
+<footer class="footer"><div class="container">© 2024 在线工具箱</div></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const monthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const rfcDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const rfcMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function setToday() {
+  const now = new Date();
+  document.getElementById('dateInput').value = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+  updateFormats(now);
+}
+
+function updateFormats(d) {
+  if (!d || isNaN(d.getTime())) return;
+  const y = d.getFullYear(), m = d.getMonth(), day = d.getDate(), dow = d.getDay();
+  document.getElementById('f-iso').textContent = y + '-' + pad(m+1) + '-' + pad(day);
+  document.getElementById('f-us').textContent = pad(m+1) + '/' + pad(day) + '/' + y;
+  document.getElementById('f-uk').textContent = pad(day) + '/' + pad(m+1) + '/' + y;
+  document.getElementById('f-long').textContent = months[m] + ' ' + day + ', ' + y;
+  document.getElementById('f-short').textContent = monthsShort[m] + ' ' + day + ', ' + y;
+  document.getElementById('f-weekday').textContent = weekdays[dow] + ', ' + months[m] + ' ' + day + ', ' + y;
+  // RFC 2822
+  const offset = d.getTimezoneOffset();
+  const sign = offset <= 0 ? '+' : '-';
+  const absOff = Math.abs(offset);
+  const tz = sign + pad(Math.floor(absOff/60)) + pad(absOff%60);
+  document.getElementById('f-rfc').textContent = rfcDays[dow] + ', ' + pad(day) + ' ' + rfcMonths[m] + ' ' + y + ' 00:00:00 ' + tz;
+  document.getElementById('f-unix').textContent = Math.floor(d.getTime() / 1000);
+}
+
+document.getElementById('dateInput').addEventListener('change', function() {
+  const d = new Date(this.value + 'T00:00:00');
+  updateFormats(d);
+  document.getElementById('dateTextInput').value = this.value;
+});
+
+document.getElementById('dateTextInput').addEventListener('change', function() {
+  const d = new Date(this.value);
+  if (!isNaN(d.getTime())) {
+    updateFormats(d);
+    document.getElementById('dateInput').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  }
+});
+
+function copyVal(id) {
+  const text = document.getElementById(id).textContent;
+  if (text && text !== '-') {
+    if (typeof copyToClipboard === 'function') { copyToClipboard(text); showMessage('success', '已复制！'); }
+    else { navigator.clipboard.writeText(text).then(() => showMessage('success', '已复制！')); }
+  }
+}
+
+setToday();
+</script>
+</body>
+</html>

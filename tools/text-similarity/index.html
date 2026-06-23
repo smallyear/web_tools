@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内容重复率检测 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 0;position:sticky;top:0;z-index:100}
+.navbar .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+.navbar .logo{font-size:1.3rem;font-weight:700;color:#4a6cf7;text-decoration:none}
+.breadcrumb{max-width:1200px;margin:16px auto;padding:0 20px;font-size:.9rem;color:#666}
+.breadcrumb a{color:#4a6cf7;text-decoration:none}.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:28px;margin:20px auto;max-width:800px}
+.card h2{font-size:1.4rem;margin-bottom:20px;color:#333}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#555}
+textarea{width:100%;min-height:180px;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;transition:border .2s}
+textarea:focus{outline:none;border-color:#4a6cf7;box-shadow:0 0 0 3px rgba(74,108,247,.15)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#4a6cf7;color:#fff}.btn-primary:hover{background:#3a5ce5}
+.btn-copy{background:#10b981;color:#fff}.btn-copy:hover{background:#059669}
+.btn-group{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.results{margin-top:24px;display:none}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-item{background:#f8f9fc;border-radius:8px;padding:16px;text-align:center}
+.stat-item .value{font-size:1.8rem;font-weight:700;color:#4a6cf7}
+.stat-item .label{font-size:.85rem;color:#888;margin-top:4px}
+.progress-bar{background:#e9ecef;border-radius:10px;height:24px;overflow:hidden;margin:12px 0}
+.progress-fill{height:100%;border-radius:10px;transition:width .6s ease;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:600;background:linear-gradient(90deg,#10b981,#4a6cf7,#ef4444)}
+.msg{padding:10px 16px;border-radius:8px;margin:10px 0;font-size:.9rem;display:none}
+.msg-error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.msg-success{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../index.html" class="logo">🛠 在线工具箱</a></div></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../../index.html">文本工具</a> / 内容重复率检测</div>
+<div class="container">
+<div class="card">
+<h2>📊 内容重复率检测</h2>
+<div class="form-group"><label for="inputText">输入文本内容</label><textarea id="inputText" placeholder="请粘贴或输入要检测的文本内容..."></textarea></div>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="analyze()">🔍 开始检测</button>
+<button class="btn btn-copy" onclick="copyResults()">📋 复制结果</button>
+</div>
+<div class="msg msg-error" id="errorMsg"></div>
+<div class="results" id="results">
+<h3 style="margin-bottom:16px">检测结果</h3>
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+<div class="stat-grid">
+<div class="stat-item"><div class="value" id="charDup">0%</div><div class="label">字符重复率</div></div>
+<div class="stat-item"><div class="value" id="totalLines">0</div><div class="label">总行数</div></div>
+<div class="stat-item"><div class="value" id="uniqueLines">0</div><div class="label">唯一行数</div></div>
+<div class="stat-item"><div class="value" id="dupLines">0</div><div class="label">重复行数</div></div>
+</div>
+</div>
+</div>
+</div>
+<footer>© 2026 在线工具箱 | 内容重复率检测</footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+function analyze(){
+const text=document.getElementById('inputText').value.trim();
+if(!text){showError('请输入文本内容');return}
+hideError();
+const lines=text.split('\n').filter(l=>l.trim()!=='');
+const totalLines=lines.length;
+const uniqueSet=new Set(lines);
+const uniqueLines=uniqueSet.size;
+const dupLines=totalLines-uniqueLines;
+// char-level duplicate
+const chars=text.replace(/\s/g,'').split('');
+const totalChars=chars.length;
+const uniqueChars=new Set(chars).size;
+const charDupRate=totalChars>0?((1-uniqueChars/totalChars)*100):0;
+const lineDupRate=totalLines>0?((dupLines/totalLines)*100):0;
+const overallDup=Math.round((charDupRate*0.5+lineDupRate*0.5)*10)/10;
+document.getElementById('charDup').textContent=overallDup+'%';
+document.getElementById('totalLines').textContent=totalLines;
+document.getElementById('uniqueLines').textContent=uniqueLines;
+document.getElementById('dupLines').textContent=dupLines;
+const fill=document.getElementById('progressFill');
+fill.style.width=overallDup+'%';fill.textContent=overallDup+'%';
+if(overallDup>60)fill.style.background='linear-gradient(90deg,#ef4444,#dc2626)';
+else if(overallDup>30)fill.style.background='linear-gradient(90deg,#f59e0b,#ef4444)';
+else fill.style.background='linear-gradient(90deg,#10b981,#4a6cf7)';
+document.getElementById('results').style.display='block';
+}
+function showError(msg){const e=document.getElementById('errorMsg');e.textContent=msg;e.style.display='block'}
+function hideError(){document.getElementById('errorMsg').style.display='none'}
+function copyResults(){
+const t=`字符重复率: ${document.getElementById('charDup').textContent}\n总行数: ${document.getElementById('totalLines').textContent}\n唯一行数: ${document.getElementById('uniqueLines').textContent}\n重复行数: ${document.getElementById('dupLines').textContent}`;
+if(typeof copyToClipboard==='function')copyToClipboard(t);else{navigator.clipboard.writeText(t);showMessage('已复制到剪贴板');}}
+</script>
+</body>
+</html>

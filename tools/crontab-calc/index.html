@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>crontab执行时间计算 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 16px; align-items: end; margin-bottom: 24px; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 200px; }
+    .preset-row { display: flex; gap: 12px; align-items: end; margin-bottom: 16px; flex-wrap: wrap; }
+    .preset-row .form-group { flex: 1; min-width: 200px; }
+    .description-box { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-size: 16px; color: #2E7D32; }
+    .error-box { background: #FFEBEE; border: 1px solid #EF9A9A; border-radius: 8px; padding: 16px; margin-bottom: 24px; color: #C62828; }
+    .times-list { list-style: none; padding: 0; }
+    .times-list li { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .times-list li:last-child { border-bottom: none; }
+    .times-list .time-text { font-weight: 500; }
+    .times-list .index { color: var(--text-secondary); font-size: 13px; min-width: 30px; }
+    .ref-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .ref-table th, .ref-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .ref-table th { background: var(--primary); color: white; font-weight: 500; }
+    .ref-table tr:nth-child(even) { background: var(--bg); }
+    .field-labels { display: flex; gap: 8px; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); }
+    .field-labels span { flex: 1; text-align: center; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>crontab执行时间计算</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">⏰ crontab执行时间计算</h1>
+        <p style="color: var(--text-secondary);">解析 cron 表达式，显示可读描述和未来执行时间</p>
+      </div>
+
+      <div class="card">
+        <div class="preset-row">
+          <div class="form-group">
+            <label class="form-label">常用预设</label>
+            <select id="presets" class="form-select" onchange="applyPreset()">
+              <option value="">-- 选择预设 --</option>
+              <option value="* * * * *">每分钟执行</option>
+              <option value="0 * * * *">每小时整点执行</option>
+              <option value="0 0 * * *">每天午夜执行</option>
+              <option value="0 0 * * 1">每周一午夜执行</option>
+              <option value="0 0 1 * *">每月1号午夜执行</option>
+              <option value="*/5 * * * *">每5分钟执行</option>
+              <option value="0 9 * * 1-5">工作日上午9点执行</option>
+              <option value="0 0 1 1 *">每年1月1日午夜执行</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="form-group" style="flex: 3;">
+            <label class="form-label">Cron 表达式 (5个字段)</label>
+            <div class="field-labels">
+              <span>分 (0-59)</span>
+              <span>时 (0-23)</span>
+              <span>日 (1-31)</span>
+              <span>月 (1-12)</span>
+              <span>周 (0-7)</span>
+            </div>
+            <input type="text" id="cronInput" class="form-input" value="* * * * *" placeholder="分 时 日 月 周" oninput="calculate()" style="font-family: monospace; font-size: 16px; letter-spacing: 4px;">
+          </div>
+          <div class="form-group" style="flex: 0; min-width: auto;">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-primary" onclick="calculate()">计算</button>
+          </div>
+        </div>
+
+        <div id="errorBox" style="display: none;"></div>
+        <div id="descriptionBox" style="display: none;"></div>
+
+        <div class="card" style="margin-top: 16px;">
+          <div class="card-title">未来10次执行时间</div>
+          <ul class="times-list" id="timesList"></ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-title">Cron 语法参考</div>
+        <table class="ref-table">
+          <thead>
+            <tr>
+              <th>字段</th>
+              <th>取值范围</th>
+              <th>允许的特殊字符</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>分钟</td><td>0-59</td><td>* , - /</td><td>第几分钟执行</td></tr>
+            <tr><td>小时</td><td>0-23</td><td>* , - /</td><td>第几小时执行</td></tr>
+            <tr><td>日期</td><td>1-31</td><td>* , - /</td><td>每月第几天执行</td></tr>
+            <tr><td>月份</td><td>1-12</td><td>* , - /</td><td>第几个月执行</td></tr>
+            <tr><td>星期</td><td>0-7 (0和7都是周日)</td><td>* , - /</td><td>星期几执行</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
+          <p><strong>特殊字符说明：</strong></p>
+          <p>• <code>*</code> — 匹配任意值</p>
+          <p>• <code>,</code> — 列举多个值，如 <code>1,3,5</code></p>
+          <p>• <code>-</code> — 范围，如 <code>1-5</code> 表示 1 到 5</p>
+          <p>• <code>/</code> — 步长，如 <code>*/5</code> 表示每5个单位</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    function applyPreset() {
+      const val = document.getElementById('presets').value;
+      if (val) {
+        document.getElementById('cronInput').value = val;
+        calculate();
+      }
+    }
+
+    function parseField(field, min, max) {
+      const values = new Set();
+      const parts = field.split(',');
+      for (const part of parts) {
+        if (part === '*') {
+          for (let i = min; i <= max; i++) values.add(i);
+        } else if (part.includes('/')) {
+          const [range, step] = part.split('/');
+          const stepNum = parseInt(step);
+          if (isNaN(stepNum) || stepNum <= 0) throw new Error(`无效步长: ${step}`);
+          let rMin = min, rMax = max;
+          if (range !== '*') {
+            if (range.includes('-')) {
+              [rMin, rMax] = range.split('-').map(Number);
+            } else {
+              rMin = rMax = parseInt(range);
+            }
+          }
+          for (let i = rMin; i <= rMax; i += stepNum) values.add(i);
+        } else if (part.includes('-')) {
+          const [start, end] = part.split('-').map(Number);
+          if (isNaN(start) || isNaN(end) || start > end) throw new Error(`无效范围: ${part}`);
+          for (let i = start; i <= end; i++) values.add(i);
+        } else {
+          const n = parseInt(part);
+          if (isNaN(n) || n < min || n > max) throw new Error(`值 ${part} 不在范围 ${min}-${max} 内`);
+          values.add(n);
+        }
+      }
+      return Array.from(values).sort((a, b) => a - b);
+    }
+
+    function describeCron(fields) {
+      const [minF, hourF, domF, monthF, dowF] = fields;
+      let desc = '';
+
+      if (minF === '*' && hourF === '*' && domF === '*' && monthF === '*' && dowF === '*') {
+        return '每分钟执行一次';
+      }
+
+      let timeDesc = '';
+      if (hourF !== '*' && minF !== '*') {
+        timeDesc = `在 ${hourF.padStart ? hourF : hourF} 时 ${minF.padStart ? minF : minF} 分`;
+      } else if (hourF !== '*' && minF === '*') {
+        timeDesc = `每小时的第 ${minF} 分钟`;
+      } else if (hourF === '*' && minF !== '*') {
+        if (minF.startsWith('*/')) {
+          timeDesc = `每 ${minF.slice(2)} 分钟`;
+        } else {
+          timeDesc = `每小时的第 ${minF} 分钟`;
+        }
+      } else {
+        if (minF.startsWith('*/')) {
+          timeDesc = `每 ${minF.slice(2)} 分钟`;
+        } else {
+          timeDesc = '每分钟';
+        }
+      }
+
+      let dateDesc = '';
+      if (domF !== '*' && monthF !== '*') {
+        dateDesc = `，在 ${monthF} 月 ${domF} 日`;
+      } else if (domF !== '*') {
+        dateDesc = `，每月 ${domF} 日`;
+      } else if (monthF !== '*') {
+        dateDesc = `，在 ${monthF} 月`;
+      }
+
+      let dowDesc = '';
+      const dowNames = { 0: '日', 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日' };
+      if (dowF !== '*') {
+        if (dowF.includes('-')) {
+          const [s, e] = dowF.split('-').map(Number);
+          dowDesc = `，在星期${dowNames[s]}到星期${dowNames[e]}`;
+        } else {
+          const days = dowF.split(',').map(d => dowNames[d] || d).join('、');
+          dowDesc = `，在星期${days}`;
+        }
+      }
+
+      return timeDesc + dateDesc + dowDesc + '执行';
+    }
+
+    function getNextExecutions(fields, count) {
+      const [minVals, hourVals, domVals, monthVals, dowVals] = fields;
+      const results = [];
+      const now = new Date();
+      let check = new Date(now);
+      check.setSeconds(0);
+      check.setMilliseconds(0);
+      check.setMinutes(check.getMinutes() + 1);
+
+      const maxIterations = 525960; // ~1 year of minutes
+      for (let i = 0; i < maxIterations && results.length < count; i++) {
+        const m = check.getMinutes();
+        const h = check.getHours();
+        const dom = check.getDate();
+        const month = check.getMonth() + 1;
+        const dow = check.getDay(); // 0=Sun
+
+        if (minVals.includes(m) && hourVals.includes(h) &&
+            domVals.includes(dom) && monthVals.includes(month) &&
+            dowVals.includes(dow)) {
+          results.push(new Date(check));
+        }
+        check.setMinutes(check.getMinutes() + 1);
+      }
+      return results;
+    }
+
+    function formatDateTime(d) {
+      const pad = n => String(n).padStart(2, '0');
+      const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())} ${weekdays[d.getDay()]}`;
+    }
+
+    function calculate() {
+      const input = document.getElementById('cronInput').value.trim();
+      const errorBox = document.getElementById('errorBox');
+      const descBox = document.getElementById('descriptionBox');
+      const timesList = document.getElementById('timesList');
+
+      errorBox.style.display = 'none';
+      descBox.style.display = 'none';
+      timesList.innerHTML = '';
+
+      if (!input) return;
+
+      const parts = input.split(/\s+/);
+      if (parts.length !== 5) {
+        errorBox.style.display = 'block';
+        errorBox.innerHTML = `<div class="error-box">❌ 错误：Cron 表达式必须包含5个字段（分 时 日 月 周），当前有 ${parts.length} 个字段。</div>`;
+        return;
+      }
+
+      try {
+        const minVals = parseField(parts[0], 0, 59);
+        const hourVals = parseField(parts[1], 0, 23);
+        const domVals = parseField(parts[2], 1, 31);
+        const monthVals = parseField(parts[3], 1, 12);
+        const dowVals = parseField(parts[4], 0, 7);
+
+        const fields = [parts[0], parts[1], parts[2], parts[3], parts[4]];
+
+        // Description
+        const desc = describeCron(fields);
+        descBox.style.display = 'block';
+        descBox.innerHTML = `<div class="description-box">📋 ${input} — ${desc}</div>`;
+
+        // Next executions
+        const times = getNextExecutions([minVals, hourVals, domVals, monthVals, dowVals], 10);
+        if (times.length === 0) {
+          timesList.innerHTML = '<li style="color: var(--text-secondary);">无法找到匹配的执行时间（可能是无效组合）</li>';
+        } else {
+          timesList.innerHTML = times.map((t, i) =>
+            `<li><span class="index">#${i + 1}</span><span class="time-text">${formatDateTime(t)}</span></li>`
+          ).join('');
+        }
+      } catch (e) {
+        errorBox.style.display = 'block';
+        errorBox.innerHTML = `<div class="error-box">❌ 解析错误：${e.message}</div>`;
+      }
+    }
+
+    calculate();
+  </script>
+</body>
+</html>

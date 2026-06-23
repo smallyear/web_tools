@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面积单位换算器 - 在线工具箱</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .input-row { display: flex; gap: 16px; align-items: end; margin-bottom: 24px; flex-wrap: wrap; }
+    .input-row .form-group { flex: 1; min-width: 150px; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .result-card { background: var(--bg); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .result-card .label { color: var(--text-secondary); font-size: 14px; }
+    .result-card .value { font-weight: 600; font-size: 16px; color: var(--primary-dark); }
+    .copy-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; opacity: 0.6; transition: opacity 0.2s; }
+    .copy-btn:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ 在线工具箱</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="container">
+      <div style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+        <a href="../../index.html" style="color: var(--primary); text-decoration: none;">首页</a>
+        <span style="margin: 0 8px;">›</span>
+        <span>面积单位换算器</span>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; color: var(--primary-dark); margin-bottom: 8px;">📐 面积单位换算器</h1>
+        <p style="color: var(--text-secondary);">快速换算各种面积单位，实时计算结果</p>
+      </div>
+
+      <div class="card">
+        <div class="input-row">
+          <div class="form-group">
+            <label class="form-label">数值</label>
+            <input type="number" id="inputValue" class="form-input" value="1" oninput="convert()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">单位</label>
+            <select id="inputUnit" class="form-select" onchange="convert()">
+              <option value="sqm">平方米 (m²)</option>
+              <option value="sqcm">平方厘米 (cm²)</option>
+              <option value="sqkm">平方千米 (km²)</option>
+              <option value="ha">公顷 (ha)</option>
+              <option value="mu">亩</option>
+              <option value="acre">英亩 (acre)</option>
+              <option value="sqft">平方英尺 (ft²)</option>
+              <option value="sqin">平方英寸 (in²)</option>
+              <option value="sqmi">平方英里 (mi²)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="result-grid" id="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2024 在线工具箱 - 免费、实用的在线工具集合</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const units = {
+      sqm:  { name: '平方米', symbol: 'm²', factor: 1 },
+      sqcm: { name: '平方厘米', symbol: 'cm²', factor: 0.0001 },
+      sqkm: { name: '平方千米', symbol: 'km²', factor: 1e6 },
+      ha:   { name: '公顷', symbol: 'ha', factor: 10000 },
+      mu:   { name: '亩', symbol: '亩', factor: 666.667 },
+      acre: { name: '英亩', symbol: 'acre', factor: 4046.8564224 },
+      sqft: { name: '平方英尺', symbol: 'ft²', factor: 0.09290304 },
+      sqin: { name: '平方英寸', symbol: 'in²', factor: 0.00064516 },
+      sqmi: { name: '平方英里', symbol: 'mi²', factor: 2589988.110336 }
+    };
+
+    function formatNum(n) {
+      if (Math.abs(n) < 0.000001 && n !== 0) return n.toExponential(6);
+      if (Math.abs(n) >= 1e10) return n.toExponential(6);
+      return parseFloat(n.toPrecision(10)).toString();
+    }
+
+    function convert() {
+      const val = parseFloat(document.getElementById('inputValue').value);
+      const fromUnit = document.getElementById('inputUnit').value;
+      if (isNaN(val)) { document.getElementById('results').innerHTML = ''; return; }
+
+      const sqm = val * units[fromUnit].factor;
+      const results = Object.entries(units)
+        .filter(([k]) => k !== fromUnit)
+        .map(([key, u]) => {
+          const result = sqm / u.factor;
+          const formatted = formatNum(result);
+          return `
+            <div class="result-card">
+              <div>
+                <div class="label">${u.name} (${u.symbol})</div>
+                <div class="value">${formatted}</div>
+              </div>
+              <button class="copy-btn" onclick="copyToClipboard('${formatted}');showMessage('success','已复制')">📋</button>
+            </div>`;
+        }).join('');
+      document.getElementById('results').innerHTML = results;
+    }
+
+    convert();
+  </script>
+</body>
+</html>

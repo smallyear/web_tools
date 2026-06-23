@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数字转英文工具 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  .input-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .input-row input { flex: 1; min-width: 200px; padding: 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; font-size: 1.1rem; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .btn-convert { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 8px; padding: 12px 32px; font-size: 1rem; cursor: pointer; }
+  .result-area { margin-top: 20px; }
+  .result-card { background: var(--bg-secondary, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 10px; padding: 20px; margin-bottom: 12px; }
+  .result-card h3 { margin: 0 0 8px 0; font-size: 0.9rem; color: var(--text-secondary, #475569); text-transform: uppercase; letter-spacing: 0.5px; }
+  .result-card .value { font-size: 1.15rem; color: var(--text-primary, #1e293b); font-family: Georgia, serif; line-height: 1.6; }
+  .btn-copy-small { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.85rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container nav-container">
+    <a href="../../index.html" class="nav-brand">🧰 在线工具箱</a>
+  </div>
+</nav>
+<main class="container">
+  <div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <span>数字转英文工具</span></div>
+  <div class="card">
+    <h1>🔢 数字转英文工具</h1>
+    <p class="description">将数字转换为英文单词，支持负数、小数和序数词。最大支持 999,999,999,999。</p>
+    <div class="input-row">
+      <input type="text" id="numInput" placeholder="输入数字，如 1234 或 -56.78" />
+      <button class="btn-convert" onclick="convert()">转换</button>
+    </div>
+    <div class="result-area" id="results" style="display:none;">
+      <div class="result-card">
+        <h3>英文单词（基数词）</h3>
+        <div class="value" id="cardinal"></div>
+        <button class="btn-copy-small" onclick="copyText('cardinal')">复制</button>
+      </div>
+      <div class="result-card">
+        <h3>英文单词（序数词）</h3>
+        <div class="value" id="ordinal"></div>
+        <button class="btn-copy-small" onclick="copyText('ordinal')">复制</button>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="footer"><div class="container">© 2024 在线工具箱</div></footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+const ones = ['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const tens = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+const scales = ['','thousand','million','billion'];
+
+function chunkToWords(n) {
+  let result = '';
+  if (n >= 100) { result += ones[Math.floor(n/100)] + ' hundred '; n %= 100; }
+  if (n >= 20) { result += tens[Math.floor(n/10)] + (n%10 ? '-' + ones[n%10] : ''); }
+  else if (n > 0) { result += ones[n]; }
+  return result.trim();
+}
+
+function intToWords(n) {
+  if (n === 0) return 'zero';
+  let parts = [], scaleIdx = 0;
+  while (n > 0) {
+    const chunk = n % 1000;
+    if (chunk > 0) {
+      const w = chunkToWords(chunk);
+      parts.unshift(w + (scales[scaleIdx] ? ' ' + scales[scaleIdx] : ''));
+    }
+    n = Math.floor(n / 1000);
+    scaleIdx++;
+  }
+  return parts.join(', ');
+}
+
+function toOrdinalWords(n) {
+  if (n === 0) return 'zeroth';
+  const special = {1:'first',2:'second',3:'third',5:'fifth',8:'eighth',9:'ninth',12:'twelfth'};
+  if (n <= 12 && special[n]) return special[n];
+  if (n < 20) return ones[n].replace(/een$/, 'eenth');
+  const last = n % 100;
+  if (last === 0) return intToWords(n).replace(/y$/, 'ieth');
+  const base = intToWords(n - last);
+  const lastWords = toOrdinalWords(last);
+  return (base ? base + ' ' : '') + lastWords;
+}
+
+function numberToEnglish(numStr) {
+  numStr = numStr.replace(/,/g, '').trim();
+  if (!numStr || isNaN(numStr)) return null;
+  const num = parseFloat(numStr);
+  const negative = num < 0;
+  const abs = Math.abs(num);
+  const intPart = Math.floor(abs);
+  const decPart = abs - intPart;
+
+  let result = '';
+  if (negative) result += 'negative ';
+  result += intToWords(intPart);
+
+  if (decPart > 0) {
+    result += ' point';
+    const decStr = decPart.toFixed(10).replace(/0+$/, '').split('.')[1] || '';
+    for (const ch of decStr) result += ' ' + ones[parseInt(ch)];
+  }
+  return result;
+}
+
+function convert() {
+  const input = document.getElementById('numInput').value.trim();
+  if (!input) { alert('请输入数字'); return; }
+  const clean = input.replace(/,/g, '');
+  if (isNaN(clean)) { alert('请输入有效的数字'); return; }
+  const num = parseFloat(clean);
+  if (Math.abs(num) >= 1e12) { alert('数字超出范围（最大 999,999,999,999）'); return; }
+
+  const cardinal = numberToEnglish(input);
+  const ordinal = (num === Math.floor(num)) ? toOrdinalWords(Math.abs(Math.floor(num))) : '(仅整数支持序数词)';
+
+  document.getElementById('cardinal').textContent = cardinal;
+  document.getElementById('ordinal').textContent = (num < 0 ? 'negative ' : '') + ordinal;
+  document.getElementById('results').style.display = 'block';
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  if (typeof copyToClipboard === 'function') { copyToClipboard(text); showMessage('success', '已复制！'); }
+  else { navigator.clipboard.writeText(text).then(() => showMessage('success', '已复制！')); }
+}
+
+document.getElementById('numInput').addEventListener('keydown', e => { if (e.key === 'Enter') convert(); });
+</script>
+</body>
+</html>

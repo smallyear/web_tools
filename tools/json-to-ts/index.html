@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON转TypeScript类型 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 0;position:sticky;top:0;z-index:100}
+.navbar .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+.navbar .logo{font-size:1.3rem;font-weight:700;color:#4a6cf7;text-decoration:none}
+.breadcrumb{max-width:1200px;margin:16px auto;padding:0 20px;font-size:.9rem;color:#666}
+.breadcrumb a{color:#4a6cf7;text-decoration:none}.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:28px;margin:20px auto;max-width:960px}
+.card h2{font-size:1.4rem;margin-bottom:20px;color:#333}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#555}
+textarea{width:100%;min-height:160px;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:"Fira Code",Consolas,monospace;resize:vertical}
+textarea:focus{outline:none;border-color:#4a6cf7;box-shadow:0 0 0 3px rgba(74,108,247,.15)}
+input[type="text"],select{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+input[type="text"]:focus,select:focus{outline:none;border-color:#4a6cf7}
+.options-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.options-row label{font-size:.9rem;display:flex;align-items:center;gap:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#4a6cf7;color:#fff}.btn-primary:hover{background:#3a5ce5}
+.btn-copy{background:#10b981;color:#fff}.btn-copy:hover{background:#059669}
+.btn-group{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.msg{padding:10px 16px;border-radius:8px;margin:10px 0;font-size:.9rem;display:none}
+.msg-error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.output-area{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:20px;font-family:"Fira Code",Consolas,monospace;font-size:13px;white-space:pre;overflow-x:auto;min-height:100px;line-height:1.7;display:none;margin-top:16px}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../index.html" class="logo">🛠 在线工具箱</a></div></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../../index.html">开发工具</a> / JSON转TypeScript类型</div>
+<div class="container">
+<div class="card">
+<h2>🔄 JSON转TypeScript类型</h2>
+<div class="form-group"><label for="inputJson">输入JSON</label><textarea id="inputJson" placeholder='{"name":"test","age":25,"tags":["a","b"],"address":{"city":"Beijing"}}'></textarea></div>
+<div class="options-row">
+<label>根类型名：<input type="text" id="rootName" value="RootObject" style="width:140px"></label>
+<label>生成方式：<select id="genType"><option value="interface">interface</option><option value="type">type alias</option></select></label>
+<label><input type="checkbox" id="optionalFields"> 所有字段可选</label>
+</div>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="convert()">🔄 转换</button>
+<button class="btn btn-copy" onclick="copyOutput()">📋 复制结果</button>
+</div>
+<div class="msg msg-error" id="errorMsg"></div>
+<pre class="output-area" id="outputArea"></pre>
+</div>
+</div>
+<footer>© 2026 在线工具箱 | JSON转TypeScript类型</footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+let outputText='';
+const interfaces=[];
+function getTsType(val,name){
+if(val===null)return'null|undefined';
+if(Array.isArray(val)){
+if(val.length===0)return'any[]';
+const itemType=getTsType(val[0],name+'Item');
+return itemType+'[]';
+}
+switch(typeof val){
+case'string':return'string';
+case'number':return Number.isInteger(val)?'number':'number';
+case'boolean':return'boolean';
+default:{
+if(typeof val==='object'){
+interfaces.push({name,type:val});
+return name;
+}
+return'any';
+}
+}
+}
+function buildInterface(obj,name,opt){
+const fields=Object.entries(obj).map(([k,v])=>{
+const fieldType=getTsType(v,upper(k));
+const optMark=opt?'?':'';
+return`  ${k}${optMark}: ${fieldType};`;
+}).join('\n');
+return fields;
+}
+function upper(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+function convert(){
+const jsonStr=document.getElementById('inputJson').value.trim();
+if(!jsonStr){showMsg('请输入JSON');return}
+hideMsg();
+interfaces.length=0;
+let obj;
+try{obj=JSON.parse(jsonStr)}catch(e){showMsg('JSON解析错误: '+e.message);return}
+const rootName=document.getElementById('rootName').value.trim()||'RootObject';
+const genType=document.getElementById('genType').value;
+const optAll=document.getElementById('optionalFields').checked;
+// Process nested
+const allInterfaces=[];
+function processObj(obj,name){
+const entries=Object.entries(obj);
+const lines=[];
+for(const[k,v]of entries){
+let tsType;
+if(v===null){tsType='null';}
+else if(Array.isArray(v)){
+if(v.length===0){tsType='any[]';}
+else if(typeof v[0]==='object'&&v[0]!==null&&!Array.isArray(v[0])){
+const childName=upper(k)+'Item';
+processObj(v[0],childName);
+tsType=childName+'[]';
+}else{
+tsType=typeof v[0]==='string'?'string[]':typeof v[0]==='number'?'number[]':typeof v[0]==='boolean'?'boolean[]':'any[]';
+}
+}
+else if(typeof v==='object'){
+const childName=upper(k);
+processObj(v,childName);
+tsType=childName;
+}
+else{tsType=typeof v==='string'?'string':typeof v==='number'?'number':typeof v==='boolean'?'boolean':'any';}
+const optMark=optAll?'?':'';
+lines.push(`  ${k}${optMark}: ${tsType};`);
+}
+allInterfaces.push({name,lines});
+}
+processObj(obj,rootName);
+let output='';
+for(const ifc of allInterfaces.reverse()){
+if(genType==='interface'){
+output+=`interface ${ifc.name} {\n${ifc.lines.join('\n')}\n}\n\n`;
+}else{
+output+=`type ${ifc.name} = {\n${ifc.lines.join('\n')}\n};\n\n`;
+}
+}
+outputText=output.trim();
+const area=document.getElementById('outputArea');
+area.textContent=outputText;
+area.style.display='block';
+}
+function showMsg(m){const e=document.getElementById('errorMsg');e.textContent=m;e.style.display='block'}
+function hideMsg(){document.getElementById('errorMsg').style.display='none'}
+function copyOutput(){
+if(typeof copyToClipboard==='function')copyToClipboard(outputText);else{navigator.clipboard.writeText(outputText);showMessage('已复制');}}
+</script>
+</body>
+</html>

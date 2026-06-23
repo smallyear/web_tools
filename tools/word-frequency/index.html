@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>词频统计 - 在线工具箱</title>
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+.navbar{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 0;position:sticky;top:0;z-index:100}
+.navbar .container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+.navbar .logo{font-size:1.3rem;font-weight:700;color:#4a6cf7;text-decoration:none}
+.breadcrumb{max-width:1200px;margin:16px auto;padding:0 20px;font-size:.9rem;color:#666}
+.breadcrumb a{color:#4a6cf7;text-decoration:none}.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:28px;margin:20px auto;max-width:900px}
+.card h2{font-size:1.4rem;margin-bottom:20px;color:#333}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#555}
+textarea{width:100%;min-height:160px;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical}
+textarea:focus{outline:none;border-color:#4a6cf7;box-shadow:0 0 0 3px rgba(74,108,247,.15)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#4a6cf7;color:#fff}.btn-primary:hover{background:#3a5ce5}
+.btn-copy{background:#10b981;color:#fff}.btn-copy:hover{background:#059669}
+.btn-group{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.results{margin-top:24px;display:none}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat-item{background:#f8f9fc;border-radius:8px;padding:16px;text-align:center}
+.stat-item .value{font-size:1.6rem;font-weight:700;color:#4a6cf7}
+.stat-item .label{font-size:.85rem;color:#888;margin-top:4px}
+.freq-table{width:100%;border-collapse:collapse}
+.freq-table th,.freq-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #eee;font-size:.9rem}
+.freq-table th{background:#f8f9fc;font-weight:600;color:#555;position:sticky;top:0}
+.freq-table tr:hover{background:#f0f4ff}
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar{height:18px;border-radius:4px;background:linear-gradient(90deg,#4a6cf7,#818cf8);min-width:4px;transition:width .4s}
+.bar-text{font-size:.8rem;color:#888;white-space:nowrap}
+.msg{padding:10px 16px;border-radius:8px;margin:10px 0;font-size:.9rem;display:none}
+.msg-error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
+.table-wrap{max-height:500px;overflow-y:auto;border:1px solid #eee;border-radius:8px}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container"><a href="../../index.html" class="logo">🛠 在线工具箱</a></div></nav>
+<div class="breadcrumb"><a href="../../index.html">首页</a> / <a href="../../index.html">文本工具</a> / 词频统计</div>
+<div class="container">
+<div class="card">
+<h2>📈 词频统计</h2>
+<div class="form-group"><label for="inputText">输入文本内容</label><textarea id="inputText" placeholder="请输入要分析的中英文文本..."></textarea></div>
+<div class="btn-group">
+<button class="btn btn-primary" onclick="analyze()">🔍 开始统计</button>
+<button class="btn btn-copy" onclick="copyResults()">📋 复制结果</button>
+</div>
+<div class="msg msg-error" id="errorMsg"></div>
+<div class="results" id="results">
+<h3 style="margin-bottom:16px">统计结果</h3>
+<div class="stat-grid">
+<div class="stat-item"><div class="value" id="totalCount">0</div><div class="label">总词/字数</div></div>
+<div class="stat-item"><div class="value" id="uniqueCount">0</div><div class="label">唯一词/字</div></div>
+</div>
+<div class="table-wrap">
+<table class="freq-table">
+<thead><tr><th>#</th><th>词/字</th><th>频次</th><th>占比</th><th>分布</th></tr></thead>
+<tbody id="freqBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<footer>© 2026 在线工具箱 | 词频统计</footer>
+<script src="../../assets/js/common.js"></script>
+<script>
+function tokenize(text){
+const tokens=[];
+const cnRe=/[\u4e00-\u9fff]/;
+const enRe=/[a-zA-Z]+/;
+let i=0;
+while(i<text.length){
+if(cnRe.test(text[i])){tokens.push(text[i]);i++}
+else if(enRe.test(text[i])){
+let w='';
+while(i<text.length&&enRe.test(text[i])){w+=text[i];i++}
+tokens.push(w.toLowerCase());
+}
+else{i++}
+}
+return tokens;
+}
+function analyze(){
+const text=document.getElementById('inputText').value.trim();
+if(!text){showMsg('请输入文本内容');return}
+hideMsg();
+const tokens=tokenize(text);
+const freq={};
+tokens.forEach(t=>{freq[t]=(freq[t]||0)+1});
+const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,50);
+const total=tokens.length;
+const unique=Object.keys(freq).length;
+const maxCount=sorted.length?sorted[0][1]:1;
+document.getElementById('totalCount').textContent=total;
+document.getElementById('uniqueCount').textContent=unique;
+const body=document.getElementById('freqBody');
+body.innerHTML='';
+sorted.forEach(([word,count],i)=>{
+const pct=((count/total)*100).toFixed(1);
+const barW=Math.round((count/maxCount)*200);
+body.innerHTML+=`<tr><td>${i+1}</td><td><strong>${esc(word)}</strong></td><td>${count}</td><td>${pct}%</td><td><div class="bar-wrap"><div class="bar" style="width:${barW}px"></div><span class="bar-text">${count}</span></div></td></tr>`;
+});
+document.getElementById('results').style.display='block';
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function showMsg(m){const e=document.getElementById('errorMsg');e.textContent=m;e.style.display='block'}
+function hideMsg(){document.getElementById('errorMsg').style.display='none'}
+function copyResults(){
+const rows=document.querySelectorAll('#freqBody tr');
+let t='序号\t词/字\t频次\t占比\n';
+rows.forEach(r=>{const c=r.children;t+=`${c[0].textContent}\t${c[1].textContent}\t${c[2].textContent}\t${c[3].textContent}\n`});
+if(typeof copyToClipboard==='function')copyToClipboard(t);else{navigator.clipboard.writeText(t);showMessage('已复制');}}
+</script>
+</body>
+</html>
