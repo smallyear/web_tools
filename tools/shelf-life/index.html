@@ -4,15 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>保质期计算器 - 在线工具箱</title>
+  <meta name="description" content="生产日期+保质期→到期日，支持反算">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
-  .mode-toggle { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color, #e2e8f0); }
+  .mode-toggle { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color, #e2e8f0); }
   .mode-btn { flex: 1; padding: 10px 16px; border: none; background: var(--card-bg, #fff); cursor: pointer; font-size: 0.95rem; color: var(--text-secondary, #475569); transition: all 0.2s; }
   .mode-btn.active { background: var(--primary-color, #3b82f6); color: #fff; }
   .input-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
   .input-group label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--text-secondary, #475569); flex: 1; min-width: 180px; }
-  .input-group input, .input-group select { padding: 10px 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; font-size: 1rem; }
-  .btn-calc { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 8px; padding: 12px 32px; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 8px; }
+  .input-group input, .input-group select { padding: 10px 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 10px; font-size: 1rem; }
+  .btn-calc { background: var(--primary-color, #3b82f6); color: #fff; border: none; border-radius: 10px; padding: 12px 32px; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 8px; }
   .btn-calc:hover { opacity: 0.9; }
   .result-box { margin-top: 20px; padding: 24px; border-radius: 12px; text-align: center; display: none; }
   .result-box.ok { background: #ecfdf5; border: 2px solid #10b981; }

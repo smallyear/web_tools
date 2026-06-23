@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>工作日计算器 - 在线工具箱</title>
+  <meta name="description" content="计算日期间工作日天数">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .calc-section { margin-bottom: 32px; }
@@ -11,7 +12,7 @@
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
     .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
-    .result-item { background: var(--bg); padding: 16px; border-radius: 8px; text-align: center; }
+    .result-item { background: var(--bg); padding: 16px; border-radius: 10px; text-align: center; }
     .result-item .label { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
     .result-item .value { font-size: 28px; font-weight: 700; color: var(--primary-dark); }
     .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
@@ -117,7 +118,7 @@
           <textarea id="addHolidays" class="form-input" rows="3" placeholder="2024-01-01"></textarea>
         </div>
         <button class="btn btn-primary" onclick="addWorkDays()">计算目标日期</button>
-        <div id="addResult" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg); border-radius: 8px;">
+        <div id="addResult" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg); border-radius: 10px;">
           <p style="font-size: 16px;">目标日期：<strong id="targetDate" style="color: var(--primary-dark); font-size: 20px;"></strong></p>
         </div>
       </div>

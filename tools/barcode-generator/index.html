@@ -4,20 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>条形码生成器 - Web工具箱</title>
+  <meta name="description" content="支持CODE128/EAN13/UPC等多种格式条形码生成">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .tool-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end}
 .tool-options .opt-group{display:flex;flex-direction:column;gap:4px}
 .tool-options label{font-weight:600;font-size:13px;color:#555}
-.tool-options input[type=number],.tool-options select,.tool-options input[type=color]{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.tool-options input[type=number],.tool-options select,.tool-options input[type=color]{padding:6px 10px;border:1px solid #ddd;border-radius: 10px;font-size:14px}
 .tool-options input[type=number]{width:80px}
 .tool-options input[type=color]{width:50px;height:34px;padding:2px;cursor:pointer}
 .btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.preview-box{background:#fff;border:1px solid #eee;border-radius:8px;padding:24px;display:flex;align-items:center;justify-content:center;min-height:160px;overflow-x:auto}
+.preview-box{background:#fff;border:1px solid #eee;border-radius: 10px;padding:24px;display:flex;align-items:center;justify-content:center;min-height:160px;overflow-x:auto}
 .preview-box svg{max-width:100%;height:auto}
 .toggle-wrap{display:flex;align-items:center;gap:6px;margin-top:6px}
 .toggle-wrap input[type=checkbox]{width:16px;height:16px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius: 10px;z-index:9999;opacity:0;transition:opacity .3s;font-size:14px}
 .toast.show{opacity:1}
 @media(max-width:768px){.tool-options{flex-direction:column;gap:10px}}
 </style>

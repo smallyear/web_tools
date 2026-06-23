@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>摩斯电码编解码 - 在线工具箱</title>
+  <meta name="description" content="文字↔摩斯电码互转，支持音频播放">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
@@ -18,10 +19,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-weight:600;margin-bottom:6px;color:#444;font-size:14px}
-textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;resize:vertical;min-height:100px;font-family:monospace;transition:border-color .2s}
+textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius: 10px;font-size:16px;resize:vertical;min-height:100px;font-family:monospace;transition:border-color .2s}
 textarea:focus{outline:none;border-color:#667eea}
 .btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
-.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn{padding:10px 20px;border:none;border-radius: 10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;flex:1}
 .btn-primary:hover{opacity:.9}
 .btn-secondary{background:#f0f0ff;color:#667eea;border:2px solid #667eea;flex:1}
@@ -37,7 +38,7 @@ textarea:focus{outline:none;border-color:#667eea}
 .morse-ref.show{display:block}
 .morse-ref h3{margin-bottom:12px;color:#667eea;font-size:16px}
 .morse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-.morse-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:6px;border:1px solid #eee;font-size:14px}
+.morse-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius: 10px;border:1px solid #eee;font-size:14px}
 .morse-item .char{font-weight:700;color:#333;min-width:20px}
 .morse-item .code{font-family:monospace;color:#667eea}
 footer{text-align:center;padding:30px 20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:20px}
@@ -164,7 +165,7 @@ ref.classList.add('show');
 }
 function copyMorse(){copy(document.getElementById('morse-output').value)}
 function copyText(){copy(document.getElementById('text-input').value)}
-function copy(text){if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)})}
+function copy(text){if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius: 10px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)})}
 </script>
 <script src="../../assets/js/common.js"></script>
 </body>

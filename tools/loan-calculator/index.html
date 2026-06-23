@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>贷款计算器 - 在线工具箱</title>
+  <meta name="description" content="等额本息/等额本金房贷计算">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
-    .mode-switch { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .mode-switch { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
     .mode-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; background: white; border: none; font-size: 15px; font-weight: 500; transition: all 0.2s; color: var(--text-secondary); }
     .mode-btn.active { background: var(--primary); color: white; }
     .mode-btn:hover:not(.active) { background: #E3F2FD; }
@@ -22,7 +23,7 @@
     .schedule-table th { background: var(--bg); font-weight: 600; color: var(--text); text-align: center; position: sticky; top: 0; }
     .schedule-table td:first-child { text-align: center; font-weight: 500; }
     .schedule-table tr:hover { background: #F5F5F5; }
-    .table-wrapper { max-height: 500px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+    .table-wrapper { max-height: 500px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
     .ellipsis-row td { text-align: center; color: var(--text-secondary); background: #FAFAFA; font-style: italic; }
     .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
     .comparison-table th, .comparison-table td { padding: 12px 16px; text-align: center; border-bottom: 1px solid var(--border); }

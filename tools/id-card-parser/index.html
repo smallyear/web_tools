@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>身份证所在地查询 - 在线工具箱</title>
+  <meta name="description" content="解析身份证号：省市、出生日期、性别、年龄">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
@@ -18,11 +19,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-weight:600;margin-bottom:6px;color:#444;font-size:14px}
-.form-group input{width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;font-family:monospace;letter-spacing:1px;transition:border-color .2s}
+.form-group input{width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius: 10px;font-size:16px;font-family:monospace;letter-spacing:1px;transition:border-color .2s}
 .form-group input:focus{outline:none;border-color:#667eea}
 .form-group input.error{border-color:#e74c3c}
 .form-group input.success{border-color:#27ae60}
-.btn{padding:10px 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn{padding:10px 20px;border:none;border-radius: 10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:100%;padding:12px}
 .btn-primary:hover{opacity:.9}
 .btn-copy{background:#f0f0ff;color:#667eea;border:2px solid #667eea;font-size:13px;padding:6px 16px;margin-top:10px}
@@ -183,7 +184,7 @@ const items=document.querySelectorAll('#info-results .result-item .value');
 let text='身份证解析结果：\n';
 const labels=document.querySelectorAll('#info-results .result-item .label');
 labels.forEach((l,i)=>{text+=l.textContent+'：'+items[i].textContent+'\n'});
-if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)});
+if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius: 10px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)});
 }
 </script>
 <script src="../../assets/js/common.js"></script>

@@ -15,7 +15,7 @@
     .generated-password {
       background: var(--bg);
       border: 2px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 20px;
       text-align: center;
       font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
@@ -57,13 +57,13 @@
     .strength-bar {
       height: 8px;
       background: var(--border);
-      border-radius: 4px;
+      border-radius: 10px;
       overflow: hidden;
     }
 
     .strength-fill {
       height: 100%;
-      border-radius: 4px;
+      border-radius: 10px;
       transition: all 0.3s ease;
       width: 0%;
     }
@@ -75,7 +75,7 @@
     .control-card {
       background: white;
       padding: 20px;
-      border-radius: 8px;
+      border-radius: 10px;
       margin-bottom: 16px;
       border: 1px solid var(--border);
     }
@@ -120,7 +120,7 @@
       align-items: center;
       padding: 12px;
       background: var(--bg);
-      border-radius: 6px;
+      border-radius: 10px;
       cursor: pointer;
       transition: background 0.2s;
     }
@@ -197,7 +197,7 @@
       padding: 4px 10px;
       background: var(--primary-light);
       color: var(--primary-dark);
-      border-radius: 4px;
+      border-radius: 10px;
       font-size: 12px;
       font-family: monospace;
     }
@@ -341,7 +341,7 @@
       </div>
 
       <!-- 提示信息 -->
-      <div style="margin-top: 16px; padding: 12px; background: #FFF3E0; border-radius: 6px; font-size: 13px; color: #E65100;">
+      <div style="margin-top: 16px; padding: 12px; background: #FFF3E0; border-radius: 10px; font-size: 13px; color: #E65100;">
         💡 <strong>提示：</strong>点击生成的密码可以快速复制。建议使用所有字符类型组合以获得更高强度。
       </div>
       </div> <!-- /passwordTab -->
@@ -350,7 +350,7 @@
       <div class="tab-pane" id="keypairTab" style="display:none;">
         <div class="control-card">
           <div class="control-card-title">🔑 RSA 密钥对生成</div>
-          <div style="padding:12px; background:#FFF3E0; border-radius:6px; font-size:13px; color:#E65100; margin-bottom:16px;">
+          <div style="padding:12px; background:#FFF3E0; border-radius: 10px; font-size:13px; color:#E65100; margin-bottom:16px;">
             ⚠️ <strong>安全提示：</strong>此密钥对仅供学习演示用途。Web Crypto API 生成的 RSA-OAEP 密钥不适用于 SSH 认证。生产环境请使用 ssh-keygen 等专业工具。
           </div>
           <div class="range-group">
@@ -373,16 +373,16 @@
               <div class="control-card-title" style="margin-bottom:0;">🔓 公钥 (SPKI / PEM)</div>
               <button class="btn btn-secondary" id="copyPubKeyBtn" style="padding:6px 14px; font-size:12px;">📋 复制</button>
             </div>
-            <textarea id="publicKeyDisplay" readonly style="width:100%; min-height:120px; font-family:monospace; font-size:12px; padding:12px; border:2px solid var(--border); border-radius:8px; resize:vertical; background:var(--bg); box-sizing:border-box;"></textarea>
+            <textarea id="publicKeyDisplay" readonly style="width:100%; min-height:120px; font-family:monospace; font-size:12px; padding:12px; border:2px solid var(--border); border-radius: 10px; resize:vertical; background:var(--bg); box-sizing:border-box;"></textarea>
           </div>
           <div class="control-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <div class="control-card-title" style="margin-bottom:0;">🔒 私钥 (PKCS8 / PEM)</div>
               <button class="btn btn-secondary" id="copyPrivKeyBtn" style="padding:6px 14px; font-size:12px;">📋 复制</button>
             </div>
-            <textarea id="privateKeyDisplay" readonly style="width:100%; min-height:200px; font-family:monospace; font-size:12px; padding:12px; border:2px solid var(--border); border-radius:8px; resize:vertical; background:var(--bg); box-sizing:border-box;"></textarea>
+            <textarea id="privateKeyDisplay" readonly style="width:100%; min-height:200px; font-family:monospace; font-size:12px; padding:12px; border:2px solid var(--border); border-radius: 10px; resize:vertical; background:var(--bg); box-sizing:border-box;"></textarea>
           </div>
-          <div style="padding:12px; background:#E8F5E9; border-radius:6px; font-size:13px; color:#2E7D32;">
+          <div style="padding:12px; background:#E8F5E9; border-radius: 10px; font-size:13px; color:#2E7D32;">
             ✅ 密钥对已生成。请妥善保管私钥，切勿泄露！
           </div>
         </div>

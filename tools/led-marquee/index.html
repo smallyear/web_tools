@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>手持弹幕/LED滚动屏 - 在线工具箱</title>
+  <meta name="description" content="全屏滚动LED文字，自定义字体颜色速度">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .marquee-screen {
@@ -13,7 +14,7 @@
     display: flex;
     align-items: center;
     position: relative;
-    border-radius: 8px;
+    border-radius: 10px;
     margin-bottom: 20px;
 }
 .marquee-text {
@@ -24,13 +25,13 @@
     text-shadow: 0 0 10px currentColor;
 }
 .controls label { display: block; margin: 10px 0 4px; font-weight: 600; }
-.controls input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+.controls input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 14px; }
 .controls input[type="range"] { width: 100%; }
 .range-row { display: flex; align-items: center; gap: 10px; }
 .range-row input[type="range"] { flex: 1; }
 .range-row span { min-width: 30px; }
 .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-.btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; color: #fff; }
+.btn { padding: 10px 24px; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; color: #fff; }
 .btn-primary { background: #4a6cf7; }
 .btn-success { background: #22c55e; }
 .btn-warning { background: #f59e0b; }
@@ -38,7 +39,7 @@
 .direction-group label { font-weight: 400; display: flex; align-items: center; gap: 4px; }
 .color-row { display: flex; gap: 16px; }
 .color-row > div { flex: 1; }
-.color-row input[type="color"] { width: 50px; height: 34px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; vertical-align: middle; }
+.color-row input[type="color"] { width: 50px; height: 34px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; vertical-align: middle; }
 /* fullscreen overrides */
 :-webkit-full-screen .marquee-screen, :fullscreen .marquee-screen { height: 100vh; border-radius: 0; }
 :-webkit-full-screen .marquee-screen .marquee-text, :fullscreen .marquee-screen .marquee-text { font-size: 15vw !important; }

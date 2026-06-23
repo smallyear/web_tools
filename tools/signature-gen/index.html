@@ -4,22 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>电子签名生成 - 在线工具箱</title>
+  <meta name="description" content="手写签名或文字签名，多种字体">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Satisfy&family=Pacifico&family=Caveat:wght@400;700&family=Sacramento&family=Alex+Brush&family=Homemade+Apple&display=swap');
 .container{max-width:900px;margin:0 auto;padding:15px}
 .card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
 .card h3{margin:0 0 16px;color:#333;font-size:1.1rem}
-.btn{display:inline-block;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn{display:inline-block;padding:10px 20px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;transition:all .2s}
 .btn-primary{background:#4f46e5;color:#fff}.btn-primary:hover{background:#4338ca}
 .btn-secondary{background:#e5e7eb;color:#333}.btn-secondary:hover{background:#d1d5db}
 .btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669}
 .btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
 .btn-sm{padding:6px 12px;font-size:12px}
-canvas#drawCanvas{border:2px solid #e5e7eb;border-radius:8px;cursor:crosshair;touch-action:none;display:block;width:100%;max-width:100%;background:#fff}
+canvas#drawCanvas{border:2px solid #e5e7eb;border-radius: 10px;cursor:crosshair;touch-action:none;display:block;width:100%;max-width:100%;background:#fff}
 .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
 .controls label{font-size:13px;color:#555;display:flex;align-items:center;gap:4px}
-.controls input[type=color]{width:36px;height:28px;border:none;cursor:pointer;border-radius:4px}
+.controls input[type=color]{width:36px;height:28px;border:none;cursor:pointer;border-radius: 10px}
 .controls input[type=range]{width:100px}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb}
@@ -27,13 +28,13 @@ canvas#drawCanvas{border:2px solid #e5e7eb;border-radius:8px;cursor:crosshair;to
 .tab-bar button.active{color:#4f46e5;border-bottom-color:#4f46e5;font-weight:600}
 .tab-content{display:none}.tab-content.active{display:block}
 .font-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
-.font-option{border:2px solid #e5e7eb;border-radius:8px;padding:16px;cursor:pointer;text-align:center;transition:all .2s}
+.font-option{border:2px solid #e5e7eb;border-radius: 10px;padding:16px;cursor:pointer;text-align:center;transition:all .2s}
 .font-option:hover,.font-option.selected{border-color:#4f46e5;background:#f5f3ff}
 .font-option .preview{font-size:24px;margin-bottom:4px;min-height:36px;color:#1e293b}
 .font-option .name{font-size:11px;color:#9ca3af}
 .text-input-group{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.text-input-group input{flex:1;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
-#textSignaturePreview{border:1px solid #e5e7eb;border-radius:8px;padding:20px;min-height:80px;display:flex;align-items:center;justify-content:center;background:#fff}
+.text-input-group input{flex:1;padding:10px;border:1px solid #d1d5db;border-radius: 10px;font-size:14px}
+#textSignaturePreview{border:1px solid #e5e7eb;border-radius: 10px;padding:20px;min-height:80px;display:flex;align-items:center;justify-content:center;background:#fff}
 .toggle{position:relative;display:inline-block;width:40px;height:22px}
 .toggle input{opacity:0;width:0;height:0}
 .toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#cbd5e1;border-radius:22px;transition:.3s}

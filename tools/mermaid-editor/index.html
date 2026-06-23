@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mermaid图表编辑器 - 在线工具箱</title>
+  <meta name="description" content="Mermaid代码实时渲染，流程图/时序图模板">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
@@ -11,21 +12,21 @@
 .breadcrumb{margin-bottom:16px;font-size:14px;color:#666}
 .breadcrumb a{color:#4a90d9;text-decoration:none}
 .breadcrumb a:hover{text-decoration:underline}
-.card{background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:20px;margin-bottom:20px}
+.card{background:#fff;border-radius: 10px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:20px;margin-bottom:20px}
 .card h2{margin:0 0 16px;font-size:18px;color:#333}
 .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.toolbar select,.toolbar button{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:14px;cursor:pointer;background:#fff}
+.toolbar select,.toolbar button{padding:8px 14px;border:1px solid #ddd;border-radius: 10px;font-size:14px;cursor:pointer;background:#fff}
 .toolbar select:focus,.toolbar button:focus{outline:none;border-color:#4a90d9}
 .toolbar button{background:#4a90d9;color:#fff;border-color:#4a90d9}
 .toolbar button:hover{background:#357abd}
 .toolbar button.secondary{background:#6c757d;border-color:#6c757d}
 .toolbar button.secondary:hover{background:#5a6268}
 .editor-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.editor-panel textarea{width:100%;min-height:400px;border:1px solid #ddd;border-radius:6px;padding:12px;font-family:'Fira Code',Consolas,monospace;font-size:14px;resize:vertical;line-height:1.6}
+.editor-panel textarea{width:100%;min-height:400px;border:1px solid #ddd;border-radius: 10px;padding:12px;font-family:'Fira Code',Consolas,monospace;font-size:14px;resize:vertical;line-height:1.6}
 .editor-panel textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 3px rgba(74,144,217,.15)}
-.preview-panel{border:1px solid #ddd;border-radius:6px;padding:16px;min-height:400px;overflow:auto;background:#fafafa}
+.preview-panel{border:1px solid #ddd;border-radius: 10px;padding:16px;min-height:400px;overflow:auto;background:#fafafa}
 .preview-panel svg{max-width:100%}
-.error-box{background:#fff3f3;border:1px solid #f5c6cb;color:#721c24;padding:10px 14px;border-radius:6px;margin-top:10px;font-size:13px;display:none}
+.error-box{background:#fff3f3;border:1px solid #f5c6cb;color:#721c24;padding:10px 14px;border-radius: 10px;margin-top:10px;font-size:13px;display:none}
 @media(max-width:768px){.editor-wrap{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:stretch}}
 footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
 </style>

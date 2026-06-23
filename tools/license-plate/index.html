@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>车牌号归属地查询 - 在线工具箱</title>
+  <meta name="description" content="全国31省车牌前缀查询">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .plate-input-wrapper { display: flex; gap: 8px; align-items: center; }
-    .plate-input-wrapper .province-btn { padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-size: 18px; min-width: 50px; text-align: center; transition: all 0.2s; }
+    .plate-input-wrapper .province-btn { padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-size: 18px; min-width: 50px; text-align: center; transition: all 0.2s; }
     .plate-input-wrapper .province-btn:hover { border-color: var(--primary); }
     .plate-input-wrapper .form-input { flex: 1; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; }
     .result-card { border-radius: 12px; padding: 32px; text-align: center; }
@@ -18,7 +19,7 @@
     .result-card .info-item .label { font-size: 13px; opacity: 0.85; margin-bottom: 4px; }
     .result-card .info-item .value { font-size: 20px; font-weight: 600; }
     .province-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 16px; }
-    .province-item { padding: 10px 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s; background: white; }
+    .province-item { padding: 10px 8px; border: 1px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; background: white; }
     .province-item:hover { border-color: var(--primary); background: #E3F2FD; transform: translateY(-2px); }
     .province-item .char { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
     .province-item .name { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
@@ -36,7 +37,7 @@
     .plate-type-dot.white { background: #F5F5F5; border: 1px solid #E0E0E0; }
     .plate-type-dot.black { background: #212121; }
     .search-plate { position: relative; }
-    .plate-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .plate-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 10px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .plate-dropdown.show { display: block; }
     .plate-dropdown-item { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; border-bottom: 1px solid #F5F5F5; font-size: 14px; }
     .plate-dropdown-item:hover { background: #E3F2FD; }

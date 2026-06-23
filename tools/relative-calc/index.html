@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>亲戚称谓计算器 - 在线工具箱</title>
+  <meta name="description" content="输入关系链自动计算正确称呼">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .chain-builder { display: flex; flex-direction: column; gap: 12px; }
@@ -11,7 +12,7 @@
     .chain-step .step-num { background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
     .chain-step .arrow { color: var(--text-secondary); font-size: 18px; flex-shrink: 0; }
     .chain-step .form-select { min-width: 120px; }
-    .chain-step .btn-remove { background: none; border: none; color: var(--error); cursor: pointer; font-size: 18px; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
+    .chain-step .btn-remove { background: none; border: none; color: var(--error); cursor: pointer; font-size: 18px; padding: 4px 8px; border-radius: 10px; transition: background 0.2s; }
     .chain-step .btn-remove:hover { background: #FFEBEE; }
     .result-box { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); border-radius: 12px; padding: 32px; text-align: center; margin: 20px 0; }
     .result-box .path { font-size: 16px; color: var(--text-secondary); margin-bottom: 12px; }
@@ -23,7 +24,7 @@
     .quick-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
     .quick-link { padding: 6px 14px; background: #F5F5F5; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
     .quick-link:hover { background: #E3F2FD; border-color: var(--primary); color: var(--primary); }
-    .error-msg { color: var(--error); padding: 16px; text-align: center; background: #FFEBEE; border-radius: 8px; }
+    .error-msg { color: var(--error); padding: 16px; text-align: center; background: #FFEBEE; border-radius: 10px; }
   </style>
 </head>
 <body>

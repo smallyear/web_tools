@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>全角半角转换 - Web工具箱</title>
+  <meta name="description" content="全角↔半角字符互转">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .io-row{display:flex;gap:12px;margin-bottom:12px}
 .io-row>div{flex:1;display:flex;flex-direction:column}
-.io-row textarea{flex:1;min-height:250px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius:6px;resize:vertical;box-sizing:border-box}
+.io-row textarea{flex:1;min-height:250px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius: 10px;resize:vertical;box-sizing:border-box}
 .btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn{padding:8px 18px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;font-weight:600}
 .btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
 .btn-info{background:#17a2b8;color:#fff}.btn-info:hover{background:#138496}
 .btn-warning{background:#f0ad4e;color:#fff}.btn-warning:hover{background:#ec971f}
 .btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
 .btn-secondary{background:#6c757d;color:#fff}
 .hint{font-size:12px;color:#888;margin-bottom:12px;line-height:1.6}
-.char-table{font-size:13px;color:#555;background:#f9f9f9;padding:10px;border-radius:6px;margin-bottom:12px;line-height:1.8}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+.char-table{font-size:13px;color:#555;background:#f9f9f9;padding:10px;border-radius: 10px;margin-bottom:12px;line-height:1.8}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius: 10px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
 @media(max-width:768px){.io-row{flex-direction:column}.io-row textarea{min-height:180px}}
 </style>
 </head>

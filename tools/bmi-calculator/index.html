@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BMI体质指数计算 - 在线工具箱</title>
+  <meta name="description" content="身高体重计算BMI，可视化标尺，健康体重范围">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
@@ -20,9 +21,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .row .form-group{flex:1}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-weight:600;margin-bottom:6px;color:#444;font-size:14px}
-.form-group input,.form-group select{width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;transition:border-color .2s}
+.form-group input,.form-group select{width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius: 10px;font-size:15px;transition:border-color .2s}
 .form-group input:focus,.form-group select:focus{outline:none;border-color:#667eea}
-.btn{padding:12px 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn{padding:12px 20px;border:none;border-radius: 10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:100%;padding:12px}
 .btn-primary:hover{opacity:.9}
 .btn-copy{background:#f0f0ff;color:#667eea;border:2px solid #667eea;font-size:13px;padding:6px 16px;margin-top:10px}
@@ -52,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .result-item .value{font-weight:700;color:#333;font-size:15px}
 .result-item .value.highlight{color:#667eea;font-size:18px}
 .info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
-.info-card{background:#fff;border:1px solid #eee;border-radius:8px;padding:12px;text-align:center}
+.info-card{background:#fff;border:1px solid #eee;border-radius: 10px;padding:12px;text-align:center}
 .info-card .num{font-size:24px;font-weight:700;color:#667eea}
 .info-card .desc{font-size:12px;color:#888;margin-top:4px}
 .scale-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
@@ -168,7 +169,7 @@ BMI指数：${document.getElementById('r-bmi').textContent}
 距健康体重：${document.getElementById('r-diff').textContent}
 理想体重：${document.getElementById('i-ideal').textContent} kg
 基础代谢率：${document.getElementById('i-bmr').textContent} kcal`;
-if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)});
+if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{const d=document.createElement('div');d.textContent='已复制';d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius: 10px;z-index:999';document.body.appendChild(d);setTimeout(()=>d.remove(),2000)});
 }
 </script>
 <script src="../../assets/js/common.js"></script>

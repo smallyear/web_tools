@@ -4,25 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>文本对比/差异比较 - Web工具箱</title>
+  <meta name="description" content="逐行对比两段文本，高亮差异">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .tool-container{max-width:1200px;margin:0 auto;padding:1rem}
 .breadcrumb{font-size:.85rem;color:#888;margin-bottom:1rem}
 .breadcrumb a{color:#4a90d9;text-decoration:none}
-.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
+.card{background:#fff;border-radius: 10px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
 .card h3{margin-top:0;color:#333;border-bottom:2px solid #4a90d9;padding-bottom:.5rem}
-textarea{width:100%;min-height:200px;border:1px solid #ddd;border-radius:6px;padding:.75rem;font-family:monospace;font-size:.9rem;resize:vertical;box-sizing:border-box}
+textarea{width:100%;min-height:200px;border:1px solid #ddd;border-radius: 10px;padding:.75rem;font-family:monospace;font-size:.9rem;resize:vertical;box-sizing:border-box}
 textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,.2)}
 .text-panels{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .text-panels .panel label{display:block;font-weight:bold;margin-bottom:.5rem;color:#333}
-.btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius:6px;cursor:pointer;font-size:.9rem;transition:background .2s}
+.btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius: 10px;cursor:pointer;font-size:.9rem;transition:background .2s}
 .btn:hover{background:#357abd}
 .btn-sm{padding:.3rem .7rem;font-size:.8rem}
 .btn-success{background:#27ae60}
 .btn-success:hover{background:#219a52}
 .btn-danger{background:#e74c3c}
 .btn-danger:hover{background:#c0392b}
-.stats-bar{display:flex;gap:1.5rem;flex-wrap:wrap;margin:1rem 0;padding:.8rem;background:#f8f9fa;border-radius:6px}
+.stats-bar{display:flex;gap:1.5rem;flex-wrap:wrap;margin:1rem 0;padding:.8rem;background:#f8f9fa;border-radius: 10px}
 .stat{display:flex;align-items:center;gap:.3rem;font-size:.9rem}
 .stat-dot{width:10px;height:10px;border-radius:50%}
 .stat-added .stat-dot{background:#27ae60}
@@ -30,9 +31,9 @@ textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,14
 .stat-modified .stat-dot{background:#f39c12}
 .stat-unchanged .stat-dot{background:#95a5a6}
 .view-toggle{display:flex;gap:.5rem;margin:1rem 0}
-.view-btn{background:#f0f0f0;border:1px solid #ddd;border-radius:4px;padding:.4rem .8rem;cursor:pointer;font-size:.85rem}
+.view-btn{background:#f0f0f0;border:1px solid #ddd;border-radius: 10px;padding:.4rem .8rem;cursor:pointer;font-size:.85rem}
 .view-btn.active{background:#4a90d9;color:#fff;border-color:#4a90d9}
-.diff-container{font-family:monospace;font-size:.85rem;border-radius:6px;overflow:auto;max-height:600px;border:1px solid #ddd}
+.diff-container{font-family:monospace;font-size:.85rem;border-radius: 10px;overflow:auto;max-height:600px;border:1px solid #ddd}
 .diff-line{display:flex;border-bottom:1px solid #f0f0f0;min-height:1.4em;line-height:1.6}
 .diff-line:last-child{border-bottom:none}
 .line-num{width:40px;text-align:right;padding:0 .5rem;color:#999;background:#f8f8f8;border-right:1px solid #eee;user-select:none;flex-shrink:0}
@@ -47,7 +48,7 @@ textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,14
 .diff-line.added .line-marker{color:#27ae60}
 .diff-line.removed .line-marker{color:#e74c3c}
 .diff-line.modified .line-marker{color:#f39c12}
-.side-by-side{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd;border-radius:6px;overflow:auto;max-height:600px}
+.side-by-side{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd;border-radius: 10px;overflow:auto;max-height:600px}
 .side-col{border-right:1px solid #ddd}
 .side-col:last-child{border-right:none}
 .unified-legend{display:flex;gap:1rem;margin:.5rem 0;font-size:.8rem;color:#666}
@@ -306,7 +307,7 @@ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function showToast(msg){
 const t=document.createElement('div');
 t.textContent=msg;
-t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:6px;z-index:9999;font-size:.9rem';
+t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius: 10px;z-index:9999;font-size:.9rem';
 document.body.appendChild(t);
 setTimeout(()=>t.remove(),2000);
 }

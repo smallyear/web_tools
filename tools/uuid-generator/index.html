@@ -4,20 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UUID生成器 - Web工具箱</title>
+  <meta name="description" content="批量生成UUID v4">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .tool-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .tool-options label{font-weight:600;font-size:14px}
-.tool-options input[type=number]{width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
-.tool-options select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+.tool-options input[type=number]{width:80px;padding:6px 10px;border:1px solid #ddd;border-radius: 10px;font-size:14px}
+.tool-options select{padding:6px 10px;border:1px solid #ddd;border-radius: 10px;font-size:14px}
 .btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600}
+.btn{padding:8px 18px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;font-weight:600}
 .btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
 .btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
 .btn-secondary{background:#6c757d;color:#fff}
-.result-box{width:100%;min-height:200px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius:6px;resize:vertical;background:#f9f9f9;box-sizing:border-box}
+.result-box{width:100%;min-height:200px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius: 10px;resize:vertical;background:#f9f9f9;box-sizing:border-box}
 .count-info{font-size:13px;color:#666;margin-bottom:8px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius: 10px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
 @media(max-width:768px){.tool-options{flex-direction:column;gap:10px}}
 </style>
 </head>

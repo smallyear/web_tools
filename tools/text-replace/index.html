@@ -13,13 +13,13 @@
       width: 100%; height: 300px;
       font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
       font-size: 13px; line-height: 1.5; padding: 12px;
-      border: 1px solid var(--border); border-radius: 6px; resize: vertical;
+      border: 1px solid var(--border); border-radius: 10px; resize: vertical;
     }
     .text-area:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
     .replace-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
     .replace-bar input[type="text"] {
       flex: 1; min-width: 150px; padding: 10px 12px;
-      border: 1px solid var(--border); border-radius: 6px; font-size: 14px;
+      border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
       font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
     }
     .replace-bar input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
@@ -66,14 +66,14 @@
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
           <span>原文（高亮匹配）</span>
         </div>
-        <div id="previewArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;"></div>
+        <div id="previewArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius: 10px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;"></div>
       </div>
       <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
           <span>替换结果</span>
           <button class="btn btn-secondary" id="copyBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 复制</button>
         </div>
-        <div id="resultArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;user-select:all;"></div>
+        <div id="resultArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius: 10px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;user-select:all;"></div>
       </div>
     </div>
   </div>

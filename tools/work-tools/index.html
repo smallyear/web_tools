@@ -150,7 +150,7 @@
       width: 100%;
       padding: 12px;
       border: 1px solid var(--border, #e0e0e0);
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 14px;
       font-family: inherit;
       transition: border-color 0.2s;
@@ -170,7 +170,7 @@
       min-height: 150px;
       padding: 12px;
       border: 1px solid var(--border, #e0e0e0);
-      border-radius: 8px;
+      border-radius: 10px;
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 13px;
       line-height: 1.6;
@@ -206,7 +206,7 @@
     .tool-result {
       margin-top: 20px;
       padding: 16px;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #f8f9fa;
       border: 1px solid var(--border, #e0e0e0);
       display: none;
@@ -225,7 +225,7 @@
       background: linear-gradient(135deg, var(--primary, #1e88e5), #1565c0);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -242,7 +242,7 @@
       background: white;
       color: var(--text, #333);
       border: 1px solid var(--border, #e0e0e0);
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
@@ -299,7 +299,7 @@
       height: 200px;
       padding: 12px;
       border: 1px solid var(--border, #e0e0e0);
-      border-radius: 8px;
+      border-radius: 10px;
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 13px;
       line-height: 1.6;
@@ -354,7 +354,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 16px;
-      border-radius: 8px 8px 0 0;
+      border-radius: 10px 8px 0 0;
       font-weight: 600;
       font-size: 14px;
     }
@@ -375,7 +375,7 @@
       background: white;
     }
 
-    .fid-item { padding: 2px 8px; border-radius: 4px; display: inline-block; margin: 2px 4px 2px 0; }
+    .fid-item { padding: 2px 8px; border-radius: 10px; display: inline-block; margin: 2px 4px 2px 0; }
     .fid-item.highlight-a { background: #FFF3E0; }
     .fid-item.highlight-b { background: #E8F5E9; }
     .fid-item.highlight-both { background: #E3F2FD; }
@@ -385,7 +385,7 @@
       padding: 4px 10px;
       background: rgba(255,255,255,0.6);
       border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 4px;
+      border-radius: 10px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -412,7 +412,7 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border, #e0e0e0);
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 14px;
       background: #fafafa;
       box-sizing: border-box;
@@ -482,7 +482,7 @@
       cursor: pointer;
       padding: 6px 12px;
       border: 1px solid var(--border, #e0e0e0);
-      border-radius: 6px;
+      border-radius: 10px;
       transition: all 0.2s;
     }
 
@@ -815,7 +815,7 @@
       if (!toast) {
         toast = document.createElement('div');
         toast.id = 'globalToast';
-        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 24px;background:#333;color:#fff;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 24px;background:#333;color:#fff;border-radius: 10px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;';
         document.body.appendChild(toast);
       }
       toast.textContent = msg;
