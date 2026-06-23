@@ -76,7 +76,7 @@ canvas#drawCanvas{border:2px solid #e5e7eb;border-radius:8px;cursor:crosshair;to
 
     <div class="tab-content" id="tab-text">
       <div class="text-input-group">
-        <input type="text" id="signName" placeholder="输入您的姓名" oninput="updateTextPreview()">
+        <input type="text" id="signName" placeholder="输入您的姓名" oninput="updateTextPreview();updateFontGridPreview()">
         <input type="color" id="textColor" value="#1e293b" onchange="updateTextPreview()">
       </div>
       <p style="font-size:13px;color:#6b7280;margin-bottom:12px">选择字体样式：</p>
@@ -178,15 +178,24 @@ let selectedFont='Dancing Script';
 
 function initFontGrid(){
   const grid=document.getElementById('fontGrid');
+  const name=document.getElementById('signName').value||'Your Name';
   FONTS.forEach(f=>{
     const div=document.createElement('div');
     div.className='font-option'+(f.name===selectedFont?' selected':'');
-    div.innerHTML=`<div class="preview" style="font-family:'${f.name}'">Your Name</div><div class="name">${f.label}</div>`;
+    div.dataset.font=f.name;
+    div.innerHTML=`<div class="preview" style="font-family:'${f.name}'">${name}</div><div class="name">${f.label}</div>`;
     div.onclick=()=>{
       document.querySelectorAll('.font-option').forEach(o=>o.classList.remove('selected'));
       div.classList.add('selected');selectedFont=f.name;updateTextPreview();
     };
     grid.appendChild(div);
+  });
+}
+
+function updateFontGridPreview(){
+  const name=document.getElementById('signName').value||'Your Name';
+  document.querySelectorAll('.font-option .preview').forEach(el=>{
+    el.textContent=name;
   });
 }
 
