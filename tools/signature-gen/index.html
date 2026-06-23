@@ -158,7 +158,7 @@ function clearCanvas(){paths=[];currentPath=[];undoStack=[];redraw();}
 function downloadSignature(){
   const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;
   const cx=c.getContext('2d');
-  cx.clearRect(0,0,c.width,c.height);
+  cx.fillStyle='#fff';cx.fillRect(0,0,c.width,c.height);
   paths.forEach(p=>{cx.beginPath();cx.strokeStyle=p.color;cx.lineWidth=p.width;cx.lineCap='round';cx.lineJoin='round';cx.moveTo(p.points[0].x,p.points[0].y);for(let i=1;i<p.points.length;i++)cx.lineTo(p.points[i].x,p.points[i].y);cx.stroke();});
   const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='signature.png';a.click();
 }
@@ -197,12 +197,14 @@ function updateTextPreview(){
   prev.innerHTML=`<span style="font-family:'${selectedFont}';font-size:48px;color:${color}">${name}</span>`;
 }
 
-function downloadTextSignature(){
+async function downloadTextSignature(){
   const name=document.getElementById('signName').value;
   if(!name)return alert('请输入姓名');
   const color=document.getElementById('textColor').value;
+  await document.fonts.load(`48px '${selectedFont}'`);
   const c=document.createElement('canvas');c.width=600;c.height=150;
   const cx=c.getContext('2d');
+  cx.fillStyle='#fff';cx.fillRect(0,0,c.width,c.height);
   cx.font=`48px '${selectedFont}'`;
   cx.fillStyle=color;
   cx.textBaseline='middle';
