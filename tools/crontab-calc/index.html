@@ -91,6 +91,7 @@
         <div class="card" style="margin-top: 16px;">
           <div class="card-title">未来10次执行时间</div>
           <ul class="times-list" id="timesList"></ul>
+          <button class="btn btn-secondary" onclick="copyCronResult()" style="margin-top:8px;padding:6px 12px;font-size:12px;height:30px;">📋 复制结果</button>
         </div>
       </div>
 
@@ -302,6 +303,13 @@
         errorBox.style.display = 'block';
         errorBox.innerHTML = `<div class="error-box">❌ 解析错误：${e.message}</div>`;
       }
+    }
+
+    function copyCronResult() {
+      const desc = document.getElementById('descriptionBox').textContent.trim();
+      const times = [...document.querySelectorAll('#timesList li')].map(li => li.textContent.trim()).join('\n');
+      copyToClipboard(desc + '\n\n' + times);
+      showMessage('success', '已复制到剪贴板');
     }
 
     calculate();

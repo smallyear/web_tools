@@ -54,6 +54,7 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
       <div class="stat-item"><div class="num" id="sentences">0</div><div class="label">句子数</div></div>
     </div>
     <div class="reading-time" id="readingTime">⏱ 预计阅读时间：-</div>
+    <button class="btn btn-secondary" onclick="copyWordCount()" style="margin-top:8px;padding:6px 12px;font-size:12px;height:30px;">📋 复制统计</button>
   </div>
 </div>
 
@@ -92,6 +93,18 @@ function count() {
   else if (totalMinutes < 1) timeStr = `约 ${Math.ceil(totalMinutes * 60)} 秒`;
   else timeStr = `约 ${Math.ceil(totalMinutes)} 分钟`;
   document.getElementById('readingTime').textContent = `⏱ 预计阅读时间：${timeStr}（中文约300字/分钟，英文约200词/分钟）`;
+}
+
+function copyWordCount() {
+  const stats = [];
+  document.querySelectorAll('.stat-item').forEach(item => {
+    const num = item.querySelector('.num').textContent;
+    const label = item.querySelector('.label').textContent;
+    stats.push(label + ': ' + num);
+  });
+  const reading = document.getElementById('readingTime').textContent;
+  copyToClipboard(stats.join('\n') + '\n' + reading);
+  showMessage('success', '已复制到剪贴板');
 }
 
 input.addEventListener('input', count);
