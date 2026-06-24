@@ -869,6 +869,13 @@
       document.querySelectorAll('.tab-panel[id^="panel-"]').forEach(function(p){p.classList.remove('active')});
       var panel = document.getElementById('panel-' + btn.dataset.type);
       if (panel) panel.classList.add('active');
+      // 根据内容类型切换默认边框文字
+      var frameTexts = {
+        text: '扫码访问', wifi: '扫码连WiFi', vcard: '扫码添加联系人',
+        email: '扫码发邮件', phone: '扫码拨号', sms: '扫码发短信'
+      };
+      document.getElementById('frameText').value = frameTexts[btn.dataset.type] || '扫码访问';
+      debounceGenerate();
     });
 
     // 标签页切换
