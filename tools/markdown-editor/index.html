@@ -8,16 +8,61 @@
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .markdown-layout {
-      display: grid;
-      gap: 16px;
+      display: flex;
+      gap: 0;
       height: calc(100vh - 200px);
       min-height: 500px;
     }
+    .markdown-layout .editor-container,
+    .markdown-layout .preview-container {
+      flex: 1;
+      min-width: 0;
+    }
 
-    @media (min-width: 768px) {
+    @media (max-width: 768px) {
       .markdown-layout {
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        flex-direction: column;
+        height: auto;
+        min-height: auto;
+      }
+      .markdown-layout .editor-container,
+      .markdown-layout .preview-container {
+        height: 400px;
+      }
+    }
+
+    /* 拖拽分隔条 */
+    .md-resizer {
+      width: 12px;
+      cursor: col-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .md-resizer::after {
+      content: '';
+      width: 4px;
+      height: 48px;
+      background: var(--border);
+      border-radius: 2px;
+      transition: background 0.2s, height 0.2s;
+    }
+    .md-resizer:hover::after,
+    .md-resizer.active::after {
+      background: var(--primary);
+      height: 64px;
+    }
+    @media (max-width: 768px) {
+      .md-resizer {
+        width: 100%;
+        height: 12px;
+        cursor: row-resize;
+      }
+      .md-resizer::after {
+        width: 48px;
+        height: 4px;
       }
     }
 
@@ -74,7 +119,8 @@
     #preview {
       flex: 1;
       padding: 16px;
-      overflow: auto;
+      overflow-x: auto;
+      overflow-y: auto;
       line-height: 1.8;
     }
 
@@ -236,6 +282,9 @@
 console.log('代码块');
 ```"></textarea>
       </div>
+
+      <!-- 拖拽分隔条 -->
+      <div class="md-resizer" id="mdResizer"></div>
 
       <!-- 右侧预览 -->
       <div class="preview-container">
@@ -414,6 +463,54 @@ ${htmlContent}
       // 初始化
       updatePreview();
       markdownInput.focus();
+
+      // 拖拽分隔条逻辑
+      (function() {
+        const resizer = document.getElementById('mdResizer');
+        const layout = document.querySelector('.markdown-layout');
+        const leftPanel = layout.children[0];
+        const rightPanel = layout.children[2]; // index 1 is resizer
+        let isResizing = false;
+        let startX = 0;
+        let startLeftWidth = 0;
+
+        resizer.addEventListener('mousedown', function(e) {
+          isResizing = true;
+          startX = e.clientX;
+          startLeftWidth = leftPanel.getBoundingClientRect().width;
+          resizer.classList.add('active');
+          document.body.style.cursor = 'col-resize';
+          document.body.style.userSelect = 'none';
+          e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+          if (!isResizing) return;
+          const totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+          const delta = e.clientX - startX;
+          const newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+          const leftPercent = (newLeftWidth / totalWidth) * 100;
+          leftPanel.style.flex = 'none';
+          leftPanel.style.width = leftPercent + '%';
+          rightPanel.style.flex = '1';
+        });
+
+        document.addEventListener('mouseup', function() {
+          if (isResizing) {
+            isResizing = false;
+            resizer.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+          }
+        });
+
+        // 双击重置
+        resizer.addEventListener('dblclick', function() {
+          leftPanel.style.flex = '';
+          leftPanel.style.width = '';
+          rightPanel.style.flex = '';
+        });
+      })();
 
       // 支持 Tab 缩进
       markdownInput.addEventListener('keydown', function(e) {
