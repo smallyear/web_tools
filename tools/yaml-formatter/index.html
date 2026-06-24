@@ -85,7 +85,8 @@
       padding: 16px;
       border: 2px solid var(--border);
       border-radius: 10px;
-      overflow: auto;
+      overflow-x: auto;
+      overflow-y: auto;
       background: #f8fafc;
       white-space: pre;
       word-wrap: normal;
@@ -113,6 +114,10 @@
     /* 行号 */
     .output-wrapper {
       position: relative;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f8fafc;
     }
     .line-numbers {
       position: absolute;
@@ -135,7 +140,8 @@
     }
     .output-area.with-lines {
       margin-left: 49px;
-      border-radius: 0 10px 10px 0;
+      border: none;
+      border-radius: 0;
     }
 
     /* 操作栏 */
@@ -633,6 +639,11 @@
 
       // 实时显示输入大小
       yamlInput.addEventListener('input', updateInputSize);
+
+      // 同步滚动：输出区滚动时，行号跟着动
+      outputArea.addEventListener('scroll', () => {
+        lineNumbers.style.transform = `translateY(-${outputArea.scrollTop}px)`;
+      });
     })();
   </script>
 </body>
