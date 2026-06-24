@@ -85,11 +85,10 @@
       padding: 16px;
       border: 2px solid var(--border);
       border-radius: 10px;
-      overflow: auto;
+      overflow-x: auto;
+      overflow-y: auto;
       background: #f8fafc;
       white-space: pre;
-      word-wrap: normal;
-      overflow-wrap: normal;
       tab-size: 2;
       color: #1e293b;
     }
@@ -113,12 +112,15 @@
     /* 行号 */
     .output-wrapper {
       position: relative;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f8fafc;
     }
     .line-numbers {
       position: absolute;
       left: 0;
       top: 0;
-      bottom: 0;
       width: 48px;
       padding: 16px 8px 16px 0;
       text-align: right;
@@ -128,14 +130,16 @@
       color: #94a3b8;
       background: #f1f5f9;
       border-right: 1px solid var(--border);
-      border-radius: 10px 0 0 10px;
-      overflow: hidden;
       user-select: none;
       white-space: pre;
+      z-index: 1;
+      pointer-events: none;
     }
     .output-area.with-lines {
       margin-left: 49px;
-      border-radius: 0 10px 10px 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
     }
 
     /* 操作栏 */
@@ -449,9 +453,9 @@
         }
       }
 
-      // 同步滚动输入区和行号
-      jsonInput.addEventListener('scroll', () => {
-        // 如果需要输入区行号，可以在这里同步
+      // 同步滚动：输出区滚动时，行号跟着动
+      jsonOutput.addEventListener('scroll', () => {
+        lineNumbers.style.transform = `translateY(-${jsonOutput.scrollTop}px)`;
       });
 
       // 事件绑定
