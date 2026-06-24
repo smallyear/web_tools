@@ -9,15 +9,50 @@
 <style>
 .wheel-wrap { text-align: center; margin: 20px 0; position: relative; display: inline-block; }
 canvas { max-width: 100%; }
-.pointer { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 36px solid #e53e3e; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+/* Pointer styles */
+.pointer { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.pointer-arrow { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 36px solid #e53e3e; }
+.pointer-triangle { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 30px solid #e53e3e; transform: translateX(-50%) rotate(180deg); top: -14px; }
+.pointer-hand { font-size: 42px; top: -8px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.controls-section { margin-top: 20px; }
+.controls-section label { display: block; margin: 10px 0 4px; font-weight: 600; }
 .prize-textarea { width: 100%; height: 120px; padding: 8px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; }
 .btn { padding: 12px 32px; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; color: #fff; margin-top: 12px; }
+.btn-sm { padding: 6px 14px; font-size: 13px; margin: 0; }
 .btn-primary { background: #e53e3e; }
+.btn-success { background: #22c55e; }
+.btn-danger { background: #e53e3e; }
+.btn-warning { background: #f59e0b; }
+.btn-info { background: #4a6cf7; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 #result { font-size: 28px; font-weight: 700; margin: 16px 0; min-height: 40px; color: #e53e3e; }
 .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; overflow: hidden; }
 .confetti { position: absolute; width: 10px; height: 10px; top: -20px; animation: confetti-fall 3s ease-in forwards; border-radius: 2px; }
-@keyframes confetti-fall { 0% { opacity:1; transform: translateY(0) rotate(0); } 100% { opacity:0; transform: translateY(100vh) rotate(720deg); } }
+@keyframes confetti-fall { 0% { opacity:1; transform: translateY(0) rotate(0) scale(1); } 100% { opacity:0; transform: translateY(100vh) rotate(720deg) scale(0.5); } }
+/* Result popup */
+.popup-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,.6); z-index:1000; display:flex; align-items:center; justify-content:center; animation: fade-in .3s; }
+@keyframes fade-in { from { opacity:0; } to { opacity:1; } }
+.popup-box { background: #fff; border-radius: 20px; padding: 40px 50px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); animation: pop-in .4s cubic-bezier(.17,.89,.32,1.28); max-width: 90%; }
+@keyframes pop-in { from { transform: scale(0.5); opacity:0; } to { transform: scale(1); opacity:1; } }
+.popup-box h2 { font-size: 28px; margin: 0 0 10px; }
+.popup-box .winner-name { font-size: 42px; color: #e53e3e; font-weight: 900; margin: 10px 0; }
+.popup-close { margin-top: 20px; }
+/* Prize list */
+.prize-list { list-style: none; padding: 0; margin: 0; }
+.prize-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+.prize-item .color-dot { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #ddd; cursor: pointer; flex-shrink: 0; }
+.prize-item input { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+.prize-item .remove-prize { background: none; border: none; font-size: 18px; cursor: pointer; color: #999; padding: 4px; }
+.prize-item .remove-prize:hover { color: #e53e3e; }
+/* History */
+.history-section { max-height: 200px; overflow-y: auto; }
+.history-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+.history-item .time { color: #999; font-size: 12px; }
+.range-row { display: flex; align-items: center; gap: 10px; }
+.range-row input[type="range"] { flex: 1; }
+.range-row span { min-width: 50px; font-size: 14px; }
+.pointer-opts { display: flex; gap: 12px; margin-top: 6px; }
+.pointer-opts label { font-weight: 400; display: flex; align-items: center; gap: 4px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -26,20 +61,51 @@ canvas { max-width: 100%; }
     <div class="breadcrumb"><a href="../../index.html">首页</a> &gt; <span>在线抽奖转盘</span></div>
     <div class="card">
         <h2>在线抽奖转盘</h2>
-        <div class="wheel-wrap">
-            <div class="pointer"></div>
+        <div class="wheel-wrap" id="wheelWrap">
+            <div class="pointer pointer-arrow" id="pointer"></div>
             <canvas id="wheel" width="400" height="400"></canvas>
         </div>
         <div id="result"></div>
         <div style="text-align:center"><button class="btn btn-primary" id="spinBtn">🎰 开始抽奖</button></div>
-        <div style="margin-top:20px">
-            <label style="font-weight:600">奖品列表（每行一个）：</label>
-            <textarea class="prize-textarea" id="prizes">一等奖
-二等奖
-三等奖
-谢谢参与
-再来一次
-幸运奖</textarea>
+
+        <div class="controls-section">
+            <label>指针样式</label>
+            <div class="pointer-opts">
+                <label><input type="radio" name="ptr" value="arrow" checked> ▶ 三角箭头</label>
+                <label><input type="radio" name="ptr" value="triangle"> ▼ 倒三角</label>
+                <label><input type="radio" name="ptr" value="hand"> 👇 手指</label>
+            </div>
+
+            <label>转速/时长</label>
+            <div class="range-row">
+                <span>速度</span>
+                <input type="range" id="spinSpeed" min="1" max="10" value="5">
+                <span id="spinSpeedVal">5</span>
+            </div>
+            <div class="range-row">
+                <span>时长</span>
+                <input type="range" id="spinDuration" min="2" max="10" value="4">
+                <span id="spinDurationVal">4秒</span>
+            </div>
+
+            <label>🔊 音效设置</label>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <label style="font-weight:400"><input type="checkbox" id="chkSound" checked> 开启旋转音效</label>
+            </div>
+
+            <label>🎁 奖品管理（点击颜色可自定义）</label>
+            <ul class="prize-list" id="prizeList"></ul>
+            <button class="btn btn-sm btn-success" id="addPrizeBtn">＋ 添加奖品</button>
+
+            <label style="margin-top:14px">📝 历史记录</label>
+            <div class="history-section" id="historySection">
+                <div style="color:#999;font-size:14px;">暂无记录</div>
+            </div>
+            <button class="btn btn-sm btn-warning" id="clearHistoryBtn" style="margin-top:6px">清除历史</button>
+
+            <div style="margin-top:10px">
+                <label style="font-weight:400"><input type="checkbox" id="chkRemoveWinner"> 抽中后从奖池移除</label>
+            </div>
         </div>
     </div>
     <footer class="footer">© 2024 在线工具箱 | <a href="../../index.html">返回首页</a></footer>
@@ -49,16 +115,98 @@ canvas { max-width: 100%; }
 (function(){
     const canvas = document.getElementById('wheel');
     const ctx = canvas.getContext('2d');
-    const prizesEl = document.getElementById('prizes');
     const spinBtn = document.getElementById('spinBtn');
     const resultEl = document.getElementById('result');
-    const colors = ['#e53e3e','#f59e0b','#22c55e','#4a6cf7','#8b5cf6','#ec4899','#06b6d4','#f97316'];
-    let prizes = [], spinning = false, angle = 0;
+    const pointerEl = document.getElementById('pointer');
+    const prizeListEl = document.getElementById('prizeList');
+    const addPrizeBtn = document.getElementById('addPrizeBtn');
+    const spinSpeedEl = document.getElementById('spinSpeed');
+    const spinSpeedVal = document.getElementById('spinSpeedVal');
+    const spinDurationEl = document.getElementById('spinDuration');
+    const spinDurationVal = document.getElementById('spinDurationVal');
+    const chkSound = document.getElementById('chkSound');
+    const chkRemoveWinner = document.getElementById('chkRemoveWinner');
+    const historySection = document.getElementById('historySection');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-    function getPrizes(){ return prizesEl.value.split('\n').map(s=>s.trim()).filter(Boolean); }
+    const defaultColors = ['#e53e3e','#f59e0b','#22c55e','#4a6cf7','#8b5cf6','#ec4899','#06b6d4','#f97316'];
+    let prizes = []; // [{name, color}]
+    let spinning = false, angle = 0;
+    let audioCtx = null;
+
+    // Load from localStorage
+    function loadData(){
+        try {
+            const saved = JSON.parse(localStorage.getItem('luckyWheelPrizes'));
+            if(saved && saved.length) { prizes = saved; }
+            else { prizes = defaultColors.map((c,i)=>({name:['一等奖','二等奖','三等奖','谢谢参与','再来一次','幸运奖'][i]||'奖品'+(i+1), color:c})); }
+        } catch(e){
+            prizes = defaultColors.map((c,i)=>({name:['一等奖','二等奖','三等奖','谢谢参与','再来一次','幸运奖'][i]||'奖品'+(i+1), color:c}));
+        }
+    }
+    function saveData(){
+        try { localStorage.setItem('luckyWheelPrizes', JSON.stringify(prizes)); } catch(e){}
+    }
+
+    function loadHistory(){
+        try { return JSON.parse(localStorage.getItem('luckyWheelHistory') || '[]'); } catch(e){ return []; }
+    }
+    function saveHistoryEntry(prizeName){
+        const history = loadHistory();
+        history.unshift({ name: prizeName, time: new Date().toLocaleString('zh-CN') });
+        if(history.length > 50) history.length = 50;
+        try { localStorage.setItem('luckyWheelHistory', JSON.stringify(history)); } catch(e){}
+    }
+    function renderHistory(){
+        const history = loadHistory();
+        if(!history.length){
+            historySection.innerHTML = '<div style="color:#999;font-size:14px;">暂无记录</div>';
+            return;
+        }
+        historySection.innerHTML = history.map(h=>
+            '<div class="history-item"><span>🎉 ' + escHtml(h.name) + '</span><span class="time">' + escHtml(h.time) + '</span></div>'
+        ).join('');
+    }
+
+    function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Prize list UI
+    function renderPrizeList(){
+        prizeListEl.innerHTML = '';
+        prizes.forEach(function(p, i){
+            const li = document.createElement('li');
+            li.className = 'prize-item';
+            li.innerHTML = '<input type="color" class="color-dot" value="' + p.color + '" data-i="' + i + '">' +
+                '<input type="text" value="' + escHtml(p.name) + '" data-i="' + i + '" placeholder="奖品名称">' +
+                '<button class="remove-prize" data-i="' + i + '">✕</button>';
+            prizeListEl.appendChild(li);
+        });
+        prizeListEl.querySelectorAll('input[type="color"]').forEach(inp=>{
+            inp.addEventListener('input', function(){
+                prizes[parseInt(this.dataset.i)].color = this.value;
+                saveData(); drawWheel();
+            });
+        });
+        prizeListEl.querySelectorAll('input[type="text"]').forEach(inp=>{
+            inp.addEventListener('input', function(){
+                prizes[parseInt(this.dataset.i)].name = this.value;
+                saveData(); drawWheel();
+            });
+        });
+        prizeListEl.querySelectorAll('.remove-prize').forEach(btn=>{
+            btn.onclick = function(){
+                prizes.splice(parseInt(this.dataset.i), 1);
+                saveData(); renderPrizeList(); drawWheel();
+            };
+        });
+    }
+
+    addPrizeBtn.onclick = function(){
+        prizes.push({ name: '新奖品', color: defaultColors[prizes.length % defaultColors.length] });
+        saveData(); renderPrizeList(); drawWheel();
+    };
 
     function drawWheel(){
-        prizes = getPrizes();
         if(!prizes.length) return;
         const cx = 200, cy = 200, r = 180, n = prizes.length;
         const arc = 2 * Math.PI / n;
@@ -71,7 +219,7 @@ canvas { max-width: 100%; }
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.arc(0, 0, r, startAngle, startAngle + arc);
-            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillStyle = prizes[i].color;
             ctx.fill();
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
@@ -81,11 +229,10 @@ canvas { max-width: 100%; }
             ctx.fillStyle = '#fff';
             ctx.font = n > 8 ? 'bold 14px sans-serif' : 'bold 18px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(prizes[i], r * 0.6, 6);
+            ctx.fillText(prizes[i].name, r * 0.6, 6);
             ctx.restore();
         }
         ctx.restore();
-        // center circle
         ctx.beginPath();
         ctx.arc(cx, cy, 25, 0, 2*Math.PI);
         ctx.fillStyle = '#fff';
@@ -94,55 +241,139 @@ canvas { max-width: 100%; }
         ctx.stroke();
     }
 
+    // Sound via Web Audio API
+    function initAudio(){
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playSpinSound(duration){
+        if(!chkSound.checked) return;
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + duration * 0.8);
+        osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + duration);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + duration);
+    }
+    function playWinSound(){
+        if(!chkSound.checked) return;
+        initAudio();
+        [523, 659, 784].forEach(function(freq, i){
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + i * 0.15);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + i * 0.15 + 0.3);
+            osc.start(audioCtx.currentTime + i * 0.15);
+            osc.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+        });
+    }
+
     function spin(){
         if(spinning || prizes.length < 2) return;
         spinning = true;
         spinBtn.disabled = true;
         resultEl.textContent = '';
-        let velocity = 0.3 + Math.random() * 0.2;
-        const friction = 0.995;
-        const minV = 0.001;
-        function step(){
-            velocity *= friction;
-            angle += velocity;
+
+        const speedFactor = parseInt(spinSpeedEl.value);
+        const duration = parseInt(spinDurationEl.value) * 1000;
+        const totalRotation = (speedFactor * 3 + Math.random() * 4) * Math.PI * 2;
+        const startAngle = angle;
+        const startTime = performance.now();
+
+        playSpinSound(duration / 1000);
+
+        function step(now){
+            const elapsed = now - startTime;
+            const t = Math.min(elapsed / duration, 1);
+            // ease-out cubic
+            const eased = 1 - Math.pow(1 - t, 3);
+            angle = startAngle + totalRotation * eased;
             drawWheel();
-            if(velocity > minV){
+            if(t < 1){
                 requestAnimationFrame(step);
             } else {
                 spinning = false;
                 spinBtn.disabled = false;
-                // pointer at top (angle 0 = right, top = -PI/2)
                 const n = prizes.length;
                 const arc = 2 * Math.PI / n;
                 let normalized = ((-angle - Math.PI/2) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
                 let idx = Math.floor(normalized / arc) % n;
-                resultEl.textContent = '🎉 恭喜获得：' + prizes[idx];
+                const winner = prizes[idx];
+                resultEl.textContent = '🎉 恭喜获得：' + winner.name;
+                showResultPopup(winner.name);
                 showConfetti();
+                playWinSound();
+                saveHistoryEntry(winner.name);
+                renderHistory();
+                if(chkRemoveWinner.checked && prizes.length > 2){
+                    prizes.splice(idx, 1);
+                    saveData(); renderPrizeList(); drawWheel();
+                }
             }
         }
         requestAnimationFrame(step);
+    }
+
+    function showResultPopup(name){
+        const overlay = document.createElement('div');
+        overlay.className = 'popup-overlay';
+        overlay.innerHTML = '<div class="popup-box">' +
+            '<h2>🎊 恭喜中奖 🎊</h2>' +
+            '<div class="winner-name">' + escHtml(name) + '</div>' +
+            '<button class="btn btn-primary popup-close">知道了</button></div>';
+        document.body.appendChild(overlay);
+        overlay.querySelector('.popup-close').onclick = function(){ overlay.remove(); };
+        overlay.onclick = function(e){ if(e.target === overlay) overlay.remove(); };
     }
 
     function showConfetti(){
         const container = document.createElement('div');
         container.className = 'confetti-container';
         document.body.appendChild(container);
-        const c = ['#e53e3e','#f59e0b','#22c55e','#4a6cf7','#8b5cf6','#ec4899'];
-        for(let i = 0; i < 80; i++){
+        const c = ['#e53e3e','#f59e0b','#22c55e','#4a6cf7','#8b5cf6','#ec4899','#06b6d4','#f97316'];
+        for(let i = 0; i < 100; i++){
             const el = document.createElement('div');
             el.className = 'confetti';
             el.style.left = Math.random()*100+'%';
             el.style.background = c[Math.floor(Math.random()*c.length)];
             el.style.animationDelay = Math.random()*2+'s';
-            el.style.width = (6+Math.random()*8)+'px';
-            el.style.height = (6+Math.random()*8)+'px';
+            el.style.width = (6+Math.random()*10)+'px';
+            el.style.height = (6+Math.random()*10)+'px';
+            el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
             container.appendChild(el);
         }
-        setTimeout(()=>container.remove(), 4000);
+        setTimeout(()=>container.remove(), 5000);
     }
 
+    // Pointer style
+    document.querySelectorAll('input[name="ptr"]').forEach(r=>r.addEventListener('change', function(){
+        pointerEl.className = 'pointer';
+        if(this.value === 'arrow') pointerEl.classList.add('pointer-arrow');
+        else if(this.value === 'triangle') pointerEl.classList.add('pointer-triangle');
+        else if(this.value === 'hand'){ pointerEl.classList.add('pointer-hand'); pointerEl.textContent = '👇'; }
+        if(this.value !== 'hand') pointerEl.textContent = '';
+    }));
+
+    spinSpeedEl.addEventListener('input', function(){ spinSpeedVal.textContent = this.value; });
+    spinDurationEl.addEventListener('input', function(){ spinDurationVal.textContent = this.value + '秒'; });
     spinBtn.onclick = spin;
-    prizesEl.addEventListener('input', drawWheel);
+    clearHistoryBtn.onclick = function(){
+        try { localStorage.removeItem('luckyWheelHistory'); } catch(e){}
+        renderHistory();
+    };
+
+    loadData();
+    renderPrizeList();
+    renderHistory();
     drawWheel();
 })();
 </script>
