@@ -85,7 +85,7 @@
     .preview-container {
       border: 1px solid var(--border);
       border-radius: 10px;
-      overflow: hidden;
+      overflow: visible;
       background: white;
       display: flex;
       flex-direction: column;
@@ -114,6 +114,10 @@
       line-height: 1.6;
       resize: none;
       outline: none;
+      overflow-x: auto;
+      overflow-y: auto;
+      white-space: pre;
+      word-wrap: normal;
     }
 
     #preview {
