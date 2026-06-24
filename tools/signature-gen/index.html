@@ -7,7 +7,7 @@
   <meta name="description" content="手写签名或文字签名，多种字体">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Satisfy&family=Pacifico&family=Caveat:wght@400;700&family=Sacramento&family=Alex+Brush&family=Homemade+Apple&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Satisfy&family=Pacifico&family=Caveat:wght@400;700&family=Sacramento&family=Alex+Brush&family=Homemade+Apple&family=Kalam:wght@300;400;700&family=Indie+Flower&family=Permanent+Marker&family=Lobster&family=Allura&family=Parisienne&display=swap');
 .container{max-width:900px;margin:0 auto;padding:15px}
 .card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
 .card h3{margin:0 0 16px;color:#333;font-size:1.1rem}
@@ -22,7 +22,7 @@ canvas#drawCanvas{border:2px solid #e5e7eb;border-radius: 10px;cursor:crosshair;
 .controls label{font-size:13px;color:#555;display:flex;align-items:center;gap:4px}
 .controls input[type=color]{width:36px;height:28px;border:none;cursor:pointer;border-radius: 10px}
 .controls input[type=range]{width:100px}
-.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
 .tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb}
 .tab-bar button{padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;font-size:14px;color:#6b7280;transition:all .2s}
 .tab-bar button.active{color:#4f46e5;border-bottom-color:#4f46e5;font-weight:600}
@@ -41,6 +41,9 @@ canvas#drawCanvas{border:2px solid #e5e7eb;border-radius: 10px;cursor:crosshair;
 .toggle .slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
 .toggle input:checked+.slider{background:#4f46e5}
 .toggle input:checked+.slider:before{transform:translateX(18px)}
+.text-sliders{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.text-sliders label{font-size:13px;color:#555;display:flex;align-items:center;gap:6px}
+.text-sliders input[type=range]{width:120px}
 </style>
 </head>
 <body>
@@ -72,6 +75,9 @@ canvas#drawCanvas{border:2px solid #e5e7eb;border-radius: 10px;cursor:crosshair;
         <button class="btn btn-secondary btn-sm" onclick="redo()">↪️ 重做</button>
         <button class="btn btn-danger btn-sm" onclick="clearCanvas()">🗑️ 清除</button>
         <button class="btn btn-success" onclick="downloadSignature()">💾 下载PNG</button>
+        <label style="font-size:13px;color:#555;display:flex;align-items:center;gap:4px;margin-left:8px">
+          <input type="checkbox" id="transparentBgDraw"> 透明背景
+        </label>
       </div>
     </div>
 
@@ -82,9 +88,16 @@ canvas#drawCanvas{border:2px solid #e5e7eb;border-radius: 10px;cursor:crosshair;
       </div>
       <p style="font-size:13px;color:#6b7280;margin-bottom:12px">选择字体样式：</p>
       <div class="font-grid" id="fontGrid"></div>
+      <div class="text-sliders">
+        <label>🔤 字号 <input type="range" id="fontSizeSlider" min="24" max="96" value="48" oninput="updateTextPreview()"> <span id="fontSizeVal">48</span>px</label>
+        <label>📐 倾斜 <input type="range" id="textAngleSlider" min="-15" max="15" value="0" oninput="updateTextPreview()"> <span id="textAngleVal">0</span>°</label>
+      </div>
       <div id="textSignaturePreview" style="margin-top:16px"></div>
       <div class="btn-group">
         <button class="btn btn-success" onclick="downloadTextSignature()">💾 下载PNG</button>
+        <label style="font-size:13px;color:#555;display:flex;align-items:center;gap:4px;margin-left:8px">
+          <input type="checkbox" id="transparentBgText"> 透明背景
+        </label>
       </div>
     </div>
   </div>
@@ -156,12 +169,53 @@ function undo(){if(paths.length){undoStack.push(paths.pop());redraw();}}
 function redo(){if(undoStack.length){paths.push(undoStack.pop());redraw();}}
 function clearCanvas(){paths=[];currentPath=[];undoStack=[];redraw();}
 
+// Auto-crop helper: scan canvas for bounding box of non-white pixels
+function autoCropCanvas(srcCanvas, padding){
+  padding = padding || 10;
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const imgData = srcCanvas.getContext('2d').getImageData(0, 0, w, h);
+  const data = imgData.data;
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  let found = false;
+  for(let y = 0; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y * w + x) * 4;
+      const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+      // Consider pixel as "content" if it's not white or near-white (with some tolerance)
+      if(a > 10 && (r < 250 || g < 250 || b < 250)){
+        if(x < minX) minX = x;
+        if(y < minY) minY = y;
+        if(x > maxX) maxX = x;
+        if(y > maxY) maxY = y;
+        found = true;
+      }
+    }
+  }
+  if(!found) return srcCanvas; // empty canvas, return as-is
+  // Apply padding
+  minX = Math.max(0, minX - padding);
+  minY = Math.max(0, minY - padding);
+  maxX = Math.min(w - 1, maxX + padding);
+  maxY = Math.min(h - 1, maxY + padding);
+  const cropW = maxX - minX + 1;
+  const cropH = maxY - minY + 1;
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropW;
+  cropCanvas.height = cropH;
+  const cx = cropCanvas.getContext('2d');
+  cx.drawImage(srcCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+  return cropCanvas;
+}
+
 function downloadSignature(){
   const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;
   const cx=c.getContext('2d');
-  cx.fillStyle='#fff';cx.fillRect(0,0,c.width,c.height);
+  const transparent = document.getElementById('transparentBgDraw').checked;
+  if(!transparent){ cx.fillStyle='#fff';cx.fillRect(0,0,c.width,c.height); }
   paths.forEach(p=>{cx.beginPath();cx.strokeStyle=p.color;cx.lineWidth=p.width;cx.lineCap='round';cx.lineJoin='round';cx.moveTo(p.points[0].x,p.points[0].y);for(let i=1;i<p.points.length;i++)cx.lineTo(p.points[i].x,p.points[i].y);cx.stroke();});
-  const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='signature.png';a.click();
+  // Auto-crop
+  const cropped = autoCropCanvas(c, 10);
+  const a=document.createElement('a');a.href=cropped.toDataURL('image/png');a.download='signature.png';a.click();
 }
 
 // --- Text Signature ---
@@ -174,6 +228,12 @@ const FONTS=[
   {name:'Sacramento',label:'精致连笔'},
   {name:'Alex Brush',label:'艺术花体'},
   {name:'Homemade Apple',label:'手绘风格'},
+  {name:'Kalam',label:'轻松随笔'},
+  {name:'Indie Flower',label:'独立手绘'},
+  {name:'Permanent Marker',label:'马克笔迹'},
+  {name:'Lobster',label:'龙虾花体'},
+  {name:'Allura',label:'优雅书法'},
+  {name:'Parisienne',label:'巴黎花体'},
 ];
 let selectedFont='Dancing Script';
 
@@ -203,23 +263,41 @@ function updateFontGridPreview(){
 function updateTextPreview(){
   const name=document.getElementById('signName').value||'Your Name';
   const color=document.getElementById('textColor').value;
+  const fontSize = document.getElementById('fontSizeSlider').value;
+  const angle = document.getElementById('textAngleSlider').value;
+  document.getElementById('fontSizeVal').textContent = fontSize;
+  document.getElementById('textAngleVal').textContent = angle;
   const prev=document.getElementById('textSignaturePreview');
-  prev.innerHTML=`<span style="font-family:'${selectedFont}';font-size:48px;color:${color}">${name}</span>`;
+  prev.innerHTML=`<span style="font-family:'${selectedFont}';font-size:${fontSize}px;color:${color};display:inline-block;transform:rotate(${angle}deg)">${name}</span>`;
 }
 
 async function downloadTextSignature(){
   const name=document.getElementById('signName').value;
   if(!name)return alert('请输入姓名');
   const color=document.getElementById('textColor').value;
-  await document.fonts.load(`48px '${selectedFont}'`);
-  const c=document.createElement('canvas');c.width=600;c.height=150;
+  const fontSize = parseInt(document.getElementById('fontSizeSlider').value);
+  const angle = parseInt(document.getElementById('textAngleSlider').value);
+  const transparent = document.getElementById('transparentBgText').checked;
+  await document.fonts.load(`${fontSize}px '${selectedFont}'`);
+  // Create a large canvas to accommodate rotated text
+  const c=document.createElement('canvas');
+  c.width=800;c.height=300;
   const cx=c.getContext('2d');
-  cx.fillStyle='#fff';cx.fillRect(0,0,c.width,c.height);
-  cx.font=`48px '${selectedFont}'`;
+  if(!transparent){ cx.fillStyle='#fff';cx.fillRect(0,0,c.width,c.height); }
+  cx.save();
+  // Translate to center, rotate, then draw text
+  const rad = angle * Math.PI / 180;
+  cx.translate(c.width / 2, c.height / 2);
+  cx.rotate(rad);
+  cx.font=`${fontSize}px '${selectedFont}'`;
   cx.fillStyle=color;
   cx.textBaseline='middle';
-  cx.fillText(name,20,75);
-  const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='text-signature.png';a.click();
+  cx.textAlign='center';
+  cx.fillText(name, 0, 0);
+  cx.restore();
+  // Auto-crop
+  const cropped = autoCropCanvas(c, 10);
+  const a=document.createElement('a');a.href=cropped.toDataURL('image/png');a.download='text-signature.png';a.click();
 }
 
 initFontGrid();updateTextPreview();

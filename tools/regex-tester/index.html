@@ -40,7 +40,8 @@
     .match-item .match-pos { color: var(--text-secondary); font-size: 11px; margin-left: 8px; }
     .group-item { margin-left: 20px; color: var(--text-secondary); }
     .group-item .group-name { color: var(--warning); font-weight: 500; }
-    .info-bar { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+    .info-bar { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    .info-bar .exec-time { color: var(--primary); font-weight: 500; }
     .error-msg { color: var(--error); font-size: 13px; margin-bottom: 8px; }
     .quick-regex { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
     .quick-regex button {
@@ -55,7 +56,34 @@
       border: 1px solid var(--border); border-radius: 10px;
       white-space: pre-wrap; word-break: break-all; overflow: auto; user-select: all;
     }
-  
+    .replace-bar { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    .replace-bar label { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+    .replace-bar .regex-input { flex: 1; }
+    .share-bar { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .code-snippet-area {
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 13px;
+      line-height: 1.6; padding: 12px; background: #FAFAFA;
+      border: 1px solid var(--border); border-radius: 10px;
+      white-space: pre-wrap; word-break: break-all; overflow: auto;
+      max-height: 400px; position: relative;
+    }
+    .code-tabs { display: flex; gap: 0; margin-bottom: -1px; position: relative; z-index: 1; }
+    .code-tabs button {
+      padding: 6px 16px; font-size: 12px; cursor: pointer;
+      background: #EEE; border: 1px solid var(--border); border-bottom: none;
+      border-radius: 8px 8px 0 0; color: var(--text-secondary);
+    }
+    .code-tabs button.active {
+      background: #FAFAFA; color: var(--primary); font-weight: 600;
+      border-bottom: 1px solid #FAFAFA;
+    }
+    .code-copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      padding: 4px 10px; font-size: 11px; cursor: pointer;
+      background: white; border: 1px solid var(--border); border-radius: 6px;
+    }
+    .code-copy-btn:hover { border-color: var(--primary); color: var(--primary); }
+
     /* 拖拽分隔条 */
     .resizer {
       width: 12px; cursor: col-resize; display: flex; align-items: center;
@@ -85,7 +113,7 @@
     <div class="tool-header">
       <div class="breadcrumb"><a href="../../index.html">首页</a> / 正则表达式测试</div>
       <h1>🔍 正则表达式测试工具</h1>
-      <p style="color: var(--text-secondary); margin-top: 8px;">实时匹配高亮，分组展示，常用正则模板</p>
+      <p style="color: var(--text-secondary); margin-top: 8px;">实时匹配高亮，分组展示，替换预览，代码生成</p>
     </div>
 
     <div class="card">
@@ -96,11 +124,20 @@
         <span class="regex-delimiter">/</span>
         <input type="text" class="regex-input" id="flagsInput" value="g" style="width:60px;flex:none;" placeholder="flags">
       </div>
+      <div class="replace-bar">
+        <label>替换：</label>
+        <input type="text" class="regex-input" id="replaceInput" placeholder="替换字符串（支持 $1 $&amp; $` $' $$ 等）">
+      </div>
       <div class="flags-bar">
         <label><input type="checkbox" id="flagG" checked> g 全局</label>
         <label><input type="checkbox" id="flagI"> i 忽略大小写</label>
         <label><input type="checkbox" id="flagM"> m 多行</label>
         <label><input type="checkbox" id="flagS"> s 点号匹配换行</label>
+        <label><input type="checkbox" id="flagU"> u Unicode</label>
+        <label><input type="checkbox" id="flagD"> d hasIndices</label>
+      </div>
+      <div class="share-bar">
+        <button class="btn btn-secondary" id="shareBtn" style="padding:6px 12px;font-size:12px;height:28px;">🔗 复制链接</button>
       </div>
       <div class="quick-regex">
         <span style="font-size:12px;color:var(--text-secondary);line-height:28px;">常用：</span>
@@ -126,11 +163,20 @@
 
     <div class="info-bar">
       <span>匹配数: <strong id="matchCount">0</strong></span>
+      <span class="exec-time" id="execTime"></span>
     </div>
 
     <div class="card">
       <div class="card-title">高亮预览</div>
       <div id="previewArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius: 10px;white-space:pre-wrap;word-break:break-all;min-height:60px;max-height:300px;overflow:auto;"></div>
+    </div>
+
+    <div class="card" id="replaceCard" style="display:none;">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>替换结果</span>
+        <button class="btn btn-secondary" id="copyReplaceBtn" style="padding:6px 12px;font-size:12px;height:28px;">📋 复制</button>
+      </div>
+      <div class="result-output" id="replaceResult"></div>
     </div>
 
     <div class="card">
@@ -148,6 +194,21 @@
       </div>
       <div class="result-output" id="extractResult"></div>
     </div>
+
+    <div class="card">
+      <div class="card-title">代码片段生成</div>
+      <div class="code-tabs" id="codeTabs">
+        <button class="active" data-lang="js">JavaScript</button>
+        <button data-lang="python">Python</button>
+        <button data-lang="go">Go</button>
+        <button data-lang="java">Java</button>
+        <button data-lang="csharp">C#</button>
+      </div>
+      <div style="position:relative;">
+        <div class="code-snippet-area" id="codeSnippet"></div>
+        <button class="code-copy-btn" id="copyCodeBtn">📋 复制</button>
+      </div>
+    </div>
   </div>
 
   <footer class="footer">
@@ -159,30 +220,41 @@
     (function() {
       const regexInput = document.getElementById('regexInput');
       const flagsInput = document.getElementById('flagsInput');
+      const replaceInput = document.getElementById('replaceInput');
       const testArea = document.getElementById('testArea');
       const previewArea = document.getElementById('previewArea');
       const matchList = document.getElementById('matchList');
       const matchCount = document.getElementById('matchCount');
       const errorMsg = document.getElementById('errorMsg');
       const extractResult = document.getElementById('extractResult');
+      const replaceResult = document.getElementById('replaceResult');
+      const replaceCard = document.getElementById('replaceCard');
+      const execTimeEl = document.getElementById('execTime');
 
-      const flagCheckboxes = { g: document.getElementById('flagG'), i: document.getElementById('flagI'), m: document.getElementById('flagM'), s: document.getElementById('flagS') };
+      const flagCheckboxes = {
+        g: document.getElementById('flagG'),
+        i: document.getElementById('flagI'),
+        m: document.getElementById('flagM'),
+        s: document.getElementById('flagS'),
+        u: document.getElementById('flagU'),
+        d: document.getElementById('flagD')
+      };
+
+      let currentLang = 'js';
 
       function syncFlags() {
         let f = '';
-        if (flagCheckboxes.g.checked) f += 'g';
-        if (flagCheckboxes.i.checked) f += 'i';
-        if (flagCheckboxes.m.checked) f += 'm';
-        if (flagCheckboxes.s.checked) f += 's';
+        for (const [key, cb] of Object.entries(flagCheckboxes)) {
+          if (cb.checked) f += key;
+        }
         flagsInput.value = f;
       }
 
       function syncCheckboxes() {
         const f = flagsInput.value;
-        flagCheckboxes.g.checked = f.includes('g');
-        flagCheckboxes.i.checked = f.includes('i');
-        flagCheckboxes.m.checked = f.includes('m');
-        flagCheckboxes.s.checked = f.includes('s');
+        for (const [key, cb] of Object.entries(flagCheckboxes)) {
+          cb.checked = f.includes(key);
+        }
       }
 
       Object.values(flagCheckboxes).forEach(cb => cb.addEventListener('change', () => { syncFlags(); render(); }));
@@ -190,10 +262,24 @@
 
       function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+      // Extract named groups from pattern
+      function extractNamedGroups(pattern) {
+        const names = {};
+        const re = /\(\?<([^>]+)>/g;
+        let idx = 1;
+        let m;
+        while ((m = re.exec(pattern)) !== null) {
+          names[idx] = m[1];
+          idx++;
+        }
+        return names;
+      }
+
       function render() {
         const pattern = regexInput.value;
         const text = testArea.value;
         const flags = flagsInput.value;
+        const replaceVal = replaceInput.value;
 
         if (!pattern || !text) {
           previewArea.textContent = text;
@@ -201,6 +287,10 @@
           matchCount.textContent = '0';
           extractResult.textContent = '';
           errorMsg.textContent = '';
+          execTimeEl.textContent = '';
+          replaceCard.style.display = 'none';
+          generateCode();
+          updateHash();
           return;
         }
 
@@ -213,25 +303,43 @@
           previewArea.textContent = text;
           matchList.innerHTML = '';
           matchCount.textContent = '0';
+          replaceCard.style.display = 'none';
+          execTimeEl.textContent = '';
+          generateCode();
+          updateHash();
           return;
         }
+
+        // Time the matching
+        const t0 = performance.now();
 
         // Find all matches
         const globalRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
         const matches = [];
         let m;
         while ((m = globalRegex.exec(text)) !== null) {
-          matches.push({ value: m[0], index: m.index, groups: m.slice(1) });
+          const matchObj = { value: m[0], index: m.index, endIndex: m.index + m[0].length, groups: m.slice(1), namedGroups: m.groups || {} };
+          // If 'd' flag is available and indices exist
+          if (m.indices) {
+            matchObj.indices = m.indices;
+          }
+          matches.push(matchObj);
           if (!flags.includes('g')) break;
           if (m[0].length === 0) globalRegex.lastIndex++;
         }
 
+        const t1 = performance.now();
+        const elapsed = (t1 - t0).toFixed(2);
+        execTimeEl.textContent = `⏱ 执行时间: ${elapsed} ms`;
+
         matchCount.textContent = matches.length;
+
+        // Named groups info
+        const namedGroupsMap = extractNamedGroups(pattern);
 
         // Highlight preview
         let html = '';
         let lastIdx = 0;
-        const nonGlobalRegex = new RegExp(pattern, flags.replace('g', ''));
         const highlightRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
         let hm;
         let hi = 0;
@@ -251,24 +359,234 @@
         matchList.innerHTML = matches.map((m, i) => {
           let groups = '';
           if (m.groups.length > 0) {
-            groups = m.groups.map((g, gi) =>
-              `<div class="group-item"><span class="group-name">Group ${gi + 1}:</span> ${escapeHtml(g || '(empty)')}</div>`
-            ).join('');
+            groups = m.groups.map((g, gi) => {
+              const name = namedGroupsMap[gi + 1];
+              const label = name ? `Group '${name}'` : `Group ${gi + 1}`;
+              return `<div class="group-item"><span class="group-name">${label}:</span> ${escapeHtml(g || '(empty)')}</div>`;
+            }).join('');
+          }
+          // Also show any named groups not covered by positional
+          if (m.namedGroups && Object.keys(m.namedGroups).length > 0) {
+            // Check if we already showed all named groups positionally
+            const positionalNames = new Set(Object.values(namedGroupsMap));
+            for (const [n, v] of Object.entries(m.namedGroups)) {
+              if (!positionalNames.has(n)) {
+                groups += `<div class="group-item"><span class="group-name">Group '${n}':</span> ${escapeHtml(v || '(empty)')}</div>`;
+              }
+            }
           }
           return `<div class="match-item">
             <span class="match-idx">#${i + 1}</span>
             <code>${escapeHtml(m.value)}</code>
-            <span class="match-pos">index: ${m.index}</span>
+            <span class="match-pos">index: ${m.index}-${m.endIndex}</span>
             ${groups}
           </div>`;
         }).join('');
 
         // Extract result
         extractResult.textContent = matches.map(m => m.value).join('\n');
+
+        // Replace result
+        if (replaceVal !== '') {
+          replaceCard.style.display = '';
+          const replaced = text.replace(new RegExp(pattern, flags), replaceVal);
+          replaceResult.textContent = replaced;
+        } else {
+          replaceCard.style.display = 'none';
+        }
+
+        generateCode();
+        updateHash();
       }
+
+      // --- Shareable URL ---
+      function updateHash() {
+        const data = {
+          r: regexInput.value,
+          f: flagsInput.value,
+          t: testArea.value,
+          rp: replaceInput.value
+        };
+        try {
+          const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+          history.replaceState(null, '', '#' + encoded);
+        } catch (e) { /* ignore */ }
+      }
+
+      function loadFromHash() {
+        const hash = location.hash.slice(1);
+        if (!hash) return;
+        try {
+          const json = decodeURIComponent(escape(atob(hash)));
+          const data = JSON.parse(json);
+          if (data.r !== undefined) regexInput.value = data.r;
+          if (data.f !== undefined) { flagsInput.value = data.f; syncCheckboxes(); }
+          if (data.t !== undefined) testArea.value = data.t;
+          if (data.rp !== undefined) replaceInput.value = data.rp;
+          render();
+        } catch (e) { /* ignore invalid hash */ }
+      }
+
+      document.getElementById('shareBtn').addEventListener('click', async () => {
+        const url = location.href;
+        await copyToClipboard(url);
+        showMessage('success', '链接已复制到剪贴板');
+      });
+
+      // --- Code snippet generator ---
+      function escapeForLang(s, quote) {
+        return s.replace(/\\/g, '\\\\').replace(new RegExp(quote, 'g'), '\\' + quote);
+      }
+
+      function generateCode() {
+        const pattern = regexInput.value;
+        const flags = flagsInput.value;
+        const text = testArea.value;
+        if (!pattern) {
+          document.getElementById('codeSnippet').textContent = '// 输入正则表达式后自动生成代码';
+          return;
+        }
+
+        const escapedPattern = pattern.replace(/\\/g, '\\\\');
+        const escapedText = text.replace(/\\/g, '\\\\');
+
+        let code = '';
+        switch (currentLang) {
+          case 'js': {
+            let jsFlags = flags;
+            code = `const regex = /${pattern}/${jsFlags};\n`;
+            code += `const text = ${JSON.stringify(text)};\n\n`;
+            code += `// 匹配所有\n`;
+            code += `const matches = [...text.matchAll(regex)];\n`;
+            code += `matches.forEach((m, i) => {\n`;
+            code += `  console.log(\`Match #\${i+1}: \${m[0]} at index \${m.index}\`);\n`;
+            code += `});\n\n`;
+            if (replaceInput.value) {
+              code += `// 替换\n`;
+              code += `const replaced = text.replace(regex, ${JSON.stringify(replaceInput.value)});\n`;
+              code += `console.log(replaced);`;
+            }
+            break;
+          }
+          case 'python': {
+            let pyFlags = [];
+            if (flags.includes('i')) pyFlags.push('re.IGNORECASE');
+            if (flags.includes('m')) pyFlags.push('re.MULTILINE');
+            if (flags.includes('s')) pyFlags.push('re.DOTALL');
+            if (flags.includes('u')) pyFlags.push('re.UNICODE');
+            const pyFlagStr = pyFlags.length ? `, ${pyFlags.join(' | ')}` : '';
+            code = `import re\n\n`;
+            code += `pattern = r"${pattern}"\n`;
+            code += `text = ${JSON.stringify(text)}\n\n`;
+            code += `# 匹配所有\n`;
+            code += `matches = re.finditer(pattern, text${pyFlagStr})\n`;
+            code += `for i, m in enumerate(matches):\n`;
+            code += `    print(f"Match #{i+1}: {m.group()} at index {m.start()}-{m.end()}")\n`;
+            if (replaceInput.value) {
+              code += `\n# 替换\n`;
+              code += `replaced = re.sub(pattern, ${JSON.stringify(replaceInput.value)}, text${pyFlagStr})\n`;
+              code += `print(replaced)`;
+            }
+            break;
+          }
+          case 'go': {
+            let goPattern = pattern;
+            // Go uses RE2, wrap inline flags
+            let goPrefix = '';
+            if (flags.includes('i')) goPrefix += '(?i)';
+            if (flags.includes('m')) goPrefix += '(?m)';
+            if (flags.includes('s')) goPrefix += '(?s)';
+            code = `package main\n\nimport (\n\t"fmt"\n\t"regexp"\n)\n\nfunc main() {\n`;
+            code += `\tre := regexp.MustCompile(\`${goPrefix}${goPattern}\`)\n`;
+            code += `\ttext := ${JSON.stringify(text)}\n\n`;
+            code += `\t// 匹配所有\n`;
+            code += `\tmatches := re.FindAllStringSubmatchIndex(text, -1)\n`;
+            code += `\tfor i, m := range matches {\n`;
+            code += `\t\tfmt.Printf("Match #%d: %s at index %d-%d\\n", i+1, text[m[0]:m[1]], m[0], m[1])\n`;
+            code += `\t}\n`;
+            if (replaceInput.value) {
+              code += `\n\t// 替换\n`;
+              code += `\treplaced := re.ReplaceAllString(text, ${JSON.stringify(replaceInput.value)})\n`;
+              code += `\tfmt.Println(replaced)\n`;
+            }
+            code += `}`;
+            break;
+          }
+          case 'java': {
+            let javaFlags = [];
+            if (flags.includes('i')) javaFlags.push('Pattern.CASE_INSENSITIVE');
+            if (flags.includes('m')) javaFlags.push('Pattern.MULTILINE');
+            if (flags.includes('s')) javaFlags.push('Pattern.DOTALL');
+            if (flags.includes('u')) javaFlags.push('Pattern.UNICODE_CHARACTER_CLASS');
+            const javaFlagStr = javaFlags.length ? `, ${javaFlags.join(' | ')}` : '';
+            code = `import java.util.regex.*;\n\n`;
+            code += `Pattern pattern = Pattern.compile(${JSON.stringify(pattern)}${javaFlagStr});\n`;
+            code += `String text = ${JSON.stringify(text)};\n`;
+            code += `Matcher matcher = pattern.matcher(text);\n\n`;
+            code += `// 匹配所有\n`;
+            code += `int i = 0;\n`;
+            code += `while (matcher.find()) {\n`;
+            code += `    System.out.printf("Match #%d: %s at index %d-%d\\n", ++i, matcher.group(), matcher.start(), matcher.end());\n`;
+            code += `}\n`;
+            if (replaceInput.value) {
+              code += `\n// 替换\n`;
+              code += `String replaced = pattern.matcher(text).replaceAll(${JSON.stringify(replaceInput.value)});\n`;
+              code += `System.out.println(replaced);`;
+            }
+            break;
+          }
+          case 'csharp': {
+            let csFlags = [];
+            if (flags.includes('i')) csFlags.push('RegexOptions.IgnoreCase');
+            if (flags.includes('m')) csFlags.push('RegexOptions.Multiline');
+            if (flags.includes('s')) csFlags.push('RegexOptions.Singleline');
+            const csFlagStr = csFlags.length ? `, ${csFlags.join(' | ')}` : '';
+            code = `using System.Text.RegularExpressions;\n\n`;
+            code += `var regex = new Regex(${JSON.stringify(pattern)}${csFlagStr});\n`;
+            code += `var text = ${JSON.stringify(text)};\n\n`;
+            code += `// 匹配所有\n`;
+            code += `var matches = regex.Matches(text);\n`;
+            code += `for (int i = 0; i < matches.Count; i++)\n{\n`;
+            code += `    var m = matches[i];\n`;
+            code += `    Console.WriteLine($"Match #{i+1}: {m.Value} at index {m.Index}-{m.Index + m.Length}");\n`;
+            code += `}\n`;
+            if (replaceInput.value) {
+              code += `\n// 替换\n`;
+              code += `var replaced = regex.Replace(text, ${JSON.stringify(replaceInput.value)});\n`;
+              code += `Console.WriteLine(replaced);`;
+            }
+            break;
+          }
+        }
+        document.getElementById('codeSnippet').textContent = code;
+      }
+
+      // Code tab switching
+      document.getElementById('codeTabs').addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        document.querySelectorAll('#codeTabs button').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentLang = e.target.dataset.lang;
+        generateCode();
+      });
+
+      document.getElementById('copyCodeBtn').addEventListener('click', async () => {
+        const code = document.getElementById('codeSnippet').textContent;
+        if (!code) { showMessage('error', '无代码'); return; }
+        await copyToClipboard(code);
+        showMessage('success', '代码已复制');
+      });
+
+      document.getElementById('copyReplaceBtn').addEventListener('click', async () => {
+        const text = replaceResult.textContent;
+        if (!text) { showMessage('error', '结果为空'); return; }
+        await copyToClipboard(text);
+        showMessage('success', '已复制替换结果');
+      });
 
       regexInput.addEventListener('input', render);
       testArea.addEventListener('input', render);
+      replaceInput.addEventListener('input', render);
 
       // Quick regex buttons
       document.querySelectorAll('.quick-regex button[data-regex]').forEach(btn => {
@@ -297,7 +615,10 @@
         showMessage('success', '已复制');
       });
 
+      // Load from URL hash on page load
+      loadFromHash();
       syncFlags();
+      if (!location.hash) render();
     })();
     (function() {
       var resizer = document.getElementById('resizer');

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>颜色值转换工具 - 在线工具箱</title>
-  <meta name="description" content="HEX/RGB/HSL互转，颜色拾取器">
+  <meta name="description" content="HEX/RGB/HSL/CMYK互转，颜色拾取器，调色板，对比度检查">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .container { max-width: 960px; margin: 0 auto; padding: 16px; }
@@ -49,6 +49,65 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
     .io-flex { display: flex; gap: 0; align-items: stretch; }
     .io-flex > *:not(.resizer) { flex: 1; min-width: 0; }
     @media (max-width: 768px) { .io-flex { flex-direction: column; } }
+
+    /* Color History */
+    .history-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 4px; }
+    .history-swatch {
+      width: 32px; height: 32px; border-radius: 6px; border: 2px solid var(--border, #e0e0e0);
+      cursor: pointer; transition: transform .15s, border-color .15s; position: relative;
+    }
+    .history-swatch:hover { transform: scale(1.2); border-color: var(--primary, #4a90d9); }
+    .history-label { font-size: 12px; color: var(--text-secondary, #999); margin-right: 4px; }
+
+    /* Palette */
+    .palette-section { margin-top: 8px; }
+    .palette-group { margin-bottom: 14px; }
+    .palette-group-title { font-size: 13px; font-weight: 600; color: var(--text-secondary, #666); margin-bottom: 6px; }
+    .palette-colors { display: flex; gap: 8px; flex-wrap: wrap; }
+    .palette-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; transition: transform .15s;
+    }
+    .palette-item:hover { transform: scale(1.08); }
+    .palette-swatch {
+      width: 48px; height: 48px; border-radius: 8px;
+      border: 1px solid var(--border, #e0e0e0); position: relative;
+    }
+    .palette-hex { font-size: 11px; font-family: 'SF Mono','Menlo',monospace; color: var(--text-secondary, #666); }
+
+    /* WCAG */
+    .wcag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .wcag-grid { grid-template-columns: 1fr; } }
+    .wcag-input-group { display: flex; align-items: center; gap: 8px; }
+    .wcag-input-group label { font-size: 13px; min-width: 60px; }
+    .wcag-result { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .wcag-badge {
+      padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    }
+    .wcag-pass { background: #e8f5e9; color: #2e7d32; }
+    .wcag-fail { background: #ffebee; color: #c62828; }
+    .wcag-ratio { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+
+    /* Gradient */
+    .gradient-preview {
+      width: 100%; height: 60px; border-radius: 10px;
+      border: 1px solid var(--border, #e0e0e0); margin: 10px 0;
+    }
+    .gradient-code {
+      background: var(--bg, #f5f5f5); border: 1px solid var(--border, #e0e0e0);
+      border-radius: 8px; padding: 10px 14px; font-family: 'SF Mono','Menlo',monospace;
+      font-size: 13px; word-break: break-all; position: relative;
+    }
+    .gradient-inputs { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .gradient-inputs label { font-size: 13px; }
+
+    /* Copy All Button */
+    .copy-all-btn {
+      background: var(--primary, #4a90d9); color: #fff; border: none; padding: 10px 20px;
+      border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+      transition: background .2s; margin-top: 10px;
+    }
+    .copy-all-btn:hover { background: var(--primary-dark, #3a7bc8); }
 </style>
 </head>
 <body>
@@ -59,7 +118,13 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
   <div class="breadcrumb"><a href="../../index.html">首页</a> / 颜色值转换工具</div>
   <div class="tool-header">
     <h1>🎨 颜色值转换工具</h1>
-    <p>在 HEX、RGB、HSL 等颜色格式之间互相转换</p>
+    <p>HEX / RGB / HSL / CMYK 互转 · 调色板 · 对比度检查 · 渐变生成</p>
+  </div>
+
+  <!-- Color History -->
+  <div class="card" id="historyCard" style="display:none;">
+    <h3>🕐 历史颜色 <span style="font-size:12px;font-weight:normal;color:var(--text-secondary,#999);">（最近15个，点击选用）</span></h3>
+    <div class="history-row" id="historyRow"></div>
   </div>
 
   <div class="io-flex">
@@ -83,13 +148,57 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
         <h3>颜色预览</h3>
         <div class="swatch" id="swatch"></div>
       </div>
+
+      <!-- Color Palette Harmony -->
+      <div class="card">
+        <h3>🎨 调色板配色方案</h3>
+        <div class="palette-section" id="paletteSection"></div>
+      </div>
+
+      <!-- Gradient Generator -->
+      <div class="card">
+        <h3>🌈 渐变生成器</h3>
+        <div class="gradient-inputs">
+          <label>起始色: <input type="color" id="gradFrom" value="#4a90d9"></label>
+          <label>结束色: <input type="color" id="gradTo" value="#ff6b6b"></label>
+          <label>角度: <input type="range" id="gradAngle" min="0" max="360" value="90" style="max-width:120px;"> <span id="gradAngleVal">90°</span></label>
+        </div>
+        <div class="gradient-preview" id="gradientPreview"></div>
+        <div class="gradient-code" id="gradientCode"></div>
+        <button class="copy-all-btn" onclick="copyGradientCode()" style="margin-top:8px;">📋 复制 CSS 代码</button>
+      </div>
     </div>
 
     <div class="resizer" id="resizer"></div>
 
-    <div class="card" style="flex:1;min-width:0;overflow-x:auto;">
-      <h3>转换结果 <span style="font-size:13px;color:var(--text-secondary,#666);font-weight:normal;">（点击可复制）</span></h3>
-      <ul class="result-list" id="results"></ul>
+    <div style="flex:1;min-width:0;overflow-x:auto;">
+      <div class="card">
+        <h3>转换结果 <span style="font-size:13px;color:var(--text-secondary,#666);font-weight:normal;">（点击可复制）</span></h3>
+        <ul class="result-list" id="results"></ul>
+        <button class="copy-all-btn" onclick="copyAllFormats()">📋 复制全部格式</button>
+      </div>
+
+      <!-- WCAG Contrast Checker -->
+      <div class="card">
+        <h3>♿ WCAG 对比度检查</h3>
+        <div class="wcag-grid">
+          <div class="wcag-input-group">
+            <label>背景色:</label>
+            <input type="color" id="wcagBg" value="#ffffff">
+            <input type="text" id="wcagBgHex" value="#FFFFFF" maxlength="7" style="width:100px;" placeholder="#FFFFFF">
+          </div>
+          <div class="wcag-input-group">
+            <label>文字色:</label>
+            <input type="color" id="wcagFg" value="#4a90d9">
+            <input type="text" id="wcagFgHex" value="#4A90D9" maxlength="7" style="width:100px;" placeholder="#000000">
+          </div>
+        </div>
+        <div class="wcag-preview" id="wcagPreview" style="margin:12px 0;padding:16px;border-radius:8px;text-align:center;font-size:16px;">
+          示例文字 Aa Bb Cc 颜色工具
+        </div>
+        <div class="wcag-ratio" id="wcagRatio">对比度: —</div>
+        <div class="wcag-result" id="wcagResult"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -98,6 +207,7 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
 
 <script src="../../assets/js/common.js"></script>
 <script>
+/* ========== 元素引用 ========== */
 const picker = document.getElementById('picker');
 const hexInput = document.getElementById('hexInput');
 const alphaRange = document.getElementById('alphaRange');
@@ -105,6 +215,7 @@ const alphaVal = document.getElementById('alphaVal');
 const swatch = document.getElementById('swatch');
 const results = document.getElementById('results');
 
+/* ========== 颜色转换函数 ========== */
 function hexToRgb(hex) {
   hex = hex.replace('#', '');
   if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
@@ -129,12 +240,208 @@ function rgbToHsl(r, g, b) {
   return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
+function hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r, g, b;
+  if (h < 60)       { r = c; g = x; b = 0; }
+  else if (h < 120) { r = x; g = c; b = 0; }
+  else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; }
+  else if (h < 300) { r = x; g = 0; b = c; }
+  else              { r = c; g = 0; b = x; }
+  const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function rgbToCmyk(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const k = 1 - Math.max(r, g, b);
+  if (k === 1) return { c: 0, m: 0, y: 0, k: 100 };
+  return {
+    c: Math.round(((1 - r - k) / (1 - k)) * 100),
+    m: Math.round(((1 - g - k) / (1 - k)) * 100),
+    y: Math.round(((1 - b - k) / (1 - k)) * 100),
+    k: Math.round(k * 100)
+  };
+}
+
+/* ========== 颜色历史 ========== */
+const HISTORY_KEY = 'colorHistory';
+const MAX_HISTORY = 15;
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveToHistory(hex) {
+  hex = hex.toUpperCase();
+  let hist = getHistory().filter(c => c !== hex);
+  hist.unshift(hex);
+  if (hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  renderHistory();
+}
+
+function renderHistory() {
+  const hist = getHistory();
+  const card = document.getElementById('historyCard');
+  const row = document.getElementById('historyRow');
+  if (hist.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  row.innerHTML = '<span class="history-label">历史:</span>';
+  hist.forEach(hex => {
+    const el = document.createElement('div');
+    el.className = 'history-swatch';
+    el.style.background = hex;
+    el.title = hex;
+    el.onclick = () => { hexInput.value = hex; update(); };
+    row.appendChild(el);
+  });
+}
+
+/* ========== 调色板 ========== */
+function generatePalette(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const { h, s, l } = rgbToHsl(r, g, b);
+
+  const schemes = {
+    '互补色 (Complementary)': [
+      { h: h, s: s, l: l },
+      { h: (h + 180) % 360, s: s, l: l }
+    ],
+    '类似色 (Analogous)': [
+      { h: (h - 30 + 360) % 360, s: s, l: l },
+      { h: h, s: s, l: l },
+      { h: (h + 30) % 360, s: s, l: l }
+    ],
+    '三角色 (Triadic)': [
+      { h: h, s: s, l: l },
+      { h: (h + 120) % 360, s: s, l: l },
+      { h: (h + 240) % 360, s: s, l: l }
+    ],
+    '分裂互补色 (Split-Complementary)': [
+      { h: h, s: s, l: l },
+      { h: (h + 150) % 360, s: s, l: l },
+      { h: (h + 210) % 360, s: s, l: l }
+    ],
+    '矩形色 (Tetradic)': [
+      { h: h, s: s, l: l },
+      { h: (h + 90) % 360, s: s, l: l },
+      { h: (h + 180) % 360, s: s, l: l },
+      { h: (h + 270) % 360, s: s, l: l }
+    ]
+  };
+
+  const section = document.getElementById('paletteSection');
+  section.innerHTML = '';
+
+  Object.entries(schemes).forEach(([name, colors]) => {
+    const group = document.createElement('div');
+    group.className = 'palette-group';
+    group.innerHTML = `<div class="palette-group-title">${name}</div>`;
+    const row = document.createElement('div');
+    row.className = 'palette-colors';
+    colors.forEach(c => {
+      const cHex = hslToHex(c.h, c.s, c.l).toUpperCase();
+      const item = document.createElement('div');
+      item.className = 'palette-item';
+      item.title = '点击复制 ' + cHex;
+      item.innerHTML = `<div class="palette-swatch" style="background:${cHex}"></div><span class="palette-hex">${cHex}</span>`;
+      item.onclick = () => {
+        if (typeof copyToClipboard === 'function') copyToClipboard(cHex);
+        else navigator.clipboard.writeText(cHex);
+        if (typeof showMessage === 'function') showMessage('success', '已复制 ' + cHex);
+      };
+      row.appendChild(item);
+    });
+    group.appendChild(row);
+    section.appendChild(group);
+  });
+}
+
+/* ========== WCAG 对比度 ========== */
+function relativeLuminance(r, g, b) {
+  const [rs, gs, bs] = [r, g, b].map(c => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+function contrastRatio(hex1, hex2) {
+  const rgb1 = hexToRgb(hex1);
+  const rgb2 = hexToRgb(hex2);
+  const l1 = relativeLuminance(rgb1.r, rgb1.g, rgb1.b);
+  const l2 = relativeLuminance(rgb2.r, rgb2.g, rgb2.b);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function updateWcag() {
+  const bgHex = document.getElementById('wcagBgHex').value;
+  const fgHex = document.getElementById('wcagFgHex').value;
+  if (!/^#[0-9a-fA-F]{6}$/.test(bgHex) || !/^#[0-9a-fA-F]{6}$/.test(fgHex)) return;
+
+  const ratio = contrastRatio(bgHex, fgHex);
+  const ratioStr = ratio.toFixed(2);
+
+  const preview = document.getElementById('wcagPreview');
+  preview.style.background = bgHex;
+  preview.style.color = fgHex;
+
+  const ratioEl = document.getElementById('wcagRatio');
+  ratioEl.textContent = `对比度: ${ratioStr}:1`;
+
+  const resultEl = document.getElementById('wcagResult');
+  const aaNormal = ratio >= 4.5;
+  const aaLarge = ratio >= 3;
+  const aaaNormal = ratio >= 7;
+  const aaaLarge = ratio >= 4.5;
+
+  const badge = (label, pass) =>
+    `<span class="wcag-badge ${pass ? 'wcag-pass' : 'wcag-fail'}">${label}: ${pass ? '✓ 通过' : '✗ 未通过'}</span>`;
+
+  resultEl.innerHTML =
+    badge('AA 普通文本', aaNormal) +
+    badge('AA 大文本', aaLarge) +
+    badge('AAA 普通文本', aaaNormal) +
+    badge('AAA 大文本', aaaLarge);
+}
+
+/* ========== 渐变生成 ========== */
+function updateGradient() {
+  const from = document.getElementById('gradFrom').value;
+  const to = document.getElementById('gradTo').value;
+  const angle = document.getElementById('gradAngle').value;
+  document.getElementById('gradAngleVal').textContent = angle + '°';
+
+  const css = `linear-gradient(${angle}deg, ${from}, ${to})`;
+  document.getElementById('gradientPreview').style.background = css;
+  document.getElementById('gradientCode').textContent = `background: ${css};`;
+}
+
+function copyGradientCode() {
+  const code = document.getElementById('gradientCode').textContent;
+  if (typeof copyToClipboard === 'function') copyToClipboard(code);
+  else navigator.clipboard.writeText(code);
+  if (typeof showMessage === 'function') showMessage('success', '已复制渐变 CSS 代码');
+}
+
+/* ========== 主更新 ========== */
+let lastHex = '';
 function update() {
   const hex = hexInput.value;
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
   picker.value = hex;
   const { r, g, b } = hexToRgb(hex);
   const { h, s, l } = rgbToHsl(r, g, b);
+  const cmyk = rgbToCmyk(r, g, b);
   const a = parseInt(alphaRange.value) / 100;
   alphaVal.textContent = Math.round(a * 100) + '%';
 
@@ -147,6 +454,7 @@ function update() {
     { name: 'RGBA', value: `rgba(${r}, ${g}, ${b}, ${a})` },
     { name: 'HSL', value: `hsl(${h}, ${s}%, ${l}%)` },
     { name: 'HSLA', value: `hsla(${h}, ${s}%, ${l}%, ${a})` },
+    { name: 'CMYK', value: `cmyk(${cmyk.c}%, ${cmyk.m}%, ${cmyk.y}%, ${cmyk.k}%)` },
     { name: 'CSS变量', value: `--color: ${hex};` },
     { name: '十进制', value: `${r * 65536 + g * 256 + b}` },
   ];
@@ -163,12 +471,78 @@ function update() {
     };
     results.appendChild(li);
   });
+
+  // Save to history
+  if (hex.toUpperCase() !== lastHex) {
+    lastHex = hex.toUpperCase();
+    saveToHistory(hex);
+  }
+
+  // Update palette
+  generatePalette(hex);
+
+  // Sync gradient "from" color
+  document.getElementById('gradFrom').value = hex;
+  updateGradient();
+
+  // Sync WCAG foreground
+  document.getElementById('wcagFg').value = hex;
+  document.getElementById('wcagFgHex').value = hex.toUpperCase();
+  updateWcag();
 }
 
+/* ========== 复制全部格式 ========== */
+function copyAllFormats() {
+  const liEls = results.querySelectorAll('li');
+  if (liEls.length === 0) return;
+  let text = '=== 颜色转换结果 ===\n';
+  liEls.forEach(li => {
+    const name = li.querySelector('.name').textContent;
+    const value = li.querySelector('.value').textContent;
+    text += `${name}: ${value}\n`;
+  });
+  if (typeof copyToClipboard === 'function') copyToClipboard(text);
+  else navigator.clipboard.writeText(text);
+  if (typeof showMessage === 'function') showMessage('success', '已复制全部格式');
+}
+
+/* ========== 事件绑定 ========== */
 picker.addEventListener('input', () => { hexInput.value = picker.value; update(); });
 hexInput.addEventListener('input', update);
 alphaRange.addEventListener('input', update);
+
+// WCAG bindings
+document.getElementById('wcagBg').addEventListener('input', e => {
+  document.getElementById('wcagBgHex').value = e.target.value.toUpperCase();
+  updateWcag();
+});
+document.getElementById('wcagBgHex').addEventListener('input', e => {
+  if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+    document.getElementById('wcagBg').value = e.target.value;
+  }
+  updateWcag();
+});
+document.getElementById('wcagFg').addEventListener('input', e => {
+  document.getElementById('wcagFgHex').value = e.target.value.toUpperCase();
+  updateWcag();
+});
+document.getElementById('wcagFgHex').addEventListener('input', e => {
+  if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+    document.getElementById('wcagFg').value = e.target.value;
+  }
+  updateWcag();
+});
+
+// Gradient bindings
+document.getElementById('gradFrom').addEventListener('input', updateGradient);
+document.getElementById('gradTo').addEventListener('input', updateGradient);
+document.getElementById('gradAngle').addEventListener('input', updateGradient);
+
+/* ========== 初始化 ========== */
+renderHistory();
 update();
+updateGradient();
+updateWcag();
 
 // 拖拽分隔条逻辑
 (function() {
