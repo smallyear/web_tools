@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>花体英文转换器 - 在线工具箱</title>
-  <meta name="description" content="19种Unicode花体样式转换">
+  <meta name="description" content="多种Unicode花体样式转换">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 .container { max-width: 960px; margin: 0 auto; padding: 16px; }
@@ -18,23 +18,33 @@
 textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; font-size: 14px; resize: vertical; font-family: inherit; box-sizing: border-box; }
 textarea:focus { outline: none; border-color: var(--primary, #4a90d9); }
 .style-card {
-    .style-card > * { flex: 1; min-width: 0; }
-    .style-card { border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card-bg, #fff); }
+    border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card-bg, #fff);
+}
 .style-card:hover { border-color: var(--primary, #4a90d9); background: #f0f6ff; }
-.style-card .info { flex-shrink: 0; }
-.style-card .style-name { font-size: 13px; color: var(--text-secondary, #666); font-weight: 600; }
+.style-card .info { flex: 1; min-width: 0; }
+.style-card .style-name { font-size: 13px; color: var(--text-secondary, #666); font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .style-card .style-preview { font-size: 1.2em; margin-top: 4px; word-break: break-all; line-height: 1.4; }
 .style-card .copy-btn { flex-shrink: 0; padding: 5px 12px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; background: #fff; font-size: 13px; cursor: pointer; transition: all .15s; white-space: nowrap; }
 .style-card .copy-btn:hover { background: var(--primary, #4a90d9); color: #fff; border-color: var(--primary, #4a90d9); }
+.fav-star { cursor: pointer; font-size: 16px; transition: transform .15s; user-select: none; }
+.fav-star:hover { transform: scale(1.3); }
+.fav-star.active { color: #FFD600; }
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
 .toast.show { opacity: 1; }
 footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+
+/* 控制栏 */
+.controls-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.controls-bar input[type="text"] { flex: 1; min-width: 160px; padding: 8px 12px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; font-size: 14px; }
+.controls-bar input[type="text"]:focus { outline: none; border-color: var(--primary, #4a90d9); }
+.size-slider { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary, #666); }
+.size-slider input[type="range"] { width: 120px; }
+
 @media (max-width: 600px) {
   .style-card { flex-direction: column; align-items: flex-start; }
   .style-card .copy-btn { align-self: flex-end; }
 }
 
-    /* 拖拽分隔条 */
     .resizer {
       width: 12px; cursor: col-resize; display: flex; align-items: center;
       justify-content: center; flex-shrink: 0; user-select: none;
@@ -76,6 +86,18 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
 
     <div class="card" style="overflow-x:auto;">
       <h3>转换结果 <span style="font-size:13px;color:var(--text-secondary,#666);font-weight:normal;">（点击复制）</span></h3>
+      <!-- 控制栏 -->
+      <div class="controls-bar">
+        <input type="text" id="styleSearch" placeholder="🔍 搜索样式名称..." oninput="render()">
+        <div class="size-slider">
+          <span>字号</span>
+          <input type="range" id="fontSizeSlider" min="12" max="36" value="18" oninput="updateFontSize()">
+          <span id="fontSizeLabel">18px</span>
+        </div>
+        <label style="font-size:13px;color:var(--text-secondary,#666);display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" id="showFavOnly" onchange="render()"> ⭐ 仅收藏
+        </label>
+      </div>
       <div id="styles"></div>
     </div>
   </div>
@@ -98,6 +120,21 @@ function copyText(text) {
   if (typeof copyToClipboard === 'function') copyToClipboard(text);
   else navigator.clipboard.writeText(text);
   showToast('已复制！');
+}
+
+// Favorites
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem('fancyTextFavorites') || '[]'); } catch { return []; }
+}
+function saveFavorites(favs) {
+  localStorage.setItem('fancyTextFavorites', JSON.stringify(favs));
+}
+function toggleFavorite(idx) {
+  const favs = getFavorites();
+  const i = favs.indexOf(idx);
+  if (i >= 0) favs.splice(i, 1); else favs.push(idx);
+  saveFavorites(favs);
+  render();
 }
 
 // Unicode character maps for styles
@@ -181,9 +218,33 @@ const styles = [
     digits: '0123456789'
   },
   {
-    name: 'Tiny Caps（小型大写字母）',
+    name: 'Small Caps（小型大写字母）',
     upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
     lower: 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ',
+    digits: '0123456789'
+  },
+  {
+    name: 'Superscript（上标）',
+    upper: 'ᴬᴮᶜᴰᴱᶠᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾQᴿˢᵀᵁⱽᵂˣʸᶻ',
+    lower: 'ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖqʳˢᵗᵘᵛʷˣʸᶻ',
+    digits: '⁰¹²³⁴⁵⁶⁷⁸⁹'
+  },
+  {
+    name: 'Subscript（下标）',
+    upper: 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘQʀꜱᴛᴜᴠᴡxʏᴢ',
+    lower: 'ₐᵦᶜᵈₑfgₕᵢⱼₖₗₘₙₒₚqᵣₛₜᵤᵥwₓᵧz',
+    digits: '₀₁₂₃₄₅₆₇₈₉'
+  },
+  {
+    name: 'Inverted（倒置文本）',
+    upper: '∀qƆpƎℲ⅁HIſʞ˥WNOԀQɹS⊥∩ΛMX⅄Z',
+    lower: 'ɐqɔpǝɟɓɥıɾʞlɯuodbɹsʇnʌʍxʎz',
+    digits: '0₁ᄅƐㄣϛ9Ɫ86'
+  },
+  {
+    name: 'Mirrored（镜像文本）',
+    upper: 'AᙠƆᗡƎꟻ⅁HIЯK⅃MИOꟼỌЯS⊥UVWXYZ',
+    lower: 'Adɔbɘꟻǫʜiᴙklmnoqpᴙꙅƚuvwxγz',
     digits: '0123456789'
   },
   {
@@ -218,19 +279,15 @@ const styles = [
   }
 ];
 
-const aCode = 'A'.charCodeAt(0);
-const laCode = 'a'.charCodeAt(0);
-const dCode = '0'.charCodeAt(0);
-
 function convert(text, style) {
   let result = '';
   for (const ch of text) {
     const code = ch.charCodeAt(0);
-    if (code >= 65 && code <= 90) { // A-Z
+    if (code >= 65 && code <= 90) {
       result += style.upper[code - 65] || ch;
-    } else if (code >= 97 && code <= 122) { // a-z
+    } else if (code >= 97 && code <= 122) {
       result += style.lower[code - 97] || ch;
-    } else if (code >= 48 && code <= 57) { // 0-9
+    } else if (code >= 48 && code <= 57) {
       result += style.digits[code - 48] || ch;
     } else {
       result += ch;
@@ -240,20 +297,42 @@ function convert(text, style) {
 }
 
 let currentTexts = [];
+let previewFontSize = 18;
+
+function updateFontSize() {
+  previewFontSize = document.getElementById('fontSizeSlider').value;
+  document.getElementById('fontSizeLabel').textContent = previewFontSize + 'px';
+  document.querySelectorAll('.style-preview').forEach(el => el.style.fontSize = previewFontSize + 'px');
+}
+
 function render() {
   const text = document.getElementById('input').value || 'Hello World';
   const container = document.getElementById('styles');
+  const query = (document.getElementById('styleSearch').value || '').toLowerCase();
+  const showFavOnly = document.getElementById('showFavOnly').checked;
+  const favs = getFavorites();
+
   container.innerHTML = '';
   currentTexts = [];
+  let visibleCount = 0;
+
   styles.forEach((style, idx) => {
+    // Filter
+    if (query && !style.name.toLowerCase().includes(query)) return;
+    if (showFavOnly && !favs.includes(idx)) return;
+
     const converted = convert(text, style);
     currentTexts[idx] = converted;
+    const isFav = favs.includes(idx);
     const card = document.createElement('div');
     card.className = 'style-card';
     card.innerHTML = `
       <div class="info">
-        <div class="style-name">${style.name}</div>
-        <div class="style-preview">${converted}</div>
+        <div class="style-name">
+          <span class="fav-star ${isFav ? 'active' : ''}" data-idx="${idx}" title="收藏">${isFav ? '★' : '☆'}</span>
+          ${style.name}
+        </div>
+        <div class="style-preview" style="font-size:${previewFontSize}px">${converted}</div>
       </div>
       <button class="copy-btn" data-idx="${idx}">📋 复制</button>
     `;
@@ -261,8 +340,17 @@ function render() {
       e.stopPropagation();
       copyText(currentTexts[idx]);
     });
+    card.querySelector('.fav-star').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(idx);
+    });
     container.appendChild(card);
+    visibleCount++;
   });
+
+  if (visibleCount === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-secondary,#999);padding:24px;">未找到匹配的样式</div>';
+  }
 }
 
 document.getElementById('input').addEventListener('input', render);
