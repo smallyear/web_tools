@@ -1,173 +1,884 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>图片格式转换 - Web工具箱</title>
-  <meta name="description" content="JPG/PNG/WebP/BMP互转，支持质量调节">
-<link rel="stylesheet" href="../../assets/css/style.css">
-<style>
-.upload-area{border:2px dashed #ccc;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .3s,background .3s;margin-bottom:16px}
-.upload-area:hover,.upload-area.dragover{border-color:#4a90d9;background:#f0f6ff}
-.upload-area .icon{font-size:48px;margin-bottom:12px}
-.upload-area p{color:#666;font-size:14px;margin:4px 0}
-.preview-wrap{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
-.preview-item{flex:1;min-width:200px;text-align:center}
-.preview-item img{max-width:100%;max-height:300px;border:1px solid #ddd;border-radius: 10px;display:block;margin:0 auto 8px}
-.preview-label{font-weight:600;font-size:14px;color:#333;margin-bottom:6px}
-.size-info{background:#f5f5f5;border-radius: 10px;padding:12px;margin-bottom:16px;font-size:14px;display:flex;gap:24px;flex-wrap:wrap;align-items:center}
-.size-info span{display:inline-flex;align-items:center;gap:4px}
-.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
-.controls .form-group{margin-bottom:0}
-.range-wrap{display:flex;align-items:center;gap:8px}
-.range-wrap input[type=range]{width:160px}
-.range-val{min-width:40px;font-size:13px;color:#555}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.hidden{display:none}
-@media(max-width:768px){.preview-wrap{flex-direction:column}.controls{flex-direction:column;align-items:stretch}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片格式转换 - Web工具箱</title>
+  <meta name="description" content="JPG/PNG/WebP/BMP/ICO互转，支持批量转换、透明度保留、尺寸调整">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .3s, background .3s;
+      margin-bottom: 16px;
+      background: #FAFAFA;
+    }
+
+    .upload-area:hover,
+    .upload-area.dragover {
+      border-color: var(--primary);
+      background: #F0F7FF;
+    }
+
+    .upload-area .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .upload-area p {
+      color: var(--text-secondary, #666);
+      font-size: 14px;
+      margin: 4px 0;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mode-tab {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #fafafa;
+      transition: all 0.2s;
+    }
+
+    .mode-tab.active {
+      background: var(--primary, #4a90d9);
+      color: white;
+      border-color: var(--primary, #4a90d9);
+    }
+
+    .preview-wrap {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .preview-item {
+      flex: 1;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    .preview-item img {
+      max-width: 100%;
+      max-height: 300px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      display: block;
+      margin: 0 auto 8px;
+    }
+
+    .preview-label {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    .size-info {
+      background: #f5f5f5;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .size-info span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 16px;
+      background: white;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .controls .form-group {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #555;
+    }
+
+    .form-select,
+    .form-input {
+      padding: 8px 12px;
+      border: 1px solid var(--border, #ddd);
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .form-input {
+      width: 80px;
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .range-wrap input[type=range] {
+      width: 160px;
+    }
+
+    .range-val {
+      min-width: 40px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .resize-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .resize-row span {
+      color: #888;
+    }
+
+    /* 批量模式 */
+    .batch-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    .batch-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border, #ddd);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #fafafa;
+    }
+
+    .batch-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border, #ddd);
+    }
+
+    .batch-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .batch-item-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .batch-item-size {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .batch-item-result {
+      font-size: 12px;
+      color: #27ae60;
+      font-weight: 500;
+    }
+
+    .batch-item-status {
+      font-size: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .preview-wrap {
+        flex-direction: column;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .resize-row {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
 </head>
 <body>
-<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
-<div class="container">
-<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>图片格式转换</span></div>
-<div class="card tool-header"><h1>🖼️ 图片格式转换</h1><p>上传图片，转换为 PNG、JPEG、WebP、BMP 格式</p></div>
-<div class="card">
-<div class="upload-area" id="dropZone">
-<div class="icon">📤</div>
-<p><strong>点击上传</strong> 或 拖拽图片到此处</p>
-<p style="color:#999;font-size:12px">支持 PNG、JPEG、WebP、BMP、GIF 等格式</p>
-<input type="file" id="fileInput" accept="image/*" style="display:none">
-</div>
-<div id="controlsSection" class="hidden">
-<div class="controls">
-<div class="form-group">
-<label class="form-label">输出格式</label>
-<select id="formatSelect" class="form-select" style="width:140px">
-<option value="image/png">PNG</option>
-<option value="image/jpeg" selected>JPEG</option>
-<option value="image/webp">WebP</option>
-<option value="image/bmp">BMP</option>
-</select>
-</div>
-<div class="form-group" id="qualityGroup">
-<label class="form-label">质量</label>
-<div class="range-wrap">
-<input type="range" id="qualitySlider" min="0.1" max="1" step="0.05" value="0.85">
-<span class="range-val" id="qualityVal">0.85</span>
-</div>
-</div>
-<div class="form-group">
-<button class="btn btn-primary" onclick="convertImage()">🔄 转换</button>
-</div>
-</div>
-</div>
-<div id="resultSection" class="hidden">
-<div class="size-info">
-<span>📄 原始: <strong id="origSize">-</strong></span>
-<span>📦 转换后: <strong id="convSize">-</strong></span>
-<span id="sizeDiff"></span>
-</div>
-<div class="preview-wrap">
-<div class="preview-item">
-<div class="preview-label">原图</div>
-<img id="origPreview" src="" alt="原图">
-</div>
-<div class="preview-item">
-<div class="preview-label">转换结果</div>
-<img id="convPreview" src="" alt="转换结果">
-</div>
-</div>
-<div class="btn-row">
-<button class="btn btn-success" onclick="downloadResult()">📥 下载转换图片</button>
-<button class="btn btn-secondary" onclick="resetAll()">🔄 重新上传</button>
-</div>
-</div>
-</div>
-</div>
-<footer class="footer"><p>Web工具箱 © 2024</p></footer>
-<script src="../../assets/js/common.js"></script>
-<script>
-const dropZone=document.getElementById('dropZone');
-const fileInput=document.getElementById('fileInput');
-const formatSelect=document.getElementById('formatSelect');
-const qualitySlider=document.getElementById('qualitySlider');
-const qualityVal=document.getElementById('qualityVal');
-const qualityGroup=document.getElementById('qualityGroup');
-let originalFile=null,convertedBlob=null,originalImg=null;
+  <nav class="navbar">
+    <div class="container">
+      <a href="../../" class="logo">🛠️ Web工具箱</a>
+    </div>
+  </nav>
 
-dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')});
-dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
-dropZone.addEventListener('click',()=>fileInput.click());
-fileInput.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0])});
+  <div class="container">
+    <div class="breadcrumb"><a href="../../">首页</a> &gt; <span>图片格式转换</span></div>
+    <div class="card tool-header">
+      <h1>🖼️ 图片格式转换</h1>
+      <p>上传图片，转换为 PNG、JPEG、WebP、BMP、ICO 格式，支持批量转换</p>
+    </div>
 
-qualitySlider.addEventListener('input',()=>{qualityVal.textContent=qualitySlider.value});
-formatSelect.addEventListener('change',()=>{
-const f=formatSelect.value;
-qualityGroup.style.display=(f==='image/jpeg'||f==='image/webp')?'':'none';
-});
+    <!-- 模式切换 -->
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="single">📷 单张转换</div>
+      <div class="mode-tab" data-mode="batch">📦 批量转换</div>
+    </div>
 
-function handleFile(file){
-if(!file||!file.type.startsWith('image/')){showMessage('error','请选择图片文件');return}
-originalFile=file;
-const reader=new FileReader();
-reader.onload=function(e){
-originalImg=new Image();
-originalImg.onload=function(){
-document.getElementById('origPreview').src=e.target.result;
-document.getElementById('origSize').textContent=formatFileSize(file.size);
-document.getElementById('controlsSection').classList.remove('hidden');
-document.getElementById('resultSection').classList.add('hidden');
-};
-originalImg.src=e.target.result;
-};
-reader.readAsDataURL(file);
-}
+    <div class="card">
+      <div class="upload-area" id="dropZone">
+        <div class="icon">📤</div>
+        <p><strong>点击上传</strong> 或 拖拽图片到此处</p>
+        <p style="color:#999;font-size:12px" id="uploadHint">支持 PNG、JPEG、WebP、BMP、GIF 等格式</p>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+      </div>
 
-function convertImage(){
-if(!originalImg){showMessage('error','请先上传图片');return}
-const canvas=document.createElement('canvas');
-canvas.width=originalImg.width;
-canvas.height=originalImg.height;
-const ctx=canvas.getContext('2d');
-ctx.drawImage(originalImg,0,0);
-const format=formatSelect.value;
-const quality=parseFloat(qualitySlider.value);
-canvas.toBlob(function(blob){
-if(!blob){showMessage('error','转换失败');return}
-convertedBlob=blob;
-const url=URL.createObjectURL(blob);
-document.getElementById('convPreview').src=url;
-document.getElementById('convSize').textContent=formatFileSize(blob.size);
-const diff=blob.size-originalFile.size;
-const pct=((diff/originalFile.size)*100).toFixed(1);
-const diffEl=document.getElementById('sizeDiff');
-if(diff>0){diffEl.innerHTML='📈 增大 <strong>'+pct+'%</strong>';diffEl.style.color='#e67e22'}
-else{diffEl.innerHTML='📉 缩小 <strong>'+Math.abs(pct)+'%</strong>';diffEl.style.color='#27ae60'}
-document.getElementById('resultSection').classList.remove('hidden');
-showMessage('success','转换完成！');
-},format,quality);
-}
+      <!-- 单张转换控制 -->
+      <div id="controlsSection" class="hidden">
+        <div class="controls">
+          <div class="form-group">
+            <label class="form-label">输出格式</label>
+            <select id="formatSelect" class="form-select" style="width:140px">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg" selected>JPEG</option>
+              <option value="image/webp">WebP</option>
+              <option value="image/bmp">BMP</option>
+              <option value="image/x-icon">ICO (Favicon)</option>
+            </select>
+          </div>
+          <div class="form-group" id="qualityGroup">
+            <label class="form-label">质量</label>
+            <div class="range-wrap">
+              <input type="range" id="qualitySlider" min="0.1" max="1" step="0.05" value="0.85">
+              <span class="range-val" id="qualityVal">0.85</span>
+            </div>
+          </div>
+          <div class="form-group" id="transparencyGroup">
+            <label class="form-checkbox">
+              <input type="checkbox" id="preserveTransparency" checked> 保留透明度
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-label">调整尺寸（可选）</label>
+            <div class="resize-row">
+              <input type="number" id="resizeWidth" class="form-input" placeholder="宽度" min="1">
+              <span>×</span>
+              <input type="number" id="resizeHeight" class="form-input" placeholder="高度" min="1">
+              <span>px</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <button class="btn btn-primary" onclick="convertImage()">🔄 转换</button>
+          </div>
+        </div>
+      </div>
 
-function downloadResult(){
-if(!convertedBlob)return;
-const ext={image/png:'.png',image/jpeg:'.jpg',image/webp:'.webp',image/bmp:'.bmp'};
-const format=formatSelect.value;
-const a=document.createElement('a');
-a.href=URL.createObjectURL(convertedBlob);
-a.download=(originalFile.name.replace(/\.[^.]+$/,'')||'image')+(ext[format]||'.png');
-a.click();
-}
+      <!-- 单张结果 -->
+      <div id="resultSection" class="hidden">
+        <div class="size-info">
+          <span>📄 原始: <strong id="origSize">-</strong></span>
+          <span>📦 转换后: <strong id="convSize">-</strong></span>
+          <span id="sizeDiff"></span>
+        </div>
+        <div class="preview-wrap">
+          <div class="preview-item">
+            <div class="preview-label">原图</div>
+            <img id="origPreview" src="" alt="原图">
+          </div>
+          <div class="preview-item">
+            <div class="preview-label">转换结果</div>
+            <img id="convPreview" src="" alt="转换结果">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="downloadResult()">📥 下载转换图片</button>
+          <button class="btn btn-secondary" onclick="resetAll()">🔄 重新上传</button>
+        </div>
+      </div>
 
-function resetAll(){
-originalFile=null;convertedBlob=null;originalImg=null;
-fileInput.value='';
-document.getElementById('controlsSection').classList.add('hidden');
-document.getElementById('resultSection').classList.add('hidden');
-document.getElementById('origPreview').src='';
-document.getElementById('convPreview').src='';
-}
-</script>
+      <!-- 批量模式控制 -->
+      <div id="batchControlsSection" class="hidden">
+        <div class="controls" style="flex-wrap: wrap;">
+          <div class="form-group">
+            <label class="form-label">输出格式</label>
+            <select id="batchFormatSelect" class="form-select" style="width:140px">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg" selected>JPEG</option>
+              <option value="image/webp">WebP</option>
+              <option value="image/bmp">BMP</option>
+              <option value="image/x-icon">ICO (Favicon)</option>
+            </select>
+          </div>
+          <div class="form-group" id="batchQualityGroup">
+            <label class="form-label">质量</label>
+            <div class="range-wrap">
+              <input type="range" id="batchQualitySlider" min="0.1" max="1" step="0.05" value="0.85">
+              <span class="range-val" id="batchQualityVal">0.85</span>
+            </div>
+          </div>
+          <div class="form-group" id="batchTransparencyGroup">
+            <label class="form-checkbox">
+              <input type="checkbox" id="batchPreserveTransparency" checked> 保留透明度
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-label">调整尺寸（可选）</label>
+            <div class="resize-row">
+              <input type="number" id="batchResizeWidth" class="form-input" placeholder="宽度" min="1">
+              <span>×</span>
+              <input type="number" id="batchResizeHeight" class="form-input" placeholder="高度" min="1">
+              <span>px</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <button class="btn btn-primary" id="batchConvertBtn" onclick="convertBatch()">🔄 转换全部</button>
+          </div>
+        </div>
+        <div class="batch-list" id="batchList"></div>
+        <div class="btn-row">
+          <button class="btn btn-success" id="batchDownloadBtn" onclick="downloadBatchZip()" disabled>📦 下载全部 (ZIP)</button>
+          <button class="btn btn-secondary" onclick="resetAll()">🔄 重新上传</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer"><p>Web工具箱 © 2024</p></footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const formatSelect = document.getElementById('formatSelect');
+    const qualitySlider = document.getElementById('qualitySlider');
+    const qualityVal = document.getElementById('qualityVal');
+    const qualityGroup = document.getElementById('qualityGroup');
+    const preserveTransparency = document.getElementById('preserveTransparency');
+    const transparencyGroup = document.getElementById('transparencyGroup');
+    const resizeWidth = document.getElementById('resizeWidth');
+    const resizeHeight = document.getElementById('resizeHeight');
+
+    // 批量元素
+    const batchFormatSelect = document.getElementById('batchFormatSelect');
+    const batchQualitySlider = document.getElementById('batchQualitySlider');
+    const batchQualityVal = document.getElementById('batchQualityVal');
+    const batchQualityGroup = document.getElementById('batchQualityGroup');
+    const batchPreserveTransparency = document.getElementById('batchPreserveTransparency');
+    const batchTransparencyGroup = document.getElementById('batchTransparencyGroup');
+    const batchResizeWidth = document.getElementById('batchResizeWidth');
+    const batchResizeHeight = document.getElementById('batchResizeHeight');
+    const batchList = document.getElementById('batchList');
+
+    let currentMode = 'single';
+    let originalFile = null;
+    let convertedBlob = null;
+    let originalImg = null;
+    let batchFiles = [];
+    let batchResults = [];
+
+    // 模式切换
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentMode = tab.dataset.mode;
+        resetAll();
+      });
+    });
+
+    // 拖拽上传
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      if (files.length === 0) { showMessage('error', '请选择图片文件'); return; }
+      if (currentMode === 'batch') handleBatchFiles(files);
+      else handleFile(files[0]);
+    });
+    dropZone.addEventListener('click', () => {
+      fileInput.multiple = currentMode === 'batch';
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', e => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      if (currentMode === 'batch') handleBatchFiles(files);
+      else handleFile(files[0]);
+    });
+
+    // 质量滑块
+    qualitySlider.addEventListener('input', () => { qualityVal.textContent = qualitySlider.value; });
+    batchQualitySlider.addEventListener('input', () => { batchQualityVal.textContent = batchQualitySlider.value; });
+
+    // 格式切换 - 显示/隐藏质量控件
+    function updateQualityVisibility(formatSelectEl, qualityGroupEl, transparencyGroupEl) {
+      const f = formatSelectEl.value;
+      qualityGroupEl.style.display = (f === 'image/jpeg' || f === 'image/webp') ? '' : 'none';
+      transparencyGroupEl.style.display = (f === 'image/png' || f === 'image/webp') ? '' : 'none';
+    }
+
+    formatSelect.addEventListener('change', () => updateQualityVisibility(formatSelect, qualityGroup, transparencyGroup));
+    batchFormatSelect.addEventListener('change', () => updateQualityVisibility(batchFormatSelect, batchQualityGroup, batchTransparencyGroup));
+
+    // 初始化
+    updateQualityVisibility(formatSelect, qualityGroup, transparencyGroup);
+
+    // === 单张转换 ===
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showMessage('error', '请选择图片文件');
+        return;
+      }
+      originalFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        originalImg = new Image();
+        originalImg.onload = function() {
+          document.getElementById('origPreview').src = e.target.result;
+          document.getElementById('origSize').textContent = formatFileSize(file.size);
+          document.getElementById('controlsSection').classList.remove('hidden');
+          document.getElementById('resultSection').classList.add('hidden');
+          document.getElementById('batchControlsSection').classList.add('hidden');
+        };
+        originalImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function convertImage() {
+      if (!originalImg) { showMessage('error', '请先上传图片'); return; }
+
+      const canvas = document.createElement('canvas');
+      let w = originalImg.width;
+      let h = originalImg.height;
+
+      // 调整尺寸
+      const newW = parseInt(resizeWidth.value) || 0;
+      const newH = parseInt(resizeHeight.value) || 0;
+      if (newW > 0 || newH > 0) {
+        const ratio = w / h;
+        if (newW > 0 && newH > 0) {
+          w = newW;
+          h = newH;
+        } else if (newW > 0) {
+          w = newW;
+          h = Math.round(newW / ratio);
+        } else {
+          h = newH;
+          w = Math.round(newH * ratio);
+        }
+      }
+
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // 透明度处理
+      const format = formatSelect.value;
+      if (!preserveTransparency.checked || format === 'image/jpeg' || format === 'image/bmp') {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      ctx.drawImage(originalImg, 0, 0, w, h);
+
+      // ICO特殊处理 - 生成16x16和32x32多尺寸
+      if (format === 'image/x-icon') {
+        convertToIco(canvas, w, h);
+        return;
+      }
+
+      const quality = parseFloat(qualitySlider.value);
+      canvas.toBlob(function(blob) {
+        if (!blob) { showMessage('error', '转换失败'); return; }
+        convertedBlob = blob;
+        const url = URL.createObjectURL(blob);
+        document.getElementById('convPreview').src = url;
+        document.getElementById('convSize').textContent = formatFileSize(blob.size);
+        const diff = blob.size - originalFile.size;
+        const pct = ((diff / originalFile.size) * 100).toFixed(1);
+        const diffEl = document.getElementById('sizeDiff');
+        if (diff > 0) {
+          diffEl.innerHTML = '📈 增大 <strong>' + pct + '%</strong>';
+          diffEl.style.color = '#e67e22';
+        } else {
+          diffEl.innerHTML = '📉 缩小 <strong>' + Math.abs(pct) + '%</strong>';
+          diffEl.style.color = '#27ae60';
+        }
+        document.getElementById('resultSection').classList.remove('hidden');
+        showMessage('success', '转换完成！');
+      }, format, quality);
+    }
+
+    // ICO生成（使用canvas生成16x16和32x32 BMP数据）
+    function convertToIco(sourceCanvas, origW, origH) {
+      const sizes = [16, 32, 48];
+      const images = sizes.map(size => {
+        const c = document.createElement('canvas');
+        c.width = size;
+        c.height = size;
+        const cx = c.getContext('2d');
+        cx.drawImage(sourceCanvas, 0, 0, size, size);
+        return c;
+      });
+
+      // 构建ICO文件
+      const icoBlob = buildIcoFile(images);
+      convertedBlob = icoBlob;
+      convertedBlob._ext = 'ico';
+      const url = URL.createObjectURL(icoBlob);
+      document.getElementById('convPreview').src = url;
+      document.getElementById('convSize').textContent = formatFileSize(icoBlob.size);
+      document.getElementById('resultSection').classList.remove('hidden');
+      const diffEl = document.getElementById('sizeDiff');
+      diffEl.innerHTML = '';
+      showMessage('success', 'ICO转换完成！');
+    }
+
+    function buildIcoFile(canvases) {
+      // ICO header: 6 bytes
+      // ICO entry: 16 bytes each
+      // Image data: BMP DIB + pixel data
+      const entries = [];
+      const imageDataList = [];
+
+      canvases.forEach(canvas => {
+        const w = canvas.width;
+        const h = canvas.height;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const pixels = imgData.data;
+
+        // BMP信息头 (40 bytes)
+        const dibSize = 40;
+        // 像素数据: BGRA, bottom-up, 每行对齐到4字节
+        const rowSize = Math.ceil((w * 4) / 4) * 4;
+        const pixelDataSize = rowSize * h;
+        // AND掩码: 1bpp, 每行对齐到4字节
+        const andRowSize = Math.ceil(w / 32) * 4;
+        const andMaskSize = andRowSize * h;
+        const totalSize = dibSize + pixelDataSize + andMaskSize;
+
+        // DIB header
+        const dib = new ArrayBuffer(dibSize);
+        const dibView = new DataView(dib);
+        dibView.setUint32(0, dibSize, true); // header size
+        dibView.setInt32(4, w, true);  // width
+        dibView.setInt32(8, h * 2, true); // height (doubled for ICO)
+        dibView.setUint16(12, 1, true); // planes
+        dibView.setUint16(14, 32, true); // bpp
+        dibView.setUint32(16, 0, true); // compression
+        dibView.setUint32(20, pixelDataSize + andMaskSize, true); // image size
+
+        // Pixel data (BGRA, bottom-up)
+        const pixelBuf = new Uint8Array(pixelDataSize);
+        for (let y = 0; y < h; y++) {
+          const srcY = h - 1 - y; // bottom-up
+          for (let x = 0; x < w; x++) {
+            const si = (srcY * w + x) * 4;
+            const di = y * rowSize + x * 4;
+            pixelBuf[di] = pixels[si + 2];     // B
+            pixelBuf[di + 1] = pixels[si + 1]; // G
+            pixelBuf[di + 2] = pixels[si];     // R
+            pixelBuf[di + 3] = pixels[si + 3]; // A
+          }
+        }
+
+        // AND mask (all zeros = fully opaque based on alpha)
+        const andMask = new Uint8Array(andMaskSize);
+
+        const imageData = new Uint8Array(totalSize);
+        imageData.set(new Uint8Array(dib), 0);
+        imageData.set(pixelBuf, dibSize);
+        imageData.set(andMask, dibSize + pixelDataSize);
+        imageDataList.push(imageData);
+
+        entries.push({
+          width: w === 256 ? 0 : w,
+          height: h === 256 ? 0 : h,
+          size: totalSize
+        });
+      });
+
+      // ICO header
+      const headerSize = 6 + entries.length * 16;
+      let totalDataSize = 0;
+      imageDataList.forEach(d => totalDataSize += d.length);
+
+      const ico = new Uint8Array(headerSize + totalDataSize);
+      const view = new DataView(ico.buffer);
+
+      // Header
+      view.setUint16(0, 0, true); // reserved
+      view.setUint16(2, 1, true); // type: ICO
+      view.setUint16(4, entries.length, true); // count
+
+      // Entries
+      let offset = headerSize;
+      entries.forEach((entry, i) => {
+        const pos = 6 + i * 16;
+        ico[pos] = entry.width;
+        ico[pos + 1] = entry.height;
+        ico[pos + 2] = 0; // colors
+        ico[pos + 3] = 0; // reserved
+        view.setUint16(pos + 4, 1, true); // planes
+        view.setUint16(pos + 6, 32, true); // bpp
+        view.setUint32(pos + 8, entry.size, true); // data size
+        view.setUint32(pos + 12, offset, true); // data offset
+        offset += entry.size;
+      });
+
+      // Image data
+      offset = headerSize;
+      imageDataList.forEach(d => {
+        ico.set(d, offset);
+        offset += d.length;
+      });
+
+      return new Blob([ico], { type: 'image/x-icon' });
+    }
+
+    // === 批量转换 ===
+    function handleBatchFiles(files) {
+      const valid = files.filter(f => f.type.startsWith('image/'));
+      if (valid.length === 0) { showMessage('error', '没有有效的图片文件'); return; }
+      batchFiles = valid;
+      batchResults = [];
+      document.getElementById('controlsSection').classList.add('hidden');
+      document.getElementById('resultSection').classList.add('hidden');
+      document.getElementById('batchControlsSection').classList.remove('hidden');
+      document.getElementById('batchDownloadBtn').disabled = true;
+      renderBatchList();
+      showMessage('info', `已选择 ${valid.length} 张图片`);
+    }
+
+    function renderBatchList() {
+      batchList.innerHTML = '';
+      batchFiles.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.className = 'batch-item';
+        item.id = `batch-item-${idx}`;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = item.querySelector('img');
+          if (img) img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        item.innerHTML = `
+          <img src="" alt="${file.name}">
+          <div class="batch-item-info">
+            <div class="batch-item-name">${file.name}</div>
+            <div class="batch-item-size">原始: ${formatFileSize(file.size)}</div>
+            <div class="batch-item-result" id="batch-result-${idx}">等待转换...</div>
+          </div>
+          <div class="batch-item-status" id="batch-status-${idx}">⏳</div>
+        `;
+        batchList.appendChild(item);
+      });
+    }
+
+    function convertSingleBatch(file, format, quality, rw, rh) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            if (rw > 0 || rh > 0) {
+              const ratio = w / h;
+              if (rw > 0 && rh > 0) { w = rw; h = rh; }
+              else if (rw > 0) { w = rw; h = Math.round(rw / ratio); }
+              else { h = rh; w = Math.round(rh * ratio); }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!batchPreserveTransparency.checked || format === 'image/jpeg' || format === 'image/bmp') {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, w, h);
+            }
+            ctx.drawImage(img, 0, 0, w, h);
+
+            if (format === 'image/x-icon') {
+              const icoBlob = buildIcoFile([canvas]);
+              resolve({ blob: icoBlob, ext: 'ico' });
+              return;
+            }
+
+            canvas.toBlob((blob) => {
+              if (!blob) { reject(new Error('转换失败')); return; }
+              resolve({ blob, ext: format.split('/')[1].replace('jpeg', 'jpg').replace('x-icon', 'ico') });
+            }, format, quality);
+          };
+          img.onerror = () => reject(new Error('图片加载失败'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function convertBatch() {
+      if (batchFiles.length === 0) { showMessage('warning', '请先上传图片'); return; }
+
+      const format = batchFormatSelect.value;
+      const quality = parseFloat(batchQualitySlider.value);
+      const rw = parseInt(batchResizeWidth.value) || 0;
+      const rh = parseInt(batchResizeHeight.value) || 0;
+
+      const btn = document.getElementById('batchConvertBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ 转换中...';
+      batchResults = [];
+
+      for (let i = 0; i < batchFiles.length; i++) {
+        const statusEl = document.getElementById(`batch-status-${i}`);
+        const resultEl = document.getElementById(`batch-result-${i}`);
+        statusEl.textContent = '⏳';
+
+        try {
+          const result = await convertSingleBatch(batchFiles[i], format, quality, rw, rh);
+          const saved = ((batchFiles[i].size - result.blob.size) / batchFiles[i].size * 100).toFixed(1);
+          const savedText = saved > 0 ? `节省 ${saved}%` : '增大 ' + Math.abs(saved) + '%';
+
+          batchResults.push({
+            file: batchFiles[i],
+            blob: result.blob,
+            ext: result.ext
+          });
+
+          resultEl.textContent = `${formatFileSize(batchFiles[i].size)} → ${formatFileSize(result.blob.size)} (${savedText})`;
+          statusEl.textContent = '✅';
+        } catch (err) {
+          resultEl.textContent = `失败: ${err.message}`;
+          statusEl.textContent = '❌';
+        }
+      }
+
+      btn.disabled = false;
+      btn.textContent = '🔄 转换全部';
+      document.getElementById('batchDownloadBtn').disabled = batchResults.length === 0;
+      showMessage('success', `转换完成，成功 ${batchResults.length}/${batchFiles.length} 张`);
+    }
+
+    function downloadBatchZip() {
+      if (batchResults.length === 0) return;
+
+      const btn = document.getElementById('batchDownloadBtn');
+      btn.disabled = true;
+      btn.textContent = '📦 打包中...';
+
+      const zip = new JSZip();
+      batchResults.forEach((r) => {
+        const name = r.file.name.replace(/\.[^.]+$/, '') + '.' + r.ext;
+        zip.file(name, r.blob);
+      });
+
+      zip.generateAsync({ type: 'blob' }).then(content => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = `converted-images-${Date.now()}.zip`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showMessage('success', 'ZIP已下载');
+        btn.disabled = false;
+        btn.textContent = '📦 下载全部 (ZIP)';
+      }).catch(err => {
+        showMessage('error', '打包失败');
+        btn.disabled = false;
+        btn.textContent = '📦 下载全部 (ZIP)';
+      });
+    }
+
+    // === 公共 ===
+    function downloadResult() {
+      if (!convertedBlob) return;
+      const extMap = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/bmp': '.bmp', 'image/x-icon': '.ico' };
+      const format = formatSelect.value;
+      const ext = convertedBlob._ext ? '.' + convertedBlob._ext : (extMap[format] || '.png');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(convertedBlob);
+      a.download = (originalFile.name.replace(/\.[^.]+$/, '') || 'image') + ext;
+      a.click();
+    }
+
+    function resetAll() {
+      originalFile = null;
+      convertedBlob = null;
+      originalImg = null;
+      batchFiles = [];
+      batchResults = [];
+      fileInput.value = '';
+      document.getElementById('controlsSection').classList.add('hidden');
+      document.getElementById('resultSection').classList.add('hidden');
+      document.getElementById('batchControlsSection').classList.add('hidden');
+      document.getElementById('origPreview').src = '';
+      document.getElementById('convPreview').src = '';
+      document.getElementById('uploadHint').textContent = currentMode === 'batch'
+        ? '支持 PNG、JPEG、WebP、BMP、GIF 等格式，可多选'
+        : '支持 PNG、JPEG、WebP、BMP、GIF 等格式';
+    }
+  </script>
 </body>
 </html>

@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>图片压缩工具 - Web Tools</title>
-  <meta name="description" content="在线图片压缩，支持JPG、PNG格式，纯前端处理，保护隐私">
+  <meta name="description" content="在线图片压缩，支持JPG、PNG格式，批量压缩，纯前端处理，保护隐私">
   <link rel="stylesheet" href="../../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     .compressor-layout {
       display: grid;
@@ -236,6 +237,130 @@
       font-weight: 500;
       margin-left: 8px;
     }
+
+    /* 批量模式样式 */
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mode-tab {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #fafafa;
+      transition: all 0.2s;
+    }
+
+    .mode-tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .batch-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    .batch-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #fafafa;
+    }
+
+    .batch-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .batch-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .batch-item-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .batch-item-size {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .batch-item-result {
+      font-size: 12px;
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    .batch-item-status {
+      font-size: 20px;
+    }
+
+    .hidden { display: none !important; }
+
+    .dim-inputs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .dim-inputs input[type="number"] {
+      width: 80px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .dim-inputs span {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .preserve-ratio {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .form-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -254,7 +379,13 @@
         <a href="../../index.html">首页</a> / 图片压缩工具
       </div>
       <h1>🗜️ 图片压缩工具</h1>
-      <p style="color: var(--text-secondary); margin-top: 8px;">在线压缩JPG、PNG图片，降低文件大小，纯前端处理，保护隐私</p>
+      <p style="color: var(--text-secondary); margin-top: 8px;">在线压缩JPG、PNG图片，支持批量压缩、格式转换，纯前端处理，保护隐私</p>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="single">📷 单张压缩</div>
+      <div class="mode-tab" data-mode="batch">📦 批量压缩</div>
     </div>
 
     <!-- 上传区域 -->
@@ -262,10 +393,10 @@
       <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png,image/webp">
       <div class="upload-icon-large">📤</div>
       <div class="upload-text-large">点击或拖拽上传图片</div>
-      <div class="upload-hint-large">支持 JPG、PNG、WebP 格式，最大 20MB</div>
+      <div class="upload-hint-large" id="uploadHint">支持 JPG、PNG、WebP 格式，最大 20MB</div>
     </div>
 
-    <!-- 压缩结果 -->
+    <!-- 单张压缩结果 -->
     <div class="preview-container" id="resultContainer">
       <!-- 压缩控制 -->
       <div class="controls">
@@ -275,6 +406,31 @@
             <span class="quality-value" id="qualityValue">80%</span>
           </div>
           <input type="range" id="qualityRange" min="10" max="100" value="80">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>输出格式</span>
+            <select class="form-select" id="outputFormat">
+              <option value="original">保持原格式</option>
+              <option value="image/jpeg">JPEG（更小体积）</option>
+              <option value="image/webp">WebP（更小体积）</option>
+              <option value="image/png">PNG</option>
+            </select>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>最大尺寸限制（可选）</span>
+          </div>
+          <div class="dim-inputs">
+            <input type="number" id="maxWidth" placeholder="最大宽度" min="1">
+            <span>×</span>
+            <input type="number" id="maxHeight" placeholder="最大高度" min="1">
+            <span>px</span>
+            <label class="preserve-ratio">
+              <input type="checkbox" id="preserveRatio" checked> 保持比例
+            </label>
+          </div>
         </div>
         <div class="btn-group-vertical" style="justify-content: center;">
           <button class="btn btn-primary" id="compressBtn">✨ 重新压缩</button>
@@ -317,6 +473,48 @@
         </div>
       </div>
     </div>
+
+    <!-- 批量压缩 -->
+    <div class="preview-container" id="batchContainer">
+      <div class="controls">
+        <div class="control-group">
+          <div class="control-label">
+            <span>压缩质量</span>
+            <span class="quality-value" id="batchQualityValue">80%</span>
+          </div>
+          <input type="range" id="batchQualityRange" min="10" max="100" value="80">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>输出格式</span>
+            <select class="form-select" id="batchOutputFormat">
+              <option value="original">保持原格式</option>
+              <option value="image/jpeg">JPEG（更小体积）</option>
+              <option value="image/webp">WebP（更小体积）</option>
+              <option value="image/png">PNG</option>
+            </select>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>最大尺寸限制（可选）</span>
+          </div>
+          <div class="dim-inputs">
+            <input type="number" id="batchMaxWidth" placeholder="最大宽度" min="1">
+            <span>×</span>
+            <input type="number" id="batchMaxHeight" placeholder="最大高度" min="1">
+            <span>px</span>
+          </div>
+        </div>
+        <div class="btn-group-vertical" style="justify-content: center;">
+          <button class="btn btn-primary" id="batchCompressBtn">✨ 压缩全部</button>
+          <button class="btn btn-success" id="batchDownloadBtn" disabled>📦 下载ZIP</button>
+          <button class="btn btn-secondary" id="batchResetBtn">🔄 重新选择</button>
+        </div>
+      </div>
+
+      <div class="batch-list" id="batchList"></div>
+    </div>
   </div>
 
   <footer class="footer">
@@ -328,21 +526,25 @@
   <script src="../../assets/js/common.js"></script>
   <script>
     (function() {
+      // DOM
       const uploadArea = document.getElementById('uploadArea');
       const fileInput = document.getElementById('fileInput');
       const resultContainer = document.getElementById('resultContainer');
+      const batchContainer = document.getElementById('batchContainer');
+      const uploadHint = document.getElementById('uploadHint');
+
+      // 单张模式元素
       const qualityRange = document.getElementById('qualityRange');
       const qualityValue = document.getElementById('qualityValue');
+      const outputFormat = document.getElementById('outputFormat');
+      const maxWidthInput = document.getElementById('maxWidth');
+      const maxHeightInput = document.getElementById('maxHeight');
       const compressBtn = document.getElementById('compressBtn');
       const downloadBtn = document.getElementById('downloadBtn');
       const resetBtn = document.getElementById('resetBtn');
       const loadingOverlay = document.getElementById('loadingOverlay');
-
-      // 图片元素
       const originalPreview = document.getElementById('originalPreview');
       const compressedPreview = document.getElementById('compressedPreview');
-
-      // 信息元素
       const originalFormat = document.getElementById('originalFormat');
       const compressedFormat = document.getElementById('compressedFormat');
       const originalDimensions = document.getElementById('originalDimensions');
@@ -351,31 +553,83 @@
       const compressedSize = document.getElementById('compressedSize');
       const savedPercent = document.getElementById('savedPercent');
 
+      // 批量模式元素
+      const batchQualityRange = document.getElementById('batchQualityRange');
+      const batchQualityValue = document.getElementById('batchQualityValue');
+      const batchOutputFormat = document.getElementById('batchOutputFormat');
+      const batchMaxWidth = document.getElementById('batchMaxWidth');
+      const batchMaxHeight = document.getElementById('batchMaxHeight');
+      const batchCompressBtn = document.getElementById('batchCompressBtn');
+      const batchDownloadBtn = document.getElementById('batchDownloadBtn');
+      const batchResetBtn = document.getElementById('batchResetBtn');
+      const batchList = document.getElementById('batchList');
+
+      // 状态
+      let currentMode = 'single';
       let originalFile = null;
       let originalImage = null;
+      let compressedBlob = null;
+      let batchFiles = [];
+      let batchResults = [];
 
       // 格式化文件大小
-      function formatFileSize(bytes) {
+      function formatSize(bytes) {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
       }
 
-      // 拖拽上传
-      initDropArea(uploadArea, () => fileInput.click());
-
-      fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) handleFileSelect(file);
+      // 模式切换
+      document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          currentMode = tab.dataset.mode;
+          resetAll();
+        });
       });
 
-      // 处理文件选择
+      // 拖拽上传 - 支持多文件
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+      uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        if (files.length === 0) {
+          showMessage('error', '请选择图片文件');
+          return;
+        }
+        if (currentMode === 'batch') {
+          handleBatchFiles(files);
+        } else {
+          handleFileSelect(files[0]);
+        }
+      });
+      uploadArea.addEventListener('click', () => {
+        fileInput.multiple = currentMode === 'batch';
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        if (currentMode === 'batch') {
+          handleBatchFiles(files);
+        } else {
+          handleFileSelect(files[0]);
+        }
+      });
+
+      // === 单张压缩 ===
       function handleFileSelect(file) {
         if (!file.type.startsWith('image/')) {
           showMessage('error', '请选择图片文件');
           return;
         }
-
         if (file.size > 20 * 1024 * 1024) {
           showMessage('error', '图片大小不能超过 20MB');
           return;
@@ -392,7 +646,7 @@
           img.onload = () => {
             originalImage = img;
             originalDimensions.textContent = `${img.width} × ${img.height} px`;
-            originalSize.textContent = formatFileSize(file.size);
+            originalSize.textContent = formatSize(file.size);
             uploadArea.style.display = 'none';
             resultContainer.style.display = 'block';
             compressImage();
@@ -402,7 +656,6 @@
         reader.readAsDataURL(file);
       }
 
-      // 压缩图片
       function compressImage() {
         if (!originalImage) return;
 
@@ -411,19 +664,66 @@
 
         setTimeout(() => {
           try {
+            let targetW = originalImage.width;
+            let targetH = originalImage.height;
+
+            // 应用最大尺寸限制
+            const maxW = parseInt(maxWidthInput.value) || 0;
+            const maxH = parseInt(maxHeightInput.value) || 0;
+            if (maxW > 0 || maxH > 0) {
+              const ratio = originalImage.width / originalImage.height;
+              if (maxW > 0 && maxH > 0) {
+                if (targetW > maxW || targetH > maxH) {
+                  if (maxW / maxH > ratio) {
+                    targetH = maxH;
+                    targetW = Math.round(maxH * ratio);
+                  } else {
+                    targetW = maxW;
+                    targetH = Math.round(maxW / ratio);
+                  }
+                }
+              } else if (maxW > 0 && targetW > maxW) {
+                targetW = maxW;
+                targetH = Math.round(maxW / ratio);
+              } else if (maxH > 0 && targetH > maxH) {
+                targetH = maxH;
+                targetW = Math.round(maxH * ratio);
+              }
+            }
+
             const canvas = document.createElement('canvas');
-            canvas.width = originalImage.width;
-            canvas.height = originalImage.height;
+            canvas.width = targetW;
+            canvas.height = targetH;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(originalImage, 0, 0);
+            ctx.drawImage(originalImage, 0, 0, targetW, targetH);
+
+            // 确定输出格式
+            let outType = originalFile.type;
+            if (outputFormat.value !== 'original') {
+              outType = outputFormat.value;
+            }
+            // PNG转JPEG需要白色背景
+            if (outType === 'image/jpeg' && originalFile.type === 'image/png') {
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = targetW;
+              tempCanvas.height = targetH;
+              const tCtx = tempCanvas.getContext('2d');
+              tCtx.fillStyle = '#FFFFFF';
+              tCtx.fillRect(0, 0, targetW, targetH);
+              tCtx.drawImage(canvas, 0, 0);
+              canvas.width = targetW;
+              canvas.height = targetH;
+              ctx.drawImage(tempCanvas, 0, 0);
+            }
 
             canvas.toBlob(
               (blob) => {
                 const url = URL.createObjectURL(blob);
                 compressedPreview.src = url;
 
-                compressedDimensions.textContent = `${originalImage.width} × ${originalImage.height} px`;
-                compressedSize.textContent = formatFileSize(blob.size);
+                compressedFormat.textContent = outType.split('/')[1].toUpperCase();
+                compressedDimensions.textContent = `${targetW} × ${targetH} px`;
+                compressedSize.textContent = formatSize(blob.size);
 
                 const saved = ((originalFile.size - blob.size) / originalFile.size * 100).toFixed(1);
                 savedPercent.textContent = saved > 0 ? `-${saved}%` : '未减小';
@@ -432,10 +732,10 @@
                 loadingOverlay.style.display = 'none';
                 showMessage('success', '压缩完成');
 
-                // 保存 blob 供下载
                 compressedBlob = blob;
+                compressedBlob._ext = outType.split('/')[1];
               },
-              originalFile.type,
+              outType,
               quality
             );
           } catch (err) {
@@ -445,49 +745,248 @@
         }, 100);
       }
 
-      let compressedBlob = null;
-
-      // 质量滑块
+      // 实时预览 - 滑块拖动时自动压缩
+      let compressTimer = null;
       qualityRange.addEventListener('input', () => {
         qualityValue.textContent = qualityRange.value + '%';
+        clearTimeout(compressTimer);
+        compressTimer = setTimeout(compressImage, 300);
       });
 
-      qualityRange.addEventListener('change', () => {
-        compressImage();
-      });
-
-      // 重新压缩
       compressBtn.addEventListener('click', compressImage);
 
-      // 下载
       downloadBtn.addEventListener('click', () => {
         if (!compressedBlob) {
           showMessage('warning', '请先压缩');
           return;
         }
+        const ext = compressedBlob._ext || originalFile.type.split('/')[1];
         const url = URL.createObjectURL(compressedBlob);
         const a = document.createElement('a');
         a.href = url;
-        const ext = originalFile.type.split('/')[1];
         a.download = `compressed-${Date.now()}.${ext}`;
         a.click();
         URL.revokeObjectURL(url);
         showMessage('success', '已下载');
       });
 
-      // 重置
-      resetBtn.addEventListener('click', () => {
+      resetBtn.addEventListener('click', resetAll);
+
+      // === 批量压缩 ===
+      function handleBatchFiles(files) {
+        const validFiles = files.filter(f => {
+          if (!f.type.startsWith('image/')) return false;
+          if (f.size > 20 * 1024 * 1024) return false;
+          return true;
+        });
+
+        if (validFiles.length === 0) {
+          showMessage('error', '没有有效的图片文件');
+          return;
+        }
+
+        batchFiles = validFiles;
+        batchResults = [];
+        uploadArea.style.display = 'none';
+        batchContainer.style.display = 'block';
+        batchDownloadBtn.disabled = true;
+        renderBatchList();
+        showMessage('info', `已选择 ${validFiles.length} 张图片`);
+      }
+
+      function renderBatchList() {
+        batchList.innerHTML = '';
+        batchFiles.forEach((file, idx) => {
+          const item = document.createElement('div');
+          item.className = 'batch-item';
+          item.id = `batch-item-${idx}`;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = item.querySelector('img');
+            if (img) img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+
+          item.innerHTML = `
+            <img src="" alt="${file.name}">
+            <div class="batch-item-info">
+              <div class="batch-item-name">${file.name}</div>
+              <div class="batch-item-size">原始: ${formatSize(file.size)}</div>
+              <div class="batch-item-result" id="batch-result-${idx}">等待压缩...</div>
+            </div>
+            <div class="batch-item-status" id="batch-status-${idx}">⏳</div>
+          `;
+          batchList.appendChild(item);
+        });
+      }
+
+      function compressSingleBatch(file, quality, outType, maxW, maxH) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              let targetW = img.width;
+              let targetH = img.height;
+              if (maxW > 0 || maxH > 0) {
+                const ratio = img.width / img.height;
+                if (maxW > 0 && maxH > 0) {
+                  if (targetW > maxW || targetH > maxH) {
+                    if (maxW / maxH > ratio) {
+                      targetH = maxH;
+                      targetW = Math.round(maxH * ratio);
+                    } else {
+                      targetW = maxW;
+                      targetH = Math.round(maxW / ratio);
+                    }
+                  }
+                } else if (maxW > 0 && targetW > maxW) {
+                  targetW = maxW;
+                  targetH = Math.round(maxW / ratio);
+                } else if (maxH > 0 && targetH > maxH) {
+                  targetH = maxH;
+                  targetW = Math.round(maxH * ratio);
+                }
+              }
+
+              const canvas = document.createElement('canvas');
+              canvas.width = targetW;
+              canvas.height = targetH;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, targetW, targetH);
+
+              if (outType === 'image/jpeg' && file.type === 'image/png') {
+                const tc = document.createElement('canvas');
+                tc.width = targetW;
+                tc.height = targetH;
+                const tcCtx = tc.getContext('2d');
+                tcCtx.fillStyle = '#FFFFFF';
+                tcCtx.fillRect(0, 0, targetW, targetH);
+                tcCtx.drawImage(canvas, 0, 0);
+                ctx.drawImage(tc, 0, 0);
+              }
+
+              canvas.toBlob((blob) => {
+                if (!blob) { reject(new Error('转换失败')); return; }
+                resolve({ blob, ext: outType.split('/')[1], width: targetW, height: targetH });
+              }, outType, quality);
+            };
+            img.onerror = () => reject(new Error('图片加载失败'));
+            img.src = e.target.result;
+          };
+          reader.onerror = () => reject(new Error('文件读取失败'));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      batchCompressBtn.addEventListener('click', async () => {
+        if (batchFiles.length === 0) {
+          showMessage('warning', '请先上传图片');
+          return;
+        }
+
+        const quality = batchQualityRange.value / 100;
+        let outType = batchFiles[0].type;
+        if (batchOutputFormat.value !== 'original') {
+          outType = batchOutputFormat.value;
+        }
+        const maxW = parseInt(batchMaxWidth.value) || 0;
+        const maxH = parseInt(batchMaxHeight.value) || 0;
+
+        batchCompressBtn.disabled = true;
+        batchCompressBtn.textContent = '⏳ 压缩中...';
+        batchResults = [];
+
+        for (let i = 0; i < batchFiles.length; i++) {
+          const statusEl = document.getElementById(`batch-status-${i}`);
+          const resultEl = document.getElementById(`batch-result-${i}`);
+          statusEl.textContent = '⏳';
+
+          try {
+            // 如果选择保持原格式，每个文件用自己的格式
+            let fileType = outType;
+            if (batchOutputFormat.value === 'original') {
+              fileType = batchFiles[i].type;
+            }
+
+            const result = await compressSingleBatch(batchFiles[i], quality, fileType, maxW, maxH);
+            const saved = ((batchFiles[i].size - result.blob.size) / batchFiles[i].size * 100).toFixed(1);
+            const savedText = saved > 0 ? `节省 ${saved}%` : '未减小';
+
+            batchResults.push({
+              file: batchFiles[i],
+              blob: result.blob,
+              ext: result.ext
+            });
+
+            resultEl.textContent = `${formatSize(batchFiles[i].size)} → ${formatSize(result.blob.size)} (${savedText})`;
+            statusEl.textContent = '✅';
+          } catch (err) {
+            resultEl.textContent = `失败: ${err.message}`;
+            statusEl.textContent = '❌';
+          }
+        }
+
+        batchCompressBtn.disabled = false;
+        batchCompressBtn.textContent = '✨ 压缩全部';
+        batchDownloadBtn.disabled = batchResults.length === 0;
+        showMessage('success', `压缩完成，成功 ${batchResults.length}/${batchFiles.length} 张`);
+      });
+
+      batchQualityRange.addEventListener('input', () => {
+        batchQualityValue.textContent = batchQualityRange.value + '%';
+      });
+
+      batchDownloadBtn.addEventListener('click', async () => {
+        if (batchResults.length === 0) return;
+
+        batchDownloadBtn.disabled = true;
+        batchDownloadBtn.textContent = '📦 打包中...';
+
+        try {
+          const zip = new JSZip();
+          batchResults.forEach((r, i) => {
+            const name = r.file.name.replace(/\.[^.]+$/, '') + '.' + r.ext;
+            zip.file(name, r.blob);
+          });
+
+          const content = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(content);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `compressed-images-${Date.now()}.zip`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showMessage('success', 'ZIP已下载');
+        } catch (err) {
+          showMessage('error', '打包失败: ' + err.message);
+        }
+
+        batchDownloadBtn.disabled = false;
+        batchDownloadBtn.textContent = '📦 下载ZIP';
+      });
+
+      batchResetBtn.addEventListener('click', resetAll);
+
+      function resetAll() {
         originalFile = null;
         originalImage = null;
         compressedBlob = null;
+        batchFiles = [];
+        batchResults = [];
         fileInput.value = '';
         uploadArea.style.display = 'block';
         resultContainer.style.display = 'none';
+        batchContainer.style.display = 'none';
         originalPreview.src = '';
         compressedPreview.src = '';
-      });
+        uploadHint.textContent = currentMode === 'batch'
+          ? '支持 JPG、PNG、WebP 格式，可多选，最大 20MB/张'
+          : '支持 JPG、PNG、WebP 格式，最大 20MB';
+        fileInput.multiple = currentMode === 'batch';
+      }
 
-      // 清除消息
       showMessage('info', '请选择要压缩的图片');
     })();
   </script>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>图片裁剪工具 - Web Tools</title>
-  <meta name="description" content="在线图片裁剪，支持多种证件照尺寸，纯前端处理，保护隐私">
+  <meta name="description" content="在线图片裁剪，支持多种比例、旋转翻转，纯前端处理，保护隐私">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .cropper-layout {
@@ -16,7 +16,6 @@
       .cropper-layout {
         grid-template-columns: 1fr 280px;
       }
-
       .sidebar-sticky {
         position: sticky;
         top: 24px;
@@ -24,7 +23,6 @@
       }
     }
 
-    /* 上传区域 */
     .upload-area-large {
       border: 2px dashed var(--border);
       border-radius: 12px;
@@ -62,7 +60,6 @@
       display: none;
     }
 
-    /* 预览区域 */
     .preview-container {
       display: none;
       animation: fadeIn 0.3s ease;
@@ -98,7 +95,6 @@
       display: block;
     }
 
-    /* 侧边栏 */
     .sidebar-section {
       background: white;
       border-radius: 10px;
@@ -160,7 +156,6 @@
       color: var(--primary-dark);
     }
 
-    /* 控制区 */
     .controls-row {
       display: flex;
       flex-direction: column;
@@ -179,7 +174,6 @@
       }
     }
 
-    /* 裁剪框信息 */
     .crop-info {
       display: flex;
       flex-wrap: wrap;
@@ -199,7 +193,6 @@
       font-weight: 500;
     }
 
-    /* 快捷提示 */
     .tip-text {
       font-size: 12px;
       color: var(--text-secondary);
@@ -207,31 +200,127 @@
       line-height: 1.5;
     }
 
-    /* 禁用状态 */
-    .disabled-tip {
-      text-align: center;
-      padding: 30px;
-      color: var(--text-secondary);
-      font-size: 14px;
-      background: #f9f9f9;
-      border-radius: 10px;
-    }
-
-    /* 格式徽章 */
-    .format-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      background: var(--primary-light);
-      color: var(--primary-dark);
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 500;
-      margin-left: 8px;
-    }
-
-    /* 隐藏元素 */
     .hidden {
       display: none !important;
+    }
+
+    /* 比例预设 */
+    .ratio-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .ratio-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      background: #fafafa;
+      transition: all 0.15s;
+    }
+
+    .ratio-btn:hover {
+      border-color: var(--primary-light);
+      background: #f0f7ff;
+    }
+
+    .ratio-btn.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .custom-ratio-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .custom-ratio-row input {
+      width: 50px;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .custom-ratio-row span {
+      color: #888;
+      font-size: 14px;
+    }
+
+    .custom-ratio-row button {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+
+    /* 旋转翻转控件 */
+    .transform-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .transform-btn {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #fafafa;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .transform-btn:hover {
+      background: #f0f7ff;
+      border-color: var(--primary);
+    }
+
+    .rotation-slider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .rotation-slider input[type="range"] {
+      flex: 1;
+    }
+
+    .rotation-value {
+      min-width: 45px;
+      text-align: right;
+      font-size: 13px;
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    /* 裁剪预览 */
+    .crop-preview-area {
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .crop-preview-area canvas {
+      max-width: 100%;
+      max-height: 200px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .crop-preview-dims {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 6px;
     }
   </style>
 </head>
@@ -250,7 +339,6 @@
       <div class="cropper-layout">
         <!-- 左侧：上传 + 画布 -->
         <div>
-          <!-- 上传区域 -->
           <div class="upload-area-large" id="uploadArea">
             <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png,image/webp">
             <div class="upload-icon-large">📷</div>
@@ -258,7 +346,6 @@
             <div class="upload-hint-large">支持 JPG、PNG、WebP 格式，最大 20MB</div>
           </div>
 
-          <!-- 裁剪预览区 -->
           <div class="preview-container" id="previewContainer">
             <div class="image-work-area">
               <canvas id="mainCanvas"></canvas>
@@ -269,21 +356,60 @@
           </div>
         </div>
 
-        <!-- 右侧：尺寸选择 + 操作按钮 -->
+        <!-- 右侧：控制面板 -->
         <div class="sidebar-sticky">
-          <!-- 尺寸选择 -->
+          <!-- 比例预设 -->
           <div class="sidebar-section">
-            <div class="sidebar-title">📐 导出尺寸</div>
-            <div class="size-grid" id="sizeGrid">
-              <!-- JS 填充 -->
+            <div class="sidebar-title">📐 裁剪比例</div>
+            <div class="ratio-presets" id="ratioPresets">
+              <div class="ratio-btn active" data-ratio="free">自由</div>
+              <div class="ratio-btn" data-ratio="1:1">1:1</div>
+              <div class="ratio-btn" data-ratio="4:3">4:3</div>
+              <div class="ratio-btn" data-ratio="16:9">16:9</div>
+              <div class="ratio-btn" data-ratio="3:2">3:2</div>
+              <div class="ratio-btn" data-ratio="2:3">2:3</div>
+              <div class="ratio-btn" data-ratio="9:16">9:16</div>
             </div>
+            <div class="custom-ratio-row">
+              <input type="number" id="customRatioW" placeholder="宽" min="1">
+              <span>:</span>
+              <input type="number" id="customRatioH" placeholder="高" min="1">
+              <button class="btn btn-primary" id="applyCustomRatio" style="padding:4px 10px;font-size:12px;">应用</button>
+            </div>
+          </div>
+
+          <!-- 旋转翻转 -->
+          <div class="sidebar-section" id="transformSection">
+            <div class="sidebar-title">🔄 旋转与翻转</div>
+            <div class="transform-controls">
+              <button class="transform-btn" id="rotateLeft90" title="逆时针旋转90°">↺ 90°</button>
+              <button class="transform-btn" id="rotateRight90" title="顺时针旋转90°">↻ 90°</button>
+              <button class="transform-btn" id="flipHBtn" title="水平翻转">↔ 水平</button>
+              <button class="transform-btn" id="flipVBtn" title="垂直翻转">↕ 垂直</button>
+            </div>
+            <div class="rotation-slider">
+              <span style="font-size:12px;color:#888;">自由旋转:</span>
+              <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1">
+              <span class="rotation-value" id="rotationValue">0°</span>
+            </div>
+          </div>
+
+          <!-- 导出尺寸（证件照） -->
+          <div class="sidebar-section">
+            <div class="sidebar-title">📏 导出尺寸</div>
+            <div class="size-grid" id="sizeGrid"></div>
             <div class="tip-text">💡 选择尺寸后，拖动画布上的虚线框调整裁剪位置</div>
           </div>
 
-          <!-- 当前信息 -->
+          <!-- 裁剪信息 -->
           <div class="sidebar-section hidden" id="infoSection">
             <div class="sidebar-title">ℹ️ 裁剪信息</div>
             <div class="crop-info" id="cropInfo"></div>
+            <!-- 裁剪预览 -->
+            <div class="crop-preview-area" id="cropPreviewArea">
+              <canvas id="cropPreviewCanvas"></canvas>
+              <div class="crop-preview-dims" id="cropPreviewDims"></div>
+            </div>
           </div>
 
           <!-- 操作按钮 -->
@@ -298,7 +424,6 @@
     </div>
   </div>
 
-  <!-- 消息提示容器 -->
   <div id="messageContainer"></div>
 
   <script src="../../assets/js/common.js"></script>
@@ -306,30 +431,40 @@
     (function () {
       // === 数据 ===
       const SIZES = [
-        { id: 'passport',       name: '小一寸',  mm: '25×35 mm', px: '295×413 px', w: 295,  h: 413  },
-        { id: 'large-passport',  name: '大一寸',  mm: '22×32 mm', px: '260×378 px', w: 260,  h: 378  },
-        { id: 'two-inch',        name: '二寸',    mm: '33×48 mm', px: '390×567 px', w: 390,  h: 567  },
-        { id: 'small-two-inch',  name: '小二寸',  mm: '35×49 mm', px: '413×579 px', w: 413,  h: 579  },
-        { id: 'large-two-inch',  name: '大二寸',  mm: '35×45 mm', px: '413×531 px', w: 413,  h: 531  },
-        { id: 'three-inch',      name: '三寸',    mm: '35×53 mm', px: '413×625 px', w: 413,  h: 625  },
-        { id: 'four-inch',       name: '四寸',    mm: '54×84 mm', px: '637×992 px', w: 637,  h: 992  },
-        { id: 'five-inch',       name: '五寸',    mm: '76×102 mm',px: '897×1204px', w: 897,  h: 1204 },
-        { id: 'six-inch',        name: '六寸',    mm: '89×127 mm',px: '1051×1500px',w: 1051, h: 1500 },
+        { id: 'free',          name: '自定义',  mm: '-',          px: '自由裁剪',    w: 0,    h: 0   },
+        { id: 'passport',      name: '小一寸',  mm: '25×35 mm',  px: '295×413 px',  w: 295,  h: 413  },
+        { id: 'large-passport', name: '大一寸',  mm: '22×32 mm',  px: '260×378 px',  w: 260,  h: 378  },
+        { id: 'two-inch',      name: '二寸',    mm: '33×48 mm',  px: '390×567 px',  w: 390,  h: 567  },
+        { id: 'small-two-inch', name: '小二寸',  mm: '35×49 mm',  px: '413×579 px',  w: 413,  h: 579  },
+        { id: 'large-two-inch', name: '大二寸',  mm: '35×45 mm',  px: '413×531 px',  w: 413,  h: 531  },
+        { id: 'three-inch',    name: '三寸',    mm: '35×53 mm',  px: '413×625 px',  w: 413,  h: 625  },
+        { id: 'four-inch',     name: '四寸',    mm: '54×84 mm',  px: '637×992 px',  w: 637,  h: 992  },
+        { id: 'five-inch',     name: '五寸',    mm: '76×102 mm', px: '897×1204px',  w: 897,  h: 1204 },
+        { id: 'six-inch',      name: '六寸',    mm: '89×127 mm', px: '1051×1500px', w: 1051, h: 1500 },
       ];
 
-      const MAX_DISPLAY_SIZE = 800; // 画布显示最大尺寸，确保交互流畅
+      const MAX_DISPLAY_SIZE = 800;
 
       // === 状态 ===
       let originalFile    = null;
       let originalImage   = null;
       let selectedSizeIdx = 0;
 
+      // 变换状态
+      let rotationAngle   = 0;  // 自由旋转角度
+      let flipH           = false;
+      let flipV           = false;
+      let rot90Count      = 0;  // 90°旋转次数 (0-3)
+
+      // 当前变换后的图像（用于裁剪）
+      let transformedImage = null;
+
       // 裁剪框
       let cropX = 0, cropY = 0, cropW = 0, cropH = 0;
 
       // 拖拽状态
       let dragging      = false;
-      let dragCorner     = null; // 'tl','tr','bl','br','top','bottom','left','right'
+      let dragCorner     = null;
       let dragStartX    = 0;
       let dragStartY    = 0;
       let boxStartX     = 0;
@@ -337,17 +472,26 @@
       let boxStartW     = 0;
       let boxStartH     = 0;
 
+      // 自定义比例
+      let customRatioW = 0;
+      let customRatioH = 0;
+      let activeRatioType = 'preset'; // 'preset' | 'custom'
+
       // === DOM ===
-      const uploadArea      = document.getElementById('uploadArea');
-      const fileInput       = document.getElementById('fileInput');
-      const previewContainer= document.getElementById('previewContainer');
-      const mainCanvas      = document.getElementById('mainCanvas');
-      const ctx             = mainCanvas.getContext('2d');
-      const sizeGrid        = document.getElementById('sizeGrid');
-      const infoSection     = document.getElementById('infoSection');
-      const cropInfo        = document.getElementById('cropInfo');
-      const cropBtn         = document.getElementById('cropBtn');
-      const resetBtn        = document.getElementById('resetBtn');
+      const uploadArea       = document.getElementById('uploadArea');
+      const fileInput        = document.getElementById('fileInput');
+      const previewContainer = document.getElementById('previewContainer');
+      const mainCanvas       = document.getElementById('mainCanvas');
+      const ctx              = mainCanvas.getContext('2d');
+      const sizeGrid         = document.getElementById('sizeGrid');
+      const infoSection      = document.getElementById('infoSection');
+      const cropInfo         = document.getElementById('cropInfo');
+      const cropBtn          = document.getElementById('cropBtn');
+      const resetBtn         = document.getElementById('resetBtn');
+      const rotationSlider   = document.getElementById('rotationSlider');
+      const rotationValue    = document.getElementById('rotationValue');
+      const cropPreviewCanvas = document.getElementById('cropPreviewCanvas');
+      const cropPreviewDims  = document.getElementById('cropPreviewDims');
 
       // === 初始化 ===
       initDropArea(uploadArea, () => fileInput.click());
@@ -355,10 +499,122 @@
       cropBtn.addEventListener('click', cropAndDownload);
       resetBtn.addEventListener('click', resetAll);
 
-      // 构建尺寸选择器
       buildSizeGrid();
-      // 初始只使第一个尺寸 active
       selectSize(0);
+
+      // === 比例预设按钮 ===
+      document.querySelectorAll('#ratioPresets .ratio-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#ratioPresets .ratio-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeRatioType = 'preset';
+
+          const ratio = btn.dataset.ratio;
+          if (ratio === 'free') {
+            selectSize(0); // 自定义尺寸 = 自由裁剪
+          } else {
+            const parts = ratio.split(':');
+            customRatioW = parseInt(parts[0]);
+            customRatioH = parseInt(parts[1]);
+            activeRatioType = 'custom';
+            if (originalImage) {
+              initCropBoxWithRatio(customRatioW, customRatioH);
+              draw();
+            }
+          }
+        });
+      });
+
+      // 自定义比例
+      document.getElementById('applyCustomRatio').addEventListener('click', () => {
+        const w = parseInt(document.getElementById('customRatioW').value);
+        const h = parseInt(document.getElementById('customRatioH').value);
+        if (!w || !h || w <= 0 || h <= 0) {
+          showMessage('warning', '请输入有效的宽高比');
+          return;
+        }
+        customRatioW = w;
+        customRatioH = h;
+        activeRatioType = 'custom';
+        document.querySelectorAll('#ratioPresets .ratio-btn').forEach(b => b.classList.remove('active'));
+        if (originalImage) {
+          initCropBoxWithRatio(w, h);
+          draw();
+        }
+      });
+
+      // === 旋转翻转 ===
+      document.getElementById('rotateLeft90').addEventListener('click', () => {
+        rot90Count = (rot90Count + 3) % 4;
+        applyTransform();
+      });
+
+      document.getElementById('rotateRight90').addEventListener('click', () => {
+        rot90Count = (rot90Count + 1) % 4;
+        applyTransform();
+      });
+
+      document.getElementById('flipHBtn').addEventListener('click', () => {
+        flipH = !flipH;
+        applyTransform();
+      });
+
+      document.getElementById('flipVBtn').addEventListener('click', () => {
+        flipV = !flipV;
+        applyTransform();
+      });
+
+      let rotationTimer = null;
+      rotationSlider.addEventListener('input', () => {
+        rotationAngle = parseInt(rotationSlider.value);
+        rotationValue.textContent = rotationAngle + '°';
+        clearTimeout(rotationTimer);
+        rotationTimer = setTimeout(() => applyTransform(), 150);
+      });
+
+      function applyTransform() {
+        if (!originalImage) return;
+
+        // 计算变换后的尺寸
+        let w = originalImage.width;
+        let h = originalImage.height;
+        const isRotated90 = (rot90Count % 2) === 1;
+        if (isRotated90) {
+          [w, h] = [h, w];
+        }
+
+        // 创建变换后的图像
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const tCtx = canvas.getContext('2d');
+
+        tCtx.save();
+        tCtx.translate(w / 2, h / 2);
+
+        // 应用90°旋转
+        tCtx.rotate(rot90Count * Math.PI / 2);
+
+        // 应用自由旋转
+        tCtx.rotate(rotationAngle * Math.PI / 180);
+
+        // 应用翻转
+        tCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+
+        // 绘制原图（居中）
+        tCtx.drawImage(originalImage, -originalImage.width / 2, -originalImage.height / 2);
+        tCtx.restore();
+
+        // 转为Image对象
+        const img = new Image();
+        img.onload = () => {
+          transformedImage = img;
+          resizeCanvas();
+          initCropBox();
+          draw();
+        };
+        img.src = canvas.toDataURL();
+      }
 
       // === 文件处理 ===
       function handleFileSelect(file) {
@@ -378,19 +634,27 @@
           const img = new Image();
           img.onload = () => {
             originalImage = img;
+            transformedImage = img;
+            rotationAngle = 0;
+            rot90Count = 0;
+            flipH = false;
+            flipV = false;
+            rotationSlider.value = 0;
+            rotationValue.textContent = '0°';
+
             uploadArea.style.display = 'none';
             previewContainer.style.display = 'block';
             try {
-                resizeCanvas();
-                initCropBox();
-                draw();
-                infoSection.classList.remove('hidden');
-                cropBtn.disabled = false;
-                showMessage('success', '图片加载完成，拖动虚线框调整裁剪区域');
+              resizeCanvas();
+              initCropBox();
+              draw();
+              infoSection.classList.remove('hidden');
+              cropBtn.disabled = false;
+              showMessage('success', '图片加载完成，拖动虚线框调整裁剪区域');
             } catch (e) {
-                console.error('绘图初始化失败:', e);
-                showMessage('error', '图片加载失败: ' + e.message);
-                resetAll();
+              console.error('绘图初始化失败:', e);
+              showMessage('error', '图片加载失败: ' + e.message);
+              resetAll();
             }
           };
           img.src = e.target.result;
@@ -401,6 +665,13 @@
       function resetAll() {
         originalFile = null;
         originalImage = null;
+        transformedImage = null;
+        rotationAngle = 0;
+        rot90Count = 0;
+        flipH = false;
+        flipV = false;
+        rotationSlider.value = 0;
+        rotationValue.textContent = '0°';
         fileInput.value = '';
         uploadArea.style.display = 'block';
         previewContainer.style.display = 'none';
@@ -421,7 +692,11 @@
             <span class="size-name">${s.name}</span>
             <span class="size-px">${s.px}</span>
           `;
-          div.addEventListener('click', () => selectSize(i));
+          div.addEventListener('click', () => {
+            activeRatioType = 'preset';
+            document.querySelectorAll('#ratioPresets .ratio-btn').forEach(b => b.classList.remove('active'));
+            selectSize(i);
+          });
           sizeGrid.appendChild(div);
         });
       }
@@ -431,7 +706,7 @@
         document.querySelectorAll('.size-option').forEach((el, i) => {
           el.classList.toggle('active', i === idx);
         });
-        if (originalImage) {
+        if (transformedImage) {
           initCropBox();
           draw();
         }
@@ -439,29 +714,45 @@
 
       // === 画布 ===
       function resizeCanvas() {
-        if (!originalImage) return;
+        if (!transformedImage) return;
 
-        const maxW = Math.min(originalImage.width, MAX_DISPLAY_SIZE);
-        const maxH = Math.min(originalImage.height, MAX_DISPLAY_SIZE);
-        const scale = Math.min(maxW / originalImage.width, maxH / originalImage.height);
+        const maxW = Math.min(transformedImage.width, MAX_DISPLAY_SIZE);
+        const maxH = Math.min(transformedImage.height, MAX_DISPLAY_SIZE);
+        const scale = Math.min(maxW / transformedImage.width, maxH / transformedImage.height);
 
-        mainCanvas.width  = originalImage.width * scale;
-        mainCanvas.height = originalImage.height * scale;
-
-        // 保存缩放比，坐标转换用
+        mainCanvas.width  = transformedImage.width * scale;
+        mainCanvas.height = transformedImage.height * scale;
         mainCanvas._scale = scale;
       }
 
       function initCropBox() {
-        if (!originalImage) return;
-
         const s = SIZES[selectedSizeIdx];
-        const scale = mainCanvas._scale || 1;
+        if (s.w === 0 && s.h === 0) {
+          // 自由裁剪 - 使用图片比例或自定义比例
+          if (activeRatioType === 'custom' && customRatioW > 0 && customRatioH > 0) {
+            initCropBoxWithRatio(customRatioW, customRatioH);
+          } else {
+            // 自由裁剪，无比例限制
+            const displayW = mainCanvas.width;
+            const displayH = mainCanvas.height;
+            cropW = displayW * 0.8;
+            cropH = displayH * 0.8;
+            cropX = (displayW - cropW) / 2;
+            cropY = (displayH - cropH) / 2;
+          }
+        } else {
+          initCropBoxWithRatio(s.w, s.h);
+        }
+      }
 
+      function initCropBoxWithRatio(ratioW, ratioH) {
+        if (!transformedImage) return;
+
+        const scale = mainCanvas._scale || 1;
         const displayW = mainCanvas.width;
         const displayH = mainCanvas.height;
-        const imgRatio = (originalImage.width * scale) / (originalImage.height * scale);
-        const targetRatio = s.w / s.h;
+        const imgRatio = displayW / displayH;
+        const targetRatio = ratioW / ratioH;
 
         let boxW, boxH;
         if (targetRatio > imgRatio) {
@@ -478,14 +769,24 @@
         cropY = (displayH - cropH) / 2;
       }
 
+      // === 获取当前目标比例 ===
+      function getTargetRatio() {
+        const s = SIZES[selectedSizeIdx];
+        if (s.w > 0 && s.h > 0) return s.w / s.h;
+        if (activeRatioType === 'custom' && customRatioW > 0 && customRatioH > 0) {
+          return customRatioW / customRatioH;
+        }
+        return null; // 自由
+      }
+
       // === 绘制 ===
       function draw() {
-        if (!originalImage) return;
+        if (!transformedImage) return;
 
         ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
-        // 绘制原图
-        ctx.drawImage(originalImage, 0, 0, mainCanvas.width, mainCanvas.height);
+        // 绘制变换后的图像
+        ctx.drawImage(transformedImage, 0, 0, mainCanvas.width, mainCanvas.height);
 
         // 半透明遮罩
         const scale = mainCanvas._scale || 1;
@@ -494,7 +795,7 @@
 
         // 清除裁剪区域（显示原图）
         ctx.drawImage(
-          originalImage,
+          transformedImage,
           cropX / scale, cropY / scale,
           cropW / scale, cropH / scale,
           cropX, cropY,
@@ -507,7 +808,6 @@
         ctx.setLineDash([6, 4]);
         ctx.strokeRect(cropX, cropY, cropW, cropH);
 
-        // 外发光边框
         ctx.strokeStyle = '#1E88E5';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 4]);
@@ -518,14 +818,12 @@
         ctx.strokeStyle = 'rgba(255,255,255,0.4)';
         ctx.lineWidth = 0.8;
         ctx.setLineDash([4, 6]);
-        // 竖
         for (let i = 1; i < 3; i++) {
           ctx.beginPath();
           ctx.moveTo(cropX + (cropW * i / 3), cropY);
           ctx.lineTo(cropX + (cropW * i / 3), cropY + cropH);
           ctx.stroke();
         }
-        // 横
         for (let i = 1; i < 3; i++) {
           ctx.beginPath();
           ctx.moveTo(cropX, cropY + (cropH * i / 3));
@@ -551,8 +849,8 @@
           ctx.strokeRect(cx - handleSize / 2, cy - handleSize / 2, handleSize, handleSize);
         });
 
-        // 更新信息
         updateCropInfo();
+        updateCropPreview();
       }
 
       function updateCropInfo() {
@@ -561,13 +859,49 @@
         const realH  = Math.round(cropH / scale);
         const s      = SIZES[selectedSizeIdx];
 
-        cropInfo.innerHTML = `
-          <span class="info-chip">尺寸 ${realW}×${realH} px</span>
-          <span class="info-chip">目标 ${s.w}×${s.h} px</span>
-          <span class="info-chip">${s.mm}</span>
-          <span class="info-chip">${s.name}</span>
-        `;
+        let html = `<span class="info-chip">尺寸 ${realW}×${realH} px</span>`;
+        if (s.w > 0 && s.h > 0) {
+          html += `<span class="info-chip">目标 ${s.w}×${s.h} px</span>`;
+          html += `<span class="info-chip">${s.mm}</span>`;
+          html += `<span class="info-chip">${s.name}</span>`;
+        }
+        cropInfo.innerHTML = html;
+      }
 
+      function updateCropPreview() {
+        if (!transformedImage) return;
+
+        const scale = mainCanvas._scale || 1;
+        const srcX = cropX / scale;
+        const srcY = cropY / scale;
+        const srcW = cropW / scale;
+        const srcH = cropH / scale;
+
+        const realW = Math.round(srcW);
+        const realH = Math.round(srcH);
+
+        // 预览尺寸（缩略图）
+        const previewMaxSize = 200;
+        const previewScale = Math.min(previewMaxSize / realW, previewMaxSize / realH, 1);
+        const pw = Math.round(realW * previewScale);
+        const ph = Math.round(realH * previewScale);
+
+        cropPreviewCanvas.width = pw;
+        cropPreviewCanvas.height = ph;
+        const pCtx = cropPreviewCanvas.getContext('2d');
+
+        const safeSrcX = Math.max(0, Math.min(srcX, transformedImage.width - 1));
+        const safeSrcY = Math.max(0, Math.min(srcY, transformedImage.height - 1));
+        const safeSrcW = Math.min(srcW, transformedImage.width - safeSrcX);
+        const safeSrcH = Math.min(srcH, transformedImage.height - safeSrcY);
+
+        pCtx.drawImage(
+          transformedImage,
+          safeSrcX, safeSrcY, safeSrcW, safeSrcH,
+          0, 0, pw, ph
+        );
+
+        cropPreviewDims.textContent = `裁剪预览: ${realW} × ${realH} px`;
       }
 
       // === 鼠标交互 ===
@@ -582,10 +916,7 @@
       }
 
       function hitTest(mx, my) {
-        const edge = 14; // 抓取范围
-        const hs   = 14;  // 手柄大小
-
-        // 手柄
+        const hs = 14;
         const corners = [
           { key: 'tl', cx: cropX,        cy: cropY         },
           { key: 'tr', cx: cropX + cropW, cy: cropY         },
@@ -599,7 +930,6 @@
           }
         }
 
-        // 内部
         if (mx >= cropX && mx <= cropX + cropW && my >= cropY && my <= cropY + cropH) {
           return 'move';
         }
@@ -672,16 +1002,17 @@
         cropY = Math.max(0, Math.min(cropY, mainCanvas.height - minW));
         cropW = Math.min(cropW, mainCanvas.width - cropX);
         cropH = Math.min(cropH, mainCanvas.height - cropY);
+
         // 保持宽高比
-        const s = SIZES[selectedSizeIdx];
-        const targetRatio = s.w / s.h;
-        const currentRatio = cropW / cropH;
-        if (Math.abs(currentRatio - targetRatio) > 0.001) { // 允许1像素误差
-          if (currentRatio > targetRatio) {
-            // 太宽了，缩窄
-            cropW = cropH * targetRatio;
-          } else {
-            cropH = cropW / targetRatio;
+        const targetRatio = getTargetRatio();
+        if (targetRatio !== null) {
+          const currentRatio = cropW / cropH;
+          if (Math.abs(currentRatio - targetRatio) > 0.001) {
+            if (currentRatio > targetRatio) {
+              cropW = cropH * targetRatio;
+            } else {
+              cropH = cropW / targetRatio;
+            }
           }
         }
         draw();
@@ -692,16 +1023,105 @@
         dragCorner = null;
       });
 
+      // 触摸支持
+      mainCanvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault() };
+        const { x, y } = getPointerPos(fakeEvent);
+        const hit = hitTest(x, y);
+        if (hit) {
+          dragging = true;
+          dragCorner = hit;
+          dragStartX = x;
+          dragStartY = y;
+          boxStartX = cropX;
+          boxStartY = cropY;
+          boxStartW = cropW;
+          boxStartH = cropH;
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      mainCanvas.addEventListener('touchmove', (e) => {
+        if (!dragging || e.touches.length !== 1) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
+        // 触发相同的mousemove逻辑
+        const { x, y } = getPointerPos(fakeEvent);
+        const dx = x - dragStartX;
+        const dy = y - dragStartY;
+        const minW = 40;
+
+        switch (dragCorner) {
+          case 'move':
+            cropX = Math.max(0, Math.min(boxStartX + dx, mainCanvas.width - cropW));
+            cropY = Math.max(0, Math.min(boxStartY + dy, mainCanvas.height - cropH));
+            break;
+          case 'tl':
+            cropW = Math.max(minW, boxStartW - dx);
+            cropH = Math.max(minW, boxStartH - dy);
+            cropX = boxStartX + boxStartW - cropW;
+            cropY = boxStartY + boxStartH - cropH;
+            break;
+          case 'tr':
+            cropW = Math.max(minW, boxStartW + dx);
+            cropH = Math.max(minW, boxStartH - dy);
+            cropX = boxStartX;
+            cropY = boxStartY + boxStartH - cropH;
+            break;
+          case 'bl':
+            cropW = Math.max(minW, boxStartW - dx);
+            cropH = Math.max(minW, boxStartH + dy);
+            cropX = boxStartX + boxStartW - cropW;
+            cropY = boxStartY;
+            break;
+          case 'br':
+            cropW = Math.max(minW, boxStartW + dx);
+            cropH = Math.max(minW, boxStartH + dy);
+            cropX = boxStartX;
+            cropY = boxStartY;
+            break;
+        }
+
+        cropX = Math.max(0, Math.min(cropX, mainCanvas.width - minW));
+        cropY = Math.max(0, Math.min(cropY, mainCanvas.height - minW));
+        cropW = Math.min(cropW, mainCanvas.width - cropX);
+        cropH = Math.min(cropH, mainCanvas.height - cropY);
+
+        const targetRatio = getTargetRatio();
+        if (targetRatio !== null) {
+          const currentRatio = cropW / cropH;
+          if (Math.abs(currentRatio - targetRatio) > 0.001) {
+            if (currentRatio > targetRatio) cropW = cropH * targetRatio;
+            else cropH = cropW / targetRatio;
+          }
+        }
+        draw();
+      }, { passive: false });
+
+      mainCanvas.addEventListener('touchend', () => {
+        dragging = false;
+        dragCorner = null;
+      });
+
       // === 裁剪下载 ===
       function cropAndDownload() {
-        if (!originalImage) return;
+        if (!transformedImage) return;
 
-        const s      = SIZES[selectedSizeIdx];
-        const scale  = mainCanvas._scale || 1;
+        const scale = mainCanvas._scale || 1;
+        const s = SIZES[selectedSizeIdx];
 
-        // 用目标像素尺寸输出（不是显示像素）
-        const outW   = s.w;
-        const outH   = s.h;
+        // 计算输出尺寸
+        let outW, outH;
+        if (s.w > 0 && s.h > 0) {
+          outW = s.w;
+          outH = s.h;
+        } else {
+          outW = Math.round(cropW / scale);
+          outH = Math.round(cropH / scale);
+        }
 
         // 计算原图中的裁剪坐标
         const srcX   = cropX / scale;
@@ -709,11 +1129,10 @@
         const srcW   = cropW / scale;
         const srcH   = cropH / scale;
 
-        // 防止越界
-        const safeSrcX = Math.max(0, Math.min(srcX, originalImage.width  - 1));
-        const safeSrcY = Math.max(0, Math.min(srcY, originalImage.height - 1));
-        const safeSrcW = Math.min(srcW, originalImage.width  - safeSrcX);
-        const safeSrcH = Math.min(srcH, originalImage.height - safeSrcY);
+        const safeSrcX = Math.max(0, Math.min(srcX, transformedImage.width  - 1));
+        const safeSrcY = Math.max(0, Math.min(srcY, transformedImage.height - 1));
+        const safeSrcW = Math.min(srcW, transformedImage.width  - safeSrcX);
+        const safeSrcH = Math.min(srcH, transformedImage.height - safeSrcY);
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width  = outW;
@@ -721,7 +1140,7 @@
         const tCtx = tempCanvas.getContext('2d');
 
         tCtx.drawImage(
-          originalImage,
+          transformedImage,
           safeSrcX, safeSrcY, safeSrcW, safeSrcH,
           0, 0, outW, outH
         );
@@ -738,6 +1157,6 @@
       }
     })();
   </script>
-<footer class="footer"><div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div></footer>
+  <footer class="footer"><div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div></footer>
 </body>
 </html>
