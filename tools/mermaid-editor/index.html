@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mermaid图表编辑器 - 在线工具箱</title>
-  <meta name="description" content="Mermaid代码实时渲染，流程图/时序图模板">
+  <meta name="description" content="Mermaid代码实时渲染，流程图/时序图/ER图/状态图模板">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
@@ -12,22 +12,42 @@
 .breadcrumb{margin-bottom:16px;font-size:14px;color:#666}
 .breadcrumb a{color:#4a90d9;text-decoration:none}
 .breadcrumb a:hover{text-decoration:underline}
-.card{background:#fff;border-radius: 10px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:20px;margin-bottom:20px}
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:20px;margin-bottom:20px}
 .card h2{margin:0 0 16px;font-size:18px;color:#333}
 .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.toolbar select,.toolbar button{padding:8px 14px;border:1px solid #ddd;border-radius: 10px;font-size:14px;cursor:pointer;background:#fff}
+.toolbar select,.toolbar button{padding:8px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;cursor:pointer;background:#fff}
 .toolbar select:focus,.toolbar button:focus{outline:none;border-color:#4a90d9}
 .toolbar button{background:#4a90d9;color:#fff;border-color:#4a90d9}
 .toolbar button:hover{background:#357abd}
 .toolbar button.secondary{background:#6c757d;border-color:#6c757d}
 .toolbar button.secondary:hover{background:#5a6268}
+.toolbar button.outline{background:#fff;color:#4a90d9;border-color:#4a90d9}
+.toolbar button.outline:hover{background:#e8f0fe}
 .editor-wrap{display:flex;gap:0;flex-wrap:wrap}
 .editor-wrap>.editor-panel,.editor-wrap>.preview-panel{flex:1;min-width:0}
-.editor-panel textarea{width:100%;min-height:400px;border:1px solid #ddd;border-radius: 10px;padding:12px;font-family:'Fira Code',Consolas,monospace;font-size:14px;resize:vertical;line-height:1.6}
+.editor-panel{position:relative}
+.editor-panel textarea{width:100%;min-height:400px;border:1px solid #ddd;border-radius:10px;padding:12px;font-family:'Fira Code',Consolas,monospace;font-size:14px;resize:vertical;line-height:1.6;tab-size:4}
 .editor-panel textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 3px rgba(74,144,217,.15)}
-.preview-panel{border:1px solid #ddd;border-radius: 10px;padding:16px;min-height:400px;overflow:auto;overflow-x:auto;background:#fafafa}
-.preview-panel svg{max-width:100%}
-.error-box{background:#fff3f3;border:1px solid #f5c6cb;color:#721c24;padding:10px 14px;border-radius: 10px;margin-top:10px;font-size:13px;display:none}
+.editor-panel textarea.has-error{border-color:#f44336;box-shadow:0 0 0 3px rgba(244,67,54,.15)}
+.preview-panel{border:1px solid #ddd;border-radius:10px;padding:16px;min-height:400px;overflow:auto;overflow-x:auto;background:#fafafa;position:relative}
+.preview-panel svg{max-width:100%;transition:transform .2s ease}
+.preview-panel.fullscreen{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;border-radius:0;padding:40px;background:#fff;overflow:auto}
+.error-box{background:#fff3f3;border:1px solid #f5c6cb;color:#721c24;padding:10px 14px;border-radius:10px;margin-top:10px;font-size:13px;display:none}
+.zoom-controls{position:absolute;top:10px;right:10px;display:flex;gap:4px;z-index:10}
+.zoom-controls button{width:32px;height:32px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.zoom-controls button:hover{background:#f0f0f0}
+.zoom-level{font-size:11px;color:#999;min-width:40px;text-align:center;line-height:32px}
+/* Syntax reference panel */
+.syntax-ref{margin-top:12px;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden}
+.syntax-ref-header{padding:10px 16px;background:#f8f9fa;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px;color:#555;user-select:none}
+.syntax-ref-header:hover{background:#eef1f5}
+.syntax-ref-header .arrow{transition:transform .2s}
+.syntax-ref-header.open .arrow{transform:rotate(90deg)}
+.syntax-ref-body{display:none;padding:16px;font-size:13px;font-family:monospace;line-height:1.8;max-height:300px;overflow:auto;background:#fafbfc}
+.syntax-ref-body.open{display:block}
+.syntax-ref-body code{background:#e8f0fe;padding:2px 6px;border-radius:4px;color:#1a73e8;font-size:12px}
+.syntax-ref-body pre{background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-size:12px;line-height:1.6}
+.error-line-highlight{background:rgba(244,67,54,.1);position:relative}
 @media(max-width:768px){.editor-wrap{flex-direction:column}.toolbar{flex-direction:column;align-items:stretch}}
 footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
 
@@ -62,11 +82,17 @@ footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
 <option value="class">类图</option>
 <option value="pie">饼图</option>
 <option value="gantt">甘特图</option>
+<option value="er">ER图</option>
+<option value="state">状态图</option>
+<option value="mindmap">思维导图</option>
+<option value="gitgraph">Git图</option>
 </select>
 <button onclick="loadExample()">加载示例</button>
 <button onclick="renderMermaid()">▶ 渲染</button>
 <button onclick="downloadSVG()" class="secondary">⬇ 下载SVG</button>
+<button onclick="downloadPNG()" class="secondary">🖼️ 下载PNG</button>
 <button onclick="copySVG()" class="secondary">📋 复制SVG</button>
+<button onclick="toggleFullscreen()" class="outline" id="fullscreenBtn">🖥️ 全屏预览</button>
 </div>
 <div class="editor-wrap">
 <div class="editor-panel">
@@ -74,14 +100,32 @@ footer{text-align:center;padding:20px;color:#999;font-size:13px;margin-top:40px}
 <div id="errorBox" class="error-box"></div>
 </div>
 <div class="resizer" id="resizer"></div>
-<div class="preview-panel" id="preview"></div>
+<div class="preview-panel" id="preview">
+<div class="zoom-controls">
+<button onclick="zoomOut()" title="缩小">−</button>
+<span class="zoom-level" id="zoomLevel">100%</span>
+<button onclick="zoomIn()" title="放大">+</button>
+<button onclick="zoomReset()" title="重置">⟲</button>
+</div>
+</div>
+</div>
+<div class="syntax-ref">
+<div class="syntax-ref-header" onclick="toggleSyntaxRef(this)">
+<span>📖 语法参考速查表</span>
+<span class="arrow">▸</span>
+</div>
+<div class="syntax-ref-body" id="syntaxRefBody"></div>
 </div>
 </div>
 <footer>© 2026 在线工具箱</footer>
 </div>
 <script src="../../assets/js/common.js"></script>
 <script>
+let currentZoom=100;
+let isFullscreen=false;
+
 function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
+
 const examples={
 flowchart:`flowchart TD
     A[开始] --> B{条件判断}
@@ -131,33 +175,380 @@ gantt:`gantt
     后端开发    :2026-01-20, 25d
     section 测试阶段
     集成测试    :2026-02-15, 10d
-    上线部署    :2026-02-25, 5d`
+    上线部署    :2026-02-25, 5d`,
+er:`erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    CUSTOMER {
+        string name
+        string email
+        int age
+    }
+    ORDER ||--|{ LINE-ITEM : contains
+    ORDER {
+        int orderNumber
+        date orderDate
+        float totalAmount
+    }
+    LINE-ITEM {
+        string product
+        int quantity
+        float price
+    }
+    PRODUCT ||--o{ LINE-ITEM : "ordered in"`,
+state:`stateDiagram-v2
+    [*] --> 待支付
+    待支付 --> 已支付: 支付成功
+    待支付 --> 已取消: 超时/取消
+    已支付 --> 待发货: 商家确认
+    已支付 --> 退款中: 申请退款
+    待发货 --> 已发货: 商家发货
+    已发货 --> 已签收: 用户签收
+    已签收 --> 已完成: 确认收货
+    已签收 --> 售后中: 申请售后
+    退款中 --> 已退款: 退款成功
+    售后中 --> 已完成: 售后完成
+    已取消 --> [*]
+    已退款 --> [*]
+    已完成 --> [*]`,
+mindmap:`mindmap
+  root((项目计划))
+    需求分析
+      用户调研
+      竞品分析
+      需求文档
+    设计阶段
+      UI设计
+      架构设计
+      数据库设计
+    开发阶段
+      前端开发
+        Vue.js
+        响应式布局
+      后端开发
+        API设计
+        数据库
+    测试上线
+      单元测试
+      集成测试
+      部署上线`,
+gitgraph:`gitGraph
+  commit id: "初始提交"
+  commit id: "添加README"
+  branch develop
+  checkout develop
+  commit id: "开发功能A"
+  commit id: "开发功能B"
+  checkout main
+  merge develop id: "合并develop"
+  commit id: "发布v1.0"
+  branch feature
+  checkout feature
+  commit id: "新功能开发"
+  commit id: "功能完善"
+  checkout develop
+  merge feature id: "合并feature"
+  checkout main
+  merge develop id: "发布v1.1"`
 };
+
+const syntaxRef={
+flowchart:`<strong>流程图 (Flowchart)</strong>
+<pre>flowchart 方向
+方向: TD(上到下), LR(左到右), TB, RL
+
+节点形状:
+  A[文本]       → 矩形
+  A(文本)       → 圆角矩形
+  A{文本}       → 菱形(判断)
+  A((文本))     → 圆形
+  A([文本])     → 体育场形
+  A[[文本]]     → 子程序
+  A[(文本)]     → 圆柱(数据库)
+  A&gt;/文本/]   → 旗帜形
+
+连接线:
+  A --> B        → 实线箭头
+  A --- B        → 实线无箭头
+  A -.-> B       → 虚线箭头
+  A ==> B        → 粗线箭头
+  A -- 文本 --> B → 带文本实线
+  A -->|文本| B  → 带标签箭头</pre>`,
+sequence:`<strong>时序图 (Sequence)</strong>
+<pre>sequenceDiagram
+参与者:
+  participant 别名 as 显示名
+
+消息:
+  A->>B: 同步消息(实线实箭头)
+  A-->>B: 同步返回(虚线实箭头)
+  A->B: 同步(实线)
+  A--B: 返回(虚线)
+
+激活/失活:
+  activate A
+  deactivate A
+
+注释:
+  Note left of A: 左侧注释
+  Note right of B: 右侧注释
+  Note over A,B: 跨参与者注释
+
+循环/条件:
+  loop 每次循环
+    A->>B: 消息
+  end
+  alt 条件成立
+    A->>B: 消息
+  else 否则
+    A->>B: 其他消息
+  end</pre>`,
+er:`<strong>ER图 (Entity Relationship)</strong>
+<pre>erDiagram
+实体定义:
+  实体名 {
+    类型 属性名
+    string name
+    int age
+    date created_at
+  }
+
+关系:
+  A ||--|| B : 1对1
+  A ||--o{ B : 1对多
+  A }o--o{ B : 多对多
+  A }|--|| B : 多对1
+
+符号说明:
+  ||  恰好一个(必须)
+  o|  零或一个(可选)
+  }|  一个或多个
+  }o  零或多个</pre>`,
+state:`<strong>状态图 (State Diagram)</strong>
+<pre>stateDiagram-v2
+  [*] --> 初始状态     起始
+  状态A --> 状态B: 事件
+  状态B --> [*]       终止
+
+  复合状态:
+    state 运行中 {
+      [*] --> 空闲
+      空闲 --> 处理: 收到请求
+      处理 --> 空闲: 完成
+    }
+
+  备注:
+    note right of 状态A: 注释内容
+
+  选择:
+    state choice1 <<choice>>
+    状态A --> choice1
+    choice1 --> 状态B: 条件1
+    choice1 --> 状态C: 条件2</pre>`,
+mindmap:`<strong>思维导图 (Mindmap)</strong>
+<pre>mindmap
+  root((中心主题))
+    一级分支
+      二级分支
+        三级分支
+      二级分支
+    一级分支
+
+节点形状:
+  root((文本))  → 圆形
+  root(文本)    → 圆角矩形
+  root)文本(    → 气泡
+  root{{文本}}  → 六边形
+  root[文本]    → 矩形
+  root)文本     → 旗帜</pre>`,
+gitgraph:`<strong>Git图 (Git Graph)</strong>
+<pre>gitGraph
+  commit id: "描述"
+  branch 分支名
+  checkout 分支名
+  commit id: "描述"
+  merge 分支名 id: "描述"
+  cherry-pick id: "commit_id"
+  checkout main
+
+选项:
+  commit
+    id: "标识"
+    tag: "标签"
+    type: Normal/Reverse/Highlight</pre>`,
+pie:`<strong>饼图 (Pie)</strong>
+<pre>pie title 标题
+  "标签1" : 数值
+  "标签2" : 数值
+  "标签3" : 数值</pre>`,
+class:`<strong>类图 (Class)</strong>
+<pre>classDiagram
+  class 类名 {
+    +public 属性
+    -private 属性
+    #protected 属性
+    +方法()
+  }
+
+关系:
+  A <|-- B     继承
+  A *-- B      组合
+  A o-- B      聚合
+  A --> B      关联
+  A -- B       链接(实线)
+  A ..> B      依赖
+  A .. B       实现</pre>`,
+gantt:`<strong>甘特图 (Gantt)</strong>
+<pre>gantt
+  title 标题
+  dateFormat YYYY-MM-DD
+
+  section 阶段名
+  任务名 :a1, 2026-01-01, 10d
+  任务B :after a1, 5d
+  任务C :2026-01-20, 1w
+
+时间单位: d(天), w(周), h(小时), m(分钟)
+状态标记:
+  任务名 :done, a1, 2026-01-01, 5d
+  任务名 :active, a2, 2026-01-06, 5d
+  任务名 :crit, a3, 2026-01-11, 5d</pre>`
+};
+
+// Build syntax reference
+function buildSyntaxRef(type){
+const body=document.getElementById('syntaxRefBody');
+body.innerHTML=syntaxRef[type]||syntaxRef.flowchart;
+}
+
 mermaid.initialize({startOnLoad:false,theme:'default',securityLevel:'loose'});
-function loadExample(){document.getElementById('mermaidCode').value=examples[document.getElementById('exampleSelect').value];renderMermaid();}
+
+function loadExample(){
+const sel=document.getElementById('exampleSelect');
+const val=sel.value;
+document.getElementById('mermaidCode').value=examples[val];
+buildSyntaxRef(val);
+renderMermaid();
+}
+
 async function renderMermaid(){
 const code=document.getElementById('mermaidCode').value.trim();
 const preview=document.getElementById('preview');
 const errorBox=document.getElementById('errorBox');
-errorBox.style.display='none';preview.innerHTML='';
+const textarea=document.getElementById('mermaidCode');
+errorBox.style.display='none';
+textarea.classList.remove('has-error');
+// Remove old SVG but keep zoom controls
+const oldSvg=preview.querySelector('svg');
+if(oldSvg)oldSvg.remove();
 if(!code)return;
 try{
-const {svg}=await mermaid.render('mermaidGraph',code);
-preview.innerHTML=svg;
+const {svg}=await mermaid.render('mermaidGraph_'+Date.now(),code);
+const wrapper=document.createElement('div');
+wrapper.innerHTML=svg;
+const svgEl=wrapper.firstElementChild;
+svgEl.style.transform=`scale(${currentZoom/100})`;
+svgEl.style.transformOrigin='top left';
+preview.insertBefore(svgEl,preview.querySelector('.zoom-controls'));
 }catch(e){
-errorBox.textContent='语法错误：'+(e.message||e);errorBox.style.display='block';
+const msg=e.message||String(e);
+errorBox.textContent='语法错误：'+msg;errorBox.style.display='block';
+textarea.classList.add('has-error');
+// Try to highlight error line
+highlightErrorLine(msg,code);
 }
 }
-function getSVG(){return document.getElementById('preview').innerHTML;}
+
+function highlightErrorLine(errMsg,code){
+const textarea=document.getElementById('mermaidCode');
+// Try to extract line number from mermaid error
+const lineMatch=errMsg.match(/line\s*[:\s]*(\d+)/i);
+if(lineMatch){
+const lineNum=parseInt(lineMatch[1]);
+// Visual indicator via custom highlight overlay
+showMessage('warning',`错误在第 ${lineNum} 行附近，请检查代码`);
+}
+}
+
+function getSVG(){
+const svgEl=document.getElementById('preview').querySelector('svg');
+return svgEl?svgEl.outerHTML:'';
+}
+
 function downloadSVG(){
-const svg=getSVG();if(!svg){alert('请先渲染图表');return;}
+const svg=getSVG();if(!svg){showMessage('warning','请先渲染图表');return;}
 const blob=new Blob([svg],{type:'image/svg+xml'});const a=document.createElement('a');
 a.href=URL.createObjectURL(blob);a.download='mermaid-chart.svg';a.click();URL.revokeObjectURL(a.href);
 }
-function copySVG(){
-const svg=getSVG();if(!svg){alert('请先渲染图表');return;}
-navigator.clipboard.writeText(svg).then(()=>alert('SVG代码已复制到剪贴板'));
+
+function downloadPNG(){
+const svg=getSVG();if(!svg){showMessage('warning','请先渲染图表');return;}
+const svgEl=document.getElementById('preview').querySelector('svg');
+const canvas=document.createElement('canvas');
+const ctx=canvas.getContext('2d');
+const bbox=svgEl.getBoundingClientRect();
+const dpr=window.devicePixelRatio||1;
+canvas.width=bbox.width*dpr;canvas.height=bbox.height*dpr;
+canvas.style.width=bbox.width+'px';canvas.style.height=bbox.height+'px';
+ctx.scale(dpr,dpr);
+
+const img=new Image();
+const svgData=new XMLSerializer().serializeToString(svgEl);
+const svgBlob=new Blob([svgData],{type:'image/svg+xml;charset=utf-8'});
+const url=URL.createObjectURL(svgBlob);
+img.onload=function(){
+ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.drawImage(img,0,0,bbox.width,bbox.height);
+URL.revokeObjectURL(url);
+const a=document.createElement('a');
+a.download='mermaid-chart.png';
+a.href=canvas.toDataURL('image/png');
+a.click();
+};
+img.onerror=function(){
+URL.revokeObjectURL(url);
+showMessage('error','PNG导出失败，请尝试下载SVG');
+};
+img.src=url;
 }
+
+function copySVG(){
+const svg=getSVG();if(!svg){showMessage('warning','请先渲染图表');return;}
+navigator.clipboard.writeText(svg).then(()=>showMessage('success','SVG代码已复制到剪贴板'));
+}
+
+// Zoom controls
+function zoomIn(){currentZoom=Math.min(currentZoom+20,300);applyZoom();}
+function zoomOut(){currentZoom=Math.max(currentZoom-20,30);applyZoom();}
+function zoomReset(){currentZoom=100;applyZoom();}
+function applyZoom(){
+document.getElementById('zoomLevel').textContent=currentZoom+'%';
+const svgEl=document.getElementById('preview').querySelector('svg');
+if(svgEl){svgEl.style.transform=`scale(${currentZoom/100})`;svgEl.style.transformOrigin='top left';}
+}
+
+// Fullscreen
+function toggleFullscreen(){
+const preview=document.getElementById('preview');
+isFullscreen=!isFullscreen;
+preview.classList.toggle('fullscreen',isFullscreen);
+document.getElementById('fullscreenBtn').textContent=isFullscreen?'✕ 退出全屏':'🖥️ 全屏预览';
+}
+document.addEventListener('keydown',e=>{
+if(e.key==='Escape'&&isFullscreen)toggleFullscreen();
+});
+
+// Syntax reference toggle
+function toggleSyntaxRef(header){
+header.classList.toggle('open');
+const body=header.nextElementSibling;
+body.classList.toggle('open');
+}
+
+// Update syntax ref when example type changes
+document.getElementById('exampleSelect').addEventListener('change',function(){
+buildSyntaxRef(this.value);
+});
+
 document.getElementById('mermaidCode').addEventListener('input',debounce(renderMermaid,500));
 loadExample();
 

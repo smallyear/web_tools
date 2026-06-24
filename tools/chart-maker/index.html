@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>图表生成器 - 网页工具集</title>
-  <meta name="description" content="柱状图/饼图/折线图/环形图在线生成">
+  <meta name="description" content="柱状图/饼图/折线图/环形图/雷达图在线生成">
 <link rel="stylesheet" href="../../assets/css/style.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -24,11 +24,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
 .panel h3{margin-bottom:16px;font-size:1.1rem}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:.9rem;color:#555;margin-bottom:6px;font-weight:500}
-.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius: 10px;font-size:.9rem;outline:none;transition:border .3s;font-family:inherit}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius:10px;font-size:.9rem;outline:none;transition:border .3s;font-family:inherit}
 .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:#1a73e8}
 .form-group textarea{height:160px;resize:vertical}
 .chart-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
-.chart-tab{padding:8px 16px;border:2px solid #e0e0e0;background:#fff;border-radius: 10px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.chart-tab{padding:8px 16px;border:2px solid #e0e0e0;background:#fff;border-radius:10px;cursor:pointer;font-size:.85rem;transition:all .2s}
 .chart-tab:hover{border-color:#1a73e8}
 .chart-tab.active{border-color:#1a73e8;background:#e8f0fe;color:#1a73e8;font-weight:600}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -40,18 +40,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
 .toggle input:checked+.slider{background:#1a73e8}
 .toggle input:checked+.slider:before{transform:translateX(20px)}
 .color-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.color-swatch{width:28px;height:28px;border-radius: 10px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.color-swatch{width:28px;height:28px;border-radius:10px;cursor:pointer;border:2px solid transparent;transition:all .2s}
 .color-swatch:hover,.color-swatch.active{border-color:#333;transform:scale(1.1)}
 .btn-row{display:flex;gap:8px;margin-top:16px}
-.btn-row button{flex:1;padding:10px;border:none;border-radius: 10px;font-size:.9rem;cursor:pointer;transition:all .2s}
+.btn-row button{flex:1;padding:10px;border:none;border-radius:10px;font-size:.9rem;cursor:pointer;transition:all .2s}
 .btn-primary{background:#1a73e8;color:#fff}
 .btn-primary:hover{background:#1557b0}
 .btn-secondary{background:#f5f5f5;color:#333}
 .btn-secondary:hover{background:#e0e0e0}
 .btn-success{background:#4CAF50;color:#fff}
 .btn-success:hover{background:#388E3C}
-.chart-area{min-height:400px;display:flex;align-items:center;justify-content:center}
-.chart-area canvas{max-width:100%;border-radius: 10px}
+.btn-info{background:#00bcd4;color:#fff}
+.btn-info:hover{background:#0097a7}
+.chart-area{min-height:400px;display:flex;align-items:center;justify-content:center;position:relative}
+.chart-area canvas{max-width:100%;border-radius:10px}
 .footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
 </style>
 </head>
@@ -67,7 +69,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
 <div class="container">
 <div class="header">
 <h1>📊 图表生成器</h1>
-<p>输入数据，选择图表类型，一键生成可视化图表</p>
+<p>输入数据，选择图表类型，一键生成可视化图表（支持导出PNG/SVG）</p>
 </div>
 <div class="main-grid">
 <div class="panel">
@@ -87,9 +89,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
 <label>图表类型</label>
 <div class="chart-tabs" id="chartTabs">
 <div class="chart-tab active" data-type="bar">📊 柱状图</div>
+<div class="chart-tab" data-type="hbar">📊 水平柱状图</div>
 <div class="chart-tab" data-type="pie">🥧 饼图</div>
 <div class="chart-tab" data-type="line">📈 折线图</div>
 <div class="chart-tab" data-type="donut">🍩 环形图</div>
+<div class="chart-tab" data-type="radar">🕸️ 雷达图</div>
 </div>
 </div>
 <div class="form-group">
@@ -101,12 +105,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
 <div class="toggle"><input type="checkbox" id="showValues" checked><span class="slider"></span></div>
 </div>
 <div class="toggle-row">
+<label>显示图例</label>
+<div class="toggle"><input type="checkbox" id="showLegend" checked><span class="slider"></span></div>
+</div>
+<div class="toggle-row">
+<label>显示网格线</label>
+<div class="toggle"><input type="checkbox" id="showGrid" checked><span class="slider"></span></div>
+</div>
+<div class="toggle-row">
 <label>动画效果</label>
 <div class="toggle"><input type="checkbox" id="showAnim" checked><span class="slider"></span></div>
 </div>
 <div class="btn-row">
 <button class="btn-primary" onclick="renderChart()">🎨 生成图表</button>
 <button class="btn-success" onclick="downloadPNG()">💾 下载PNG</button>
+<button class="btn-info" onclick="downloadSVG()">📐 下载SVG</button>
 </div>
 <div class="btn-row">
 <button class="btn-secondary" onclick="loadExample('sales')">📦 销售示例</button>
@@ -127,7 +140,9 @@ const COLOR_SCHEMES=[
 {name:'柔和',colors:['#64b5f6','#81c784','#ffb74d','#e57373','#ba68c8','#4dd0e1','#fff176','#a1887f']},
 {name:'深沉',colors:['#1565c0','#2e7d32','#e65100','#b71c1c','#4a148c','#006064','#f57f17','#3e2723']},
 {name:'莫兰迪',colors:['#b5838d','#6d6875','#e5989b','#ffb4a2','#ffcdb2','#a3b18a','#58815d','#344e41']},
-{name:'单色蓝',colors:['#0d47a1','#1565c0','#1976d2','#1e88e5','#2196f3','#42a5f5','#64b5f6','#90caf9']}
+{name:'单色蓝',colors:['#0d47a1','#1565c0','#1976d2','#1e88e5','#2196f3','#42a5f5','#64b5f6','#90caf9']},
+{name:'粉色系',colors:['#f8bbd0','#f48fb1','#ec407a','#e91e63','#c2185b','#ad1457','#880e4f','#880e4f']},
+{name:'薄荷',colors:['#80cbc4','#4db6ac','#26a69a','#009688','#00897b','#00796b','#00695c','#004d40']}
 ];
 
 let currentScheme=0;
@@ -190,6 +205,8 @@ const title=document.getElementById('chartTitle').value;
 const colors=COLOR_SCHEMES[currentScheme].colors;
 const showValues=document.getElementById('showValues').checked;
 const showAnim=document.getElementById('showAnim').checked;
+const showLegend=document.getElementById('showLegend').checked;
+const showGrid=document.getElementById('showGrid').checked;
 
 if(animFrame)cancelAnimationFrame(animFrame);
 
@@ -198,39 +215,40 @@ let progress=0;
 function animStep(){
 progress+=0.03;
 if(progress>1)progress=1;
-drawChart(ctx,data,title,colors,showValues,progress);
+drawChart(ctx,data,title,colors,showValues,showLegend,showGrid,progress);
 if(progress<1)animFrame=requestAnimationFrame(animStep);
 }
 animStep();
 }else{
-drawChart(ctx,data,title,colors,showValues,1);
+drawChart(ctx,data,title,colors,showValues,showLegend,showGrid,1);
 }
 }
 
-function drawChart(ctx,data,title,colors,showValues,progress){
+function drawChart(ctx,data,title,colors,showValues,showLegend,showGrid,progress){
 ctx.clearRect(0,0,700,500);
 switch(currentType){
-case'bar':drawBar(ctx,data,title,colors,showValues,progress);break;
-case'pie':drawPie(ctx,data,title,colors,showValues,progress);break;
-case'line':drawLine(ctx,data,title,colors,showValues,progress);break;
-case'donut':drawDonut(ctx,data,title,colors,showValues,progress);break;
+case'bar':drawBar(ctx,data,title,colors,showValues,showLegend,showGrid,progress);break;
+case'hbar':drawHBar(ctx,data,title,colors,showValues,showLegend,showGrid,progress);break;
+case'pie':drawPie(ctx,data,title,colors,showValues,showLegend,progress);break;
+case'line':drawLine(ctx,data,title,colors,showValues,showLegend,showGrid,progress);break;
+case'donut':drawDonut(ctx,data,title,colors,showValues,showLegend,progress);break;
+case'radar':drawRadar(ctx,data,title,colors,showValues,showLegend,progress);break;
 }
 }
 
-function drawBar(ctx,data,title,colors,showValues,progress){
+function drawBar(ctx,data,title,colors,showValues,showLegend,showGrid,progress){
 const W=700,H=500;
-const pad={top:60,right:40,bottom:80,left:60};
+const pad={top:60,right:40,bottom:showLegend?100:80,left:60};
 const cw=W-pad.left-pad.right;
 const ch=H-pad.top-pad.bottom;
 const maxVal=Math.max(...data.map(d=>d.value))*1.15;
 const barW=Math.min(60,cw/data.length*0.6);
 const gap=(cw-barW*data.length)/(data.length+1);
 
-// Title
 ctx.fillStyle='#333';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
 ctx.fillText(title,W/2,35);
 
-// Y-axis
+if(showGrid){
 ctx.strokeStyle='#e0e0e0';ctx.lineWidth=1;
 const steps=5;
 for(let i=0;i<=steps;i++){
@@ -239,11 +257,10 @@ ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
 ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='right';
 ctx.fillText(Math.round(maxVal*i/steps),pad.left-8,y+4);
 }
+}
 
-// X-axis line
 ctx.strokeStyle='#ccc';ctx.beginPath();ctx.moveTo(pad.left,pad.top+ch);ctx.lineTo(W-pad.right,pad.top+ch);ctx.stroke();
 
-// Bars
 data.forEach((d,i)=>{
 const x=pad.left+gap*(i+1)+barW*i;
 const fullH=ch*(d.value/maxVal);
@@ -251,7 +268,6 @@ const h=fullH*progress;
 const color=colors[i%colors.length];
 
 ctx.fillStyle=color;
-// Rounded top
 const r=4;
 const y=pad.top+ch-h;
 ctx.beginPath();
@@ -264,24 +280,76 @@ ctx.lineTo(x+barW,pad.top+ch);
 ctx.closePath();
 ctx.fill();
 
-// Value label
 if(showValues&&progress>0.9){
 ctx.fillStyle='#333';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
 ctx.fillText(d.value,x+barW/2,y-6);
 }
 
-// X label
 ctx.fillStyle='#555';ctx.font='12px sans-serif';ctx.textAlign='center';
 ctx.fillText(d.label,x+barW/2,pad.top+ch+20);
 });
 
-// Legend
-drawLegend(ctx,data,colors,H-25);
+if(showLegend)drawLegend(ctx,data,colors,H-25);
 }
 
-function drawPie(ctx,data,title,colors,showValues,progress){
+function drawHBar(ctx,data,title,colors,showValues,showLegend,showGrid,progress){
 const W=700,H=500;
-const cx=W/2,cy=H/2+10;
+const pad={top:60,right:80,bottom:showLegend?100:40,left:100};
+const cw=W-pad.left-pad.right;
+const ch=H-pad.top-pad.bottom;
+const maxVal=Math.max(...data.map(d=>d.value))*1.15;
+const barH=Math.min(40,ch/data.length*0.6);
+const gap=(ch-barH*data.length)/(data.length+1);
+
+ctx.fillStyle='#333';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
+ctx.fillText(title,W/2,35);
+
+if(showGrid){
+ctx.strokeStyle='#e0e0e0';ctx.lineWidth=1;
+const steps=5;
+for(let i=0;i<=steps;i++){
+const x=pad.left+cw*(i/steps);
+ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+ch);ctx.stroke();
+ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='center';
+ctx.fillText(Math.round(maxVal*i/steps),x,pad.top+ch+16);
+}
+}
+
+ctx.strokeStyle='#ccc';ctx.beginPath();ctx.moveTo(pad.left,pad.top+ch);ctx.lineTo(pad.left,pad.top);ctx.stroke();
+
+data.forEach((d,i)=>{
+const y=pad.top+gap*(i+1)+barH*i;
+const fullW=cw*(d.value/maxVal);
+const w=fullW*progress;
+const color=colors[i%colors.length];
+
+ctx.fillStyle=color;
+const r=4;
+ctx.beginPath();
+ctx.moveTo(pad.left,y);
+ctx.lineTo(pad.left+w-r,y);
+ctx.quadraticCurveTo(pad.left+w,y,pad.left+w,y+r);
+ctx.lineTo(pad.left+w,y+barH-r);
+ctx.quadraticCurveTo(pad.left+w,y+barH,pad.left+w-r,y+barH);
+ctx.lineTo(pad.left,y+barH);
+ctx.closePath();
+ctx.fill();
+
+if(showValues&&progress>0.9){
+ctx.fillStyle='#333';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+ctx.fillText(d.value,pad.left+w+6,y+barH/2+4);
+}
+
+ctx.fillStyle='#555';ctx.font='12px sans-serif';ctx.textAlign='right';
+ctx.fillText(d.label,pad.left-8,y+barH/2+4);
+});
+
+if(showLegend)drawLegend(ctx,data,colors,H-25);
+}
+
+function drawPie(ctx,data,title,colors,showValues,showLegend,progress){
+const W=700,H=500;
+const cx=W/2,cy=showLegend?H/2-10:H/2+10;
 const r=Math.min(W,H)*0.3;
 const total=data.reduce((s,d)=>s+d.value,0);
 
@@ -298,7 +366,6 @@ ctx.closePath();
 ctx.fillStyle=color;ctx.fill();
 ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
 
-// Label
 if(progress>0.9){
 const midAngle=startAngle+sliceAngle/2;
 const lx=cx+r*0.65*Math.cos(midAngle);
@@ -313,12 +380,12 @@ ctx.fillText((d.value/total*100).toFixed(1)+'%',lx,ly+14);
 startAngle+=sliceAngle;
 });
 
-drawLegend(ctx,data,colors,H-25);
+if(showLegend)drawLegend(ctx,data,colors,H-25);
 }
 
-function drawLine(ctx,data,title,colors,showValues,progress){
+function drawLine(ctx,data,title,colors,showValues,showLegend,showGrid,progress){
 const W=700,H=500;
-const pad={top:60,right:40,bottom:80,left:60};
+const pad={top:60,right:40,bottom:showLegend?100:80,left:60};
 const cw=W-pad.left-pad.right;
 const ch=H-pad.top-pad.bottom;
 const maxVal=Math.max(...data.map(d=>d.value))*1.15;
@@ -326,7 +393,7 @@ const maxVal=Math.max(...data.map(d=>d.value))*1.15;
 ctx.fillStyle='#333';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
 ctx.fillText(title,W/2,35);
 
-// Grid
+if(showGrid){
 ctx.strokeStyle='#e0e0e0';ctx.lineWidth=1;
 const steps=5;
 for(let i=0;i<=steps;i++){
@@ -335,18 +402,16 @@ ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
 ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.textAlign='right';
 ctx.fillText(Math.round(maxVal*i/steps),pad.left-8,y+4);
 }
+}
 
-// X-axis
 ctx.strokeStyle='#ccc';ctx.beginPath();ctx.moveTo(pad.left,pad.top+ch);ctx.lineTo(W-pad.right,pad.top+ch);ctx.stroke();
 
-// Points and lines
 const points=data.map((d,i)=>{
 const x=pad.left+cw*(i/(data.length-1||1));
 const y=pad.top+ch-ch*(d.value/maxVal)*progress;
 return{x,y};
 });
 
-// Area fill
 if(points.length>1){
 ctx.beginPath();ctx.moveTo(points[0].x,pad.top+ch);
 points.forEach(p=>ctx.lineTo(p.x,p.y));
@@ -358,7 +423,6 @@ grad.addColorStop(1,colors[0]+'05');
 ctx.fillStyle=grad;ctx.fill();
 }
 
-// Line
 if(points.length>1){
 ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
 for(let i=1;i<points.length;i++){
@@ -367,7 +431,6 @@ ctx.lineTo(points[i].x,points[i].y);
 ctx.strokeStyle=colors[0];ctx.lineWidth=3;ctx.lineJoin='round';ctx.stroke();
 }
 
-// Points
 points.forEach((p,i)=>{
 ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);
 ctx.fillStyle='#fff';ctx.fill();
@@ -380,11 +443,13 @@ ctx.fillText(data[i].value,p.x,p.y-14);
 ctx.fillStyle='#555';ctx.font='12px sans-serif';
 ctx.fillText(data[i].label,p.x,pad.top+ch+20);
 });
+
+if(showLegend)drawLegend(ctx,data,colors,H-25);
 }
 
-function drawDonut(ctx,data,title,colors,showValues,progress){
+function drawDonut(ctx,data,title,colors,showValues,showLegend,progress){
 const W=700,H=500;
-const cx=W/2,cy=H/2+10;
+const cx=W/2,cy=showLegend?H/2-10:H/2+10;
 const outerR=Math.min(W,H)*0.3;
 const innerR=outerR*0.55;
 const total=data.reduce((s,d)=>s+d.value,0);
@@ -404,7 +469,7 @@ ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
 
 if(progress>0.9){
 const midAngle=startAngle+sliceAngle/2;
-const lx=cx*(1-0)+((outerR+innerR)/2)*Math.cos(midAngle);
+const lx=cx+((outerR+innerR)/2)*Math.cos(midAngle);
 const ly=cy+((outerR+innerR)/2)*Math.sin(midAngle);
 ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
 if(showValues){
@@ -414,13 +479,102 @@ ctx.fillText((d.value/total*100).toFixed(1)+'%',lx,ly+4);
 startAngle+=sliceAngle;
 });
 
-// Center text
 ctx.fillStyle='#333';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
 ctx.fillText('总计',cx,cy-6);
 ctx.font='bold 20px sans-serif';
 ctx.fillText(total.toLocaleString(),cx,cy+18);
 
-drawLegend(ctx,data,colors,H-25);
+if(showLegend)drawLegend(ctx,data,colors,H-25);
+}
+
+function drawRadar(ctx,data,title,colors,showValues,showLegend,progress){
+const W=700,H=500;
+const cx=W/2,cy=showLegend?H/2-10:H/2+10;
+const r=Math.min(W,H)*0.32;
+const n=data.length;
+const maxVal=Math.max(...data.map(d=>d.value))*1.2;
+
+ctx.fillStyle='#333';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
+ctx.fillText(title,W/2,35);
+
+// Draw grid rings
+const rings=5;
+for(let ring=1;ring<=rings;ring++){
+const rr=r*(ring/rings);
+ctx.beginPath();
+for(let i=0;i<=n;i++){
+const angle=-Math.PI/2+2*Math.PI*(i%n)/n;
+const x=cx+rr*Math.cos(angle);
+const y=cy+rr*Math.sin(angle);
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+}
+ctx.closePath();
+ctx.strokeStyle='#e0e0e0';ctx.lineWidth=1;ctx.stroke();
+if(ring===rings){
+ctx.fillStyle='#f8f8f8';ctx.fill();
+}
+}
+
+// Draw axes
+for(let i=0;i<n;i++){
+const angle=-Math.PI/2+2*Math.PI*i/n;
+const x=cx+r*Math.cos(angle);
+const y=cy+r*Math.sin(angle);
+ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);
+ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.stroke();
+
+// Label
+const lx=cx+(r+20)*Math.cos(angle);
+const ly=cy+(r+20)*Math.sin(angle);
+ctx.fillStyle='#555';ctx.font='12px sans-serif';
+ctx.textAlign=Math.abs(angle+Math.PI/2)<0.1?'center':Math.cos(angle)>0?'left':'right';
+ctx.fillText(data[i].label,lx,ly+4);
+}
+
+// Draw data polygon
+const color=colors[0];
+ctx.beginPath();
+for(let i=0;i<=n;i++){
+const idx=i%n;
+const angle=-Math.PI/2+2*Math.PI*idx/n;
+const val=(data[idx].value/maxVal)*r*progress;
+const x=cx+val*Math.cos(angle);
+const y=cy+val*Math.sin(angle);
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+}
+ctx.closePath();
+ctx.fillStyle=color+'40';ctx.fill();
+ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();
+
+// Draw points and values
+for(let i=0;i<n;i++){
+const angle=-Math.PI/2+2*Math.PI*i/n;
+const val=(data[i].value/maxVal)*r*progress;
+const x=cx+val*Math.cos(angle);
+const y=cy+val*Math.sin(angle);
+
+ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+ctx.fillStyle='#fff';ctx.fill();
+ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();
+
+if(showValues&&progress>0.9){
+ctx.fillStyle='#333';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+const vx=cx+(val+14)*Math.cos(angle);
+const vy=cy+(val+14)*Math.sin(angle);
+ctx.fillText(data[i].value,vx,vy+4);
+}
+}
+
+// Ring values
+if(showValues&&progress>0.9){
+ctx.fillStyle='#aaa';ctx.font='10px sans-serif';ctx.textAlign='left';
+for(let ring=1;ring<=rings;ring++){
+const rr=r*(ring/rings);
+ctx.fillText(Math.round(maxVal*ring/rings),cx+4,cy-rr+12);
+}
+}
+
+if(showLegend)drawLegend(ctx,data,colors,H-25);
 }
 
 function drawLegend(ctx,data,colors,y){
@@ -441,6 +595,22 @@ const link=document.createElement('a');
 link.download=(document.getElementById('chartTitle').value||'chart')+'.png';
 link.href=canvas.toDataURL('image/png');
 link.click();
+}
+
+function downloadSVG(){
+// Render to a temporary SVG using canvas data
+const canvas=document.getElementById('chartCanvas');
+const pngData=canvas.toDataURL('image/png');
+const w=700,h=500;
+const svg=`<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+<image width="${w}" height="${h}" xlink:href="${pngData}"/>
+</svg>`;
+const blob=new Blob([svg],{type:'image/svg+xml'});
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');
+a.href=url;a.download=(document.getElementById('chartTitle').value||'chart')+'.svg';
+a.click();URL.revokeObjectURL(url);
 }
 
 function loadExample(type){
