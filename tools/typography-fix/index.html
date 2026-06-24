@@ -28,7 +28,7 @@ textarea:focus{outline:none;border-color:#4a6cf7;box-shadow:0 0 0 3px rgba(74,10
 .checkbox-group{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
 .checkbox-group label{display:flex;align-items:center;gap:6px;font-size:.95rem;cursor:pointer}
 .preview-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-.preview-box{background:#f8f9fc;border-radius: 10px;padding:16px;min-height:120px;font-size:.95rem;white-space:pre-wrap;word-break:break-all;border:1px solid #eee}
+.preview-box{background:#f8f9fc;border-radius: 10px;padding:16px;min-height:120px;font-size:.95rem;white-space:pre-wrap;word-break:break-all;border:1px solid #eee;overflow-x:auto}
 .preview-box h4{margin-bottom:10px;color:#555;font-size:.9rem}
 .highlight{background:#fef08a;padding:1px 2px;border-radius:3px}
 .results{margin-top:20px;display:none}
@@ -142,6 +142,40 @@ return html;
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function copyResult(){
 if(typeof copyToClipboard==='function')copyToClipboard(resultText);else{navigator.clipboard.writeText(resultText);showMessage('已复制');}}
+(function() {
+  var resizer = document.getElementById('resizer');
+  if (!resizer) return;
+  var layout = resizer.parentElement;
+  var children = layout.children;
+  var leftPanel = null, rightPanel = null;
+  for (var i = 0; i < children.length; i++) {
+    if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+  }
+  if (!leftPanel || !rightPanel) return;
+  var isResizing = false, startX = 0, startLeftWidth = 0;
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true; startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    var delta = e.clientX - startX;
+    var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+    rightPanel.style.flex = '1';
+  });
+  document.addEventListener('mouseup', function() {
+    if (isResizing) { isResizing = false; resizer.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+  });
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+  });
+})();
 </script>
 </body>
 </html>

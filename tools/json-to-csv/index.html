@@ -246,6 +246,40 @@ function downloadTsv(){
   document.getElementById('delimiter').value=origDelim;
   showToast('TSV文件已下载');
 }
+(function() {
+  var resizer = document.getElementById('resizer');
+  if (!resizer) return;
+  var layout = resizer.parentElement;
+  var children = layout.children;
+  var leftPanel = null, rightPanel = null;
+  for (var i = 0; i < children.length; i++) {
+    if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+  }
+  if (!leftPanel || !rightPanel) return;
+  var isResizing = false, startX = 0, startLeftWidth = 0;
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true; startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    var delta = e.clientX - startX;
+    var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+    rightPanel.style.flex = '1';
+  });
+  document.addEventListener('mouseup', function() {
+    if (isResizing) { isResizing = false; resizer.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+  });
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+  });
+})();
 </script>
 </body>
 </html>

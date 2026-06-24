@@ -14,7 +14,7 @@
 .card h3{margin-top:0;color:#333;border-bottom:2px solid #4a90d9;padding-bottom:.5rem}
 textarea{width:100%;min-height:200px;border:1px solid #ddd;border-radius: 10px;padding:.75rem;font-family:monospace;font-size:.9rem;resize:vertical;box-sizing:border-box}
 textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,144,217,.2)}
-.text-panels{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.text-panels{display:flex;gap:1rem}
 .text-panels .panel label{display:block;font-weight:bold;margin-bottom:.5rem;color:#333}
 .btn{background:#4a90d9;color:#fff;border:none;padding:.5rem 1.2rem;border-radius: 10px;cursor:pointer;font-size:.9rem;transition:background .2s}
 .btn:hover{background:#357abd}
@@ -55,7 +55,7 @@ textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,14
 .unified-legend span{display:flex;align-items:center;gap:.3rem}
 .unified-legend .dot{width:12px;height:12px;border-radius:2px}
 .footer{text-align:center;padding:2rem;color:#888;font-size:.8rem;margin-top:2rem;border-top:1px solid #eee}
-@media(max-width:768px){.tool-container{padding:.5rem}.card{padding:1rem}.text-panels{grid-template-columns:1fr}.side-by-side{grid-template-columns:1fr}.stats-bar{gap:.8rem}}
+@media(max-width:768px){.tool-container{padding:.5rem}.card{padding:1rem}.text-panels{flex-direction:column}.side-by-side{grid-template-columns:1fr}.stats-bar{gap:.8rem}}
 
     /* 拖拽分隔条 */
     .resizer {
@@ -88,6 +88,7 @@ textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px rgba(74,14
 <label>📄 文本A（原始文本）</label>
 <textarea id="textA" placeholder="在此输入原始文本..."></textarea>
 </div>
+<div class="resizer" id="resizer"></div>
 <div class="panel">
 <label>📄 文本B（对比文本）</label>
 <textarea id="textB" placeholder="在此输入对比文本..."></textarea>
@@ -327,6 +328,40 @@ t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
 document.body.appendChild(t);
 setTimeout(()=>t.remove(),2000);
 }
+(function() {
+  var resizer = document.getElementById('resizer');
+  if (!resizer) return;
+  var layout = resizer.parentElement;
+  var children = layout.children;
+  var leftPanel = null, rightPanel = null;
+  for (var i = 0; i < children.length; i++) {
+    if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+  }
+  if (!leftPanel || !rightPanel) return;
+  var isResizing = false, startX = 0, startLeftWidth = 0;
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true; startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    var delta = e.clientX - startX;
+    var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+    rightPanel.style.flex = '1';
+  });
+  document.addEventListener('mouseup', function() {
+    if (isResizing) { isResizing = false; resizer.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+  });
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+  });
+})();
 </script>
 <script src="../../assets/js/common.js"></script>
 <footer class="footer"><div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div></footer>

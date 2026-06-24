@@ -49,8 +49,8 @@
     .preset-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; width: 140px; }
 
     /* 输入输出区 */
-    .io-area { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-    @media (max-width: 768px) { .io-area { grid-template-columns: 1fr; } }
+    .io-area { display: flex; gap: 16px; margin-top: 16px; }
+    @media (max-width: 768px) { .io-area { flex-direction: column; } }
     .io-box textarea { width: 100%; min-height: 200px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Menlo', 'Consolas', monospace; resize: vertical; line-height: 1.6; }
     .io-box textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
     .io-label { font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -137,6 +137,7 @@
           <div class="io-label"><span>📝 输入文本</span><button class="btn btn-secondary" style="height:26px;padding:0 10px;font-size:12px;" onclick="clearInput()">清空</button></div>
           <textarea id="inputText" placeholder="在此输入文本..."></textarea>
         </div>
+        <div class="resizer" id="resizer"></div>
         <div class="io-box">
           <div class="io-label"><span>📤 输出结果</span><button class="btn btn-secondary" style="height:26px;padding:0 10px;font-size:12px;" onclick="copyOutput()">复制</button></div>
           <textarea id="outputText" placeholder="执行工作流后结果将显示在这里..." readonly></textarea>
@@ -449,6 +450,40 @@
     // 初始化
     initOpsList();
     refreshPresetSelect();
+    (function() {
+      var resizer = document.getElementById('resizer');
+      if (!resizer) return;
+      var layout = resizer.parentElement;
+      var children = layout.children;
+      var leftPanel = null, rightPanel = null;
+      for (var i = 0; i < children.length; i++) {
+        if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+      }
+      if (!leftPanel || !rightPanel) return;
+      var isResizing = false, startX = 0, startLeftWidth = 0;
+      resizer.addEventListener('mousedown', function(e) {
+        isResizing = true; startX = e.clientX;
+        startLeftWidth = leftPanel.getBoundingClientRect().width;
+        resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none'; e.preventDefault();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+        var delta = e.clientX - startX;
+        var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+        leftPanel.style.flex = 'none';
+        leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+        rightPanel.style.flex = '1';
+      });
+      document.addEventListener('mouseup', function() {
+        if (isResizing) { isResizing = false; resizer.classList.remove('active');
+        document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+      });
+      resizer.addEventListener('dblclick', function() {
+        leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+      });
+    })();
   </script>
 </body>
 </html>
