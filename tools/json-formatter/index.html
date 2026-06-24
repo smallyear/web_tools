@@ -243,13 +243,14 @@
             <span class="badge badge-success" id="outputInfo" style="display:none;"></span>
           </span>
           <div class="editor-actions">
-            <button class="btn btn-secondary" id="copyBtn">📋 复制</button>
-            <button class="btn btn-secondary" id="downloadJsonBtn">📥 下载</button>
+            <!-- 按钮已移至输出区内部浮动显示 -->
           </div>
         </div>
         <div class="output-wrapper">
           <div class="line-numbers" id="lineNumbers"></div>
           <div class="output-area with-lines" id="jsonOutput"></div>
+          <button class="btn btn-secondary" id="copyBtn" style="position:absolute;top:10px;right:10px;z-index:2;padding:6px 12px;font-size:12px;height:30px;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:none;">📋 复制</button>
+          <button class="btn btn-secondary" id="downloadJsonBtn" style="position:absolute;top:10px;right:78px;z-index:2;padding:6px 12px;font-size:12px;height:30px;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:none;">📥 下载</button>
         </div>
         <div class="stats-bar" id="statsBar" style="display:none;">
           <span>📊 行数: <strong id="statLines">0</strong></span>
@@ -374,6 +375,9 @@
         inputSize.style.display = 'inline';
       }
 
+      const copyBtn = document.getElementById('copyBtn');
+      const downloadBtn = document.getElementById('downloadJsonBtn');
+
       function setOutput(text, highlighted) {
         if (highlighted) {
           jsonOutput.innerHTML = highlighted;
@@ -382,6 +386,10 @@
         }
         updateLineNumbers(text);
         updateStats(text);
+        // 显示/隐藏浮动按钮
+        const hasContent = text && text.length > 0;
+        copyBtn.style.display = hasContent ? 'inline-flex' : 'none';
+        downloadBtn.style.display = hasContent ? 'inline-flex' : 'none';
       }
 
       function formatJSON() {
@@ -473,6 +481,8 @@
         statsBar.style.display = 'none';
         outputInfo.style.display = 'none';
         inputSize.style.display = 'none';
+        copyBtn.style.display = 'none';
+        downloadBtn.style.display = 'none';
       });
 
       document.getElementById('copyBtn').addEventListener('click', () => {
