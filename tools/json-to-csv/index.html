@@ -32,7 +32,23 @@ select{padding:8px 12px;border:1px solid #ddd;border-radius: 10px}
 .preview th,.preview td{padding:8px 12px;text-align:left;border-bottom:1px solid #eee}
 .preview th{background:#f5f7fa;font-weight:600;position:sticky;top:0}
 .preview tr:hover{background:#f9f9f9}
-</style>
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+  </style>
 </head>
 <body>
 <nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">

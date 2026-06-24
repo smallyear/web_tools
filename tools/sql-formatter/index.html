@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="../../assets/css/style.css">
     <style>
         .tool-controls {
+    .tool-controls > * { flex: 1; min-width: 0; }
+    .tool-controls {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -78,7 +80,27 @@
             padding: 5px 12px;
             font-size: 13px;
         }
-    </style>
+    
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+    .io-flex { display: flex; gap: 0; align-items: stretch; }
+    .io-flex > *:not(.resizer) { flex: 1; min-width: 0; }
+    @media (max-width: 768px) { .io-flex { flex-direction: column; } }
+
+  </style>
 </head>
 <body>
     <nav class="navbar">
@@ -101,25 +123,29 @@
             <p>在线SQL代码美化和压缩，支持关键字大写转换</p>
         </div>
 
-        <div class="card">
-            <div class="textarea-wrapper">
-                <label for="sqlInput"><strong>输入SQL语句：</strong></label>
-                <textarea id="sqlInput" placeholder="在此粘贴你的SQL语句...&#10;例如: select * from users where id = 1 and name = 'test'"></textarea>
+        <div class="io-flex">
+            <div class="card">
+                <div class="textarea-wrapper">
+                    <label for="sqlInput"><strong>输入SQL语句：</strong></label>
+                    <textarea id="sqlInput" placeholder="在此粘贴你的SQL语句...&#10;例如: select * from users where id = 1 and name = 'test'"></textarea>
+                </div>
+
+                <div class="tool-controls">
+                    <button class="btn btn-primary" onclick="beautifySQL()">格式化</button>
+                    <button class="btn btn-secondary" onclick="minifySQL()">压缩</button>
+                    <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+                </div>
             </div>
 
-            <div class="tool-controls">
-                <button class="btn btn-primary" onclick="beautifySQL()">格式化</button>
-                <button class="btn btn-secondary" onclick="minifySQL()">压缩</button>
-                <button class="btn btn-secondary" onclick="clearAll()">清空</button>
-            </div>
-        </div>
+            <div class="resizer" id="resizer"></div>
 
-        <div class="card">
-            <div class="output-header">
-                <h3>输出结果</h3>
-                <button class="btn btn-secondary btn-sm" onclick="copyOutput()">📋 复制</button>
+            <div class="card" style="overflow-x:auto;">
+                <div class="output-header">
+                    <h3>输出结果</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="copyOutput()">📋 复制</button>
+                </div>
+                <div class="output-area" id="sqlOutput">结果将显示在这里...</div>
             </div>
-            <div class="output-area" id="sqlOutput">结果将显示在这里...</div>
         </div>
     </div>
 
@@ -335,6 +361,54 @@
             copyToClipboard(text);
             showMessage('success', '已复制到剪贴板');
         }
+
+    // 拖拽分隔条逻辑
+    (function() {
+      const resizer = document.getElementById('resizer');
+      const layout = document.querySelector('.io-flex');
+      if (!resizer || !layout) return;
+      const leftPanel = layout.children[0];
+      const rightPanel = layout.children[2];
+      let isResizing = false;
+      let startX = 0;
+      let startLeftWidth = 0;
+
+      resizer.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        startLeftWidth = leftPanel.getBoundingClientRect().width;
+        resizer.classList.add('active');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        const totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+        const delta = e.clientX - startX;
+        const newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+        const leftPercent = (newLeftWidth / totalWidth) * 100;
+        leftPanel.style.flex = 'none';
+        leftPanel.style.width = leftPercent + '%';
+        rightPanel.style.flex = '1';
+      });
+
+      document.addEventListener('mouseup', function() {
+        if (isResizing) {
+          isResizing = false;
+          resizer.classList.remove('active');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+
+      resizer.addEventListener('dblclick', function() {
+        leftPanel.style.flex = '';
+        leftPanel.style.width = '';
+        rightPanel.style.flex = '';
+      });
+    })();
     </script>
 </body>
 </html>

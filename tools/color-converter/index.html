@@ -31,6 +31,24 @@ input[type="range"] { flex: 1; max-width: 200px; }
 .result-list li .value { font-family: 'SF Mono','Menlo',monospace; font-size: 14px; flex: 1; margin: 0 12px; word-break: break-all; }
 .result-list li .copy-hint { font-size: 12px; color: var(--primary, #4a90d9); white-space: nowrap; }
 footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+    .io-flex { display: flex; gap: 0; align-items: stretch; }
+    .io-flex > *:not(.resizer) { flex: 1; min-width: 0; }
+    @media (max-width: 768px) { .io-flex { flex-direction: column; } }
 </style>
 </head>
 <body>
@@ -44,29 +62,35 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
     <p>在 HEX、RGB、HSL 等颜色格式之间互相转换</p>
   </div>
 
-  <div class="card">
-    <h3>输入颜色</h3>
-    <div class="input-row">
-      <div class="color-picker-wrap">
-        <input type="color" id="picker" value="#4a90d9">
-        <input type="text" id="hexInput" value="#4a90d9" maxlength="7" placeholder="#000000">
+  <div class="io-flex">
+    <div style="flex:1;min-width:0;">
+      <div class="card">
+        <h3>输入颜色</h3>
+        <div class="input-row">
+          <div class="color-picker-wrap">
+            <input type="color" id="picker" value="#4a90d9">
+            <input type="text" id="hexInput" value="#4a90d9" maxlength="7" placeholder="#000000">
+          </div>
+        </div>
+        <div class="alpha-row">
+          <label>透明度 (Alpha):</label>
+          <input type="range" id="alphaRange" min="0" max="100" value="100">
+          <span id="alphaVal">100%</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>颜色预览</h3>
+        <div class="swatch" id="swatch"></div>
       </div>
     </div>
-    <div class="alpha-row">
-      <label>透明度 (Alpha):</label>
-      <input type="range" id="alphaRange" min="0" max="100" value="100">
-      <span id="alphaVal">100%</span>
+
+    <div class="resizer" id="resizer"></div>
+
+    <div class="card" style="flex:1;min-width:0;overflow-x:auto;">
+      <h3>转换结果 <span style="font-size:13px;color:var(--text-secondary,#666);font-weight:normal;">（点击可复制）</span></h3>
+      <ul class="result-list" id="results"></ul>
     </div>
-  </div>
-
-  <div class="card">
-    <h3>颜色预览</h3>
-    <div class="swatch" id="swatch"></div>
-  </div>
-
-  <div class="card">
-    <h3>转换结果 <span style="font-size:13px;color:var(--text-secondary,#666);font-weight:normal;">（点击可复制）</span></h3>
-    <ul class="result-list" id="results"></ul>
   </div>
 </div>
 
@@ -145,6 +169,54 @@ picker.addEventListener('input', () => { hexInput.value = picker.value; update()
 hexInput.addEventListener('input', update);
 alphaRange.addEventListener('input', update);
 update();
+
+// 拖拽分隔条逻辑
+(function() {
+  const resizer = document.getElementById('resizer');
+  const layout = document.querySelector('.io-flex');
+  if (!resizer || !layout) return;
+  const leftPanel = layout.children[0];
+  const rightPanel = layout.children[2];
+  let isResizing = false;
+  let startX = 0;
+  let startLeftWidth = 0;
+
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true;
+    startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    const totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    const delta = e.clientX - startX;
+    const newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    const leftPercent = (newLeftWidth / totalWidth) * 100;
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = leftPercent + '%';
+    rightPanel.style.flex = '1';
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (isResizing) {
+      isResizing = false;
+      resizer.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
+
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = '';
+    leftPanel.style.width = '';
+    rightPanel.style.flex = '';
+  });
+})();
 </script>
 </body>
 </html>

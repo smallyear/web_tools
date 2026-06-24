@@ -31,7 +31,26 @@ label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
 .options-row label{white-space:nowrap}
 .options-row input[type="text"]{width:180px}
 .checkbox-label{font-size:14px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer}
-</style>
+.io-split{display:flex;gap:0;align-items:stretch}
+.io-split>div{flex:1;min-width:0}
+@media(max-width:768px){.io-split{flex-direction:column}}
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+  </style>
 </head>
 <body>
 <nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
@@ -48,6 +67,8 @@ label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
 <h2 style="margin-top:0;font-size:20px">🏗️ JSON生成实体类</h2>
 <p style="color:#666;font-size:14px">将JSON数据转换为Java/C#/Go/TypeScript/Python/Rust的类/结构体定义</p>
 
+<div class="io-split">
+<div>
 <label style="margin-bottom:8px">输入JSON：</label>
 <textarea id="inputJson" class="input-area" placeholder='请粘贴JSON内容...&#10;例如:&#10;{&#10;  "name": "张三",&#10;  "age": 25,&#10;  "address": { "city": "北京" }&#10;}'></textarea>
 
@@ -71,11 +92,15 @@ label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
 
 <div class="btn-group">
 <button class="btn btn-primary" onclick="generate()">🔨 生成代码</button>
-<button class="btn btn-success" onclick="copyOutput()" style="margin-left:auto">📋 复制结果</button>
 </div>
-
+</div>
+<div class="resizer" id="resizer"></div>
+<div>
 <label style="margin-bottom:8px">生成结果：</label>
-<div id="outputArea" class="output-area">结果将显示在这里...</div>
+<div id="outputArea" class="output-area" style="overflow-x:auto;">结果将显示在这里...</div>
+<button class="btn btn-success" onclick="copyOutput()" style="margin-top:8px">📋 复制结果</button>
+</div>
+</div>
 </div>
 </div>
 

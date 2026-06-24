@@ -7,8 +7,9 @@
   <meta name="description" content="批量查找替换文本，支持正则表达式">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
-    .io-grid { display: grid; gap: 16px; }
-    @media (min-width: 768px) { .io-grid { grid-template-columns: 1fr 1fr; } }
+    .io-grid { display: flex; gap: 0; align-items: stretch; }
+    .io-grid > .card { flex: 1; min-width: 0; }
+    @media (max-width: 768px) { .io-grid { flex-direction: column; } }
     .text-area {
       width: 100%; height: 300px;
       font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
@@ -16,6 +17,8 @@
       border: 1px solid var(--border); border-radius: 10px; resize: vertical;
     }
     .text-area:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    .replace-bar {
+    .replace-bar > * { flex: 1; min-width: 0; }
     .replace-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
     .replace-bar input[type="text"] {
       flex: 1; min-width: 150px; padding: 10px 12px;
@@ -26,6 +29,22 @@
     .replace-bar label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; }
     .match-info { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
     .highlight { background: #FFEB3B; padding: 0 2px; border-radius: 2px; }
+  
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
   </style>
 </head>
 <body>
@@ -68,6 +87,9 @@
         </div>
         <div id="previewArea" style="font-family:'Monaco','Menlo','Consolas',monospace;font-size:13px;line-height:1.6;padding:12px;background:#FAFAFA;border:1px solid var(--border);border-radius: 10px;white-space:pre-wrap;word-break:break-all;min-height:120px;max-height:400px;overflow:auto;"></div>
       </div>
+
+      <div class="resizer" id="resizer"></div>
+
       <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
           <span>替换结果</span>
@@ -168,6 +190,55 @@
           render();
           showMessage('success', '已替换并更新输入');
         }
+      });
+    })();
+  </script>
+
+    // 拖拽分隔条逻辑
+    (function() {
+      const resizer = document.getElementById('resizer');
+      const layout = document.querySelector('.io-grid');
+      if (!resizer || !layout) return;
+      const leftPanel = layout.children[0];
+      const rightPanel = layout.children[2];
+      let isResizing = false;
+      let startX = 0;
+      let startLeftWidth = 0;
+
+      resizer.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        startLeftWidth = leftPanel.getBoundingClientRect().width;
+        resizer.classList.add('active');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        const totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+        const delta = e.clientX - startX;
+        const newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+        const leftPercent = (newLeftWidth / totalWidth) * 100;
+        leftPanel.style.flex = 'none';
+        leftPanel.style.width = leftPercent + '%';
+        rightPanel.style.flex = '1';
+      });
+
+      document.addEventListener('mouseup', function() {
+        if (isResizing) {
+          isResizing = false;
+          resizer.classList.remove('active');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+
+      resizer.addEventListener('dblclick', function() {
+        leftPanel.style.flex = '';
+        leftPanel.style.width = '';
+        rightPanel.style.flex = '';
       });
     })();
   </script>

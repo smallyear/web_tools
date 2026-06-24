@@ -8,14 +8,16 @@
     <link rel="stylesheet" href="../../assets/css/style.css">
     <style>
         .two-panel {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+            display: flex;
+            gap: 0;
+            flex-wrap: wrap;
         }
-        @media (min-width: 768px) {
-            .two-panel {
-                grid-template-columns: 1fr 1fr;
-            }
+        .two-panel > .card {
+            flex: 1;
+            min-width: 0;
+        }
+        @media (max-width: 768px) {
+            .two-panel { flex-direction: column; }
         }
         .panel-title {
             font-size: 16px;
@@ -44,6 +46,8 @@
             box-sizing: border-box;
         }
         .tool-controls {
+    .tool-controls > * { flex: 1; min-width: 0; }
+    .tool-controls {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -51,6 +55,7 @@
             margin-bottom: 15px;
         }
         .output-area {
+            overflow-x: auto;
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -120,7 +125,23 @@
             padding: 5px 12px;
             font-size: 13px;
         }
-    </style>
+    
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+  </style>
 </head>
 <body>
     <nav class="navbar">
@@ -165,6 +186,8 @@
                 </div>
                 <div class="output-area" id="encodeUriOutput">编码结果将显示在这里...</div>
             </div>
+
+            <div class="resizer" id="resizer"></div>
 
             <!-- Decode Panel -->
             <div class="card">
@@ -319,6 +342,41 @@
             copyToClipboard(text);
             showMessage('success', '已复制到剪贴板');
         }
+
+(function() {
+  var resizer = document.getElementById('resizer');
+  if (!resizer) return;
+  var layout = resizer.parentElement;
+  var children = layout.children;
+  var leftPanel = null, rightPanel = null;
+  for (var i = 0; i < children.length; i++) {
+    if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+  }
+  if (!leftPanel || !rightPanel) return;
+  var isResizing = false, startX = 0, startLeftWidth = 0;
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true; startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    var delta = e.clientX - startX;
+    var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+    rightPanel.style.flex = '1';
+  });
+  document.addEventListener('mouseup', function() {
+    if (isResizing) { isResizing = false; resizer.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+  });
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+  });
+})();
     </script>
 </body>
 </html>

@@ -33,7 +33,23 @@ input[type="text"]:focus,select:focus{outline:none;border-color:#4a6cf7}
 .msg-error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
 .output-area{background:#1e1e2e;color:#cdd6f4;border-radius: 10px;padding:20px;font-family:"Fira Code",Consolas,monospace;font-size:13px;white-space:pre;overflow-x:auto;min-height:100px;line-height:1.7;display:none;margin-top:16px}
 footer{text-align:center;padding:30px 20px;color:#999;font-size:.85rem;margin-top:40px}
-</style>
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+  </style>
 </head>
 <body>
 <nav class="navbar"><div class="container"><a href="../../index.html" class="logo">🛠 在线工具箱</a></div></nav>

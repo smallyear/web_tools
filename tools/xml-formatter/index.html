@@ -8,8 +8,9 @@
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .xml-layout {
-      display: grid;
-      gap: 24px;
+    .xml-layout > * { flex: 1; min-width: 0; }
+    .xml-layout {
+      display: flex; gap: 0;
     }
     @media (min-width: 768px) {
       .xml-layout { grid-template-columns: 1fr 1fr; }
@@ -181,6 +182,22 @@
     body.dark-mode .xml-text { color: #c9d1d9; }
     body.dark-mode .output-area { background: #0d1117; color: #c9d1d9; }
     body.dark-mode .line-numbers { background: #161b22; border-color: #30363d; color: #484f58; }
+  
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
   </style>
 </head>
 <body>
@@ -233,6 +250,10 @@
         </div>
         <textarea class="code-area" id="xmlInput" placeholder="在此粘贴或输入 XML 文本...&#10;&#10;例如：&#10;&lt;?xml version=&quot;1.0&quot;?&gt;&#10;&lt;root&gt;&#10;  &lt;item name=&quot;test&quot;&gt;value&lt;/item&gt;&#10;&lt;/root&gt;"></textarea>
       </div>
+
+      <!-- 拖拽分隔条 -->
+      <div class="resizer" id="resizer"></div>
+
 
       <!-- 输出 -->
       <div class="card" style="padding-bottom: 0;">

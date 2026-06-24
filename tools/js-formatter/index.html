@@ -8,8 +8,9 @@
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .js-layout {
-      display: grid;
-      gap: 24px;
+    .js-layout > * { flex: 1; min-width: 0; }
+    .js-layout {
+      display: flex; gap: 0;
     }
     @media (min-width: 768px) {
       .js-layout { grid-template-columns: 1fr 1fr; }
@@ -178,6 +179,22 @@
     body.dark-mode .js-operator { color: #8b949e; }
     body.dark-mode .output-area { background: #0d1117; color: #c9d1d9; }
     body.dark-mode .line-numbers { background: #161b22; border-color: #30363d; color: #484f58; }
+  
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
   </style>
 </head>
 <body>
@@ -231,6 +248,10 @@
         </div>
         <textarea class="code-area" id="jsInput" placeholder="在此粘贴或输入 JavaScript 代码...&#10;&#10;例如：function hello() { console.log('hi'); }"></textarea>
       </div>
+
+      <!-- 拖拽分隔条 -->
+      <div class="resizer" id="resizer"></div>
+
 
       <!-- 输出 -->
       <div class="card" style="padding-bottom: 0;">

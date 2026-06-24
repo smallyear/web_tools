@@ -20,7 +20,9 @@ label { display: block; font-size: 14px; margin-bottom: 4px; color: var(--text-s
 textarea { width: 100%; min-height: 120px; padding: 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; font-size: 14px; resize: vertical; font-family: inherit; box-sizing: border-box; }
 textarea:focus { outline: none; border-color: var(--primary, #4a90d9); }
 .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
-.options-grid .opt { display: flex; flex-direction: column; }
+.options-grid .opt {
+    .opt > * { flex: 1; min-width: 0; }
+    .opt { display: flex; flex-direction: column; }
 .options-grid input, .options-grid select { padding: 8px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; font-size: 14px; }
 .options-grid input:focus, .options-grid select:focus { outline: none; border-color: var(--primary, #4a90d9); }
 .output-box { background: var(--bg, #f5f5f5); border: 1px solid var(--border, #e0e0e0); border-radius: 10px; padding: 12px; min-height: 120px; white-space: pre-wrap; word-break: break-all; font-size: 14px; line-height: 1.6; }
@@ -32,7 +34,26 @@ textarea:focus { outline: none; border-color: var(--primary, #4a90d9); }
 .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--text-secondary, #999); }
 @media (max-width: 600px) { .options-grid { grid-template-columns: 1fr 1fr; } }
-</style>
+.io-grid { display: flex; gap: 0; }
+.io-grid > .card { flex: 1; min-width: 0; }
+@media (max-width: 768px) { .io-grid { flex-direction: column; } }
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+  </style>
 </head>
 <body>
 <nav style="background:var(--primary,#4a90d9);color:#fff;padding:12px 16px;">
@@ -45,11 +66,21 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
     <p>为每行文本添加自定义序号，支持多种格式和选项</p>
   </div>
 
+  <div class="io-grid">
   <div class="card">
     <h3>输入文本</h3>
     <textarea id="input" placeholder="请输入文本，每行一个条目...&#10;例如：&#10;苹果&#10;香蕉&#10;橘子"></textarea>
   </div>
+  <div class="resizer" id="resizer"></div>
 
+  <div class="card">
+    <h3>输出结果</h3>
+    <div class="output-box" id="output" style="overflow-x:auto;">预览将在此处显示...</div>
+    <div class="actions">
+      <button class="btn btn-success btn-sm" onclick="copyResult()">📋 复制结果</button>
+    </div>
+  </div>
+  </div>
   <div class="card">
     <h3>序号设置</h3>
     <div class="options-grid">
@@ -79,13 +110,6 @@ footer { text-align: center; padding: 24px 16px; font-size: 13px; color: var(--t
     </div>
   </div>
 
-  <div class="card">
-    <h3>输出结果</h3>
-    <div class="output-box" id="output">预览将在此处显示...</div>
-    <div class="actions">
-      <button class="btn btn-success btn-sm" onclick="copyResult()">📋 复制结果</button>
-    </div>
-  </div>
 </div>
 
 <footer>© 2025 在线工具箱 · 文本增加序号工具</footer>
@@ -135,6 +159,41 @@ function copyResult() {
 [input, startNum, format, separator, padZero].forEach(el => {
   el.addEventListener('input', process);
 });
+
+(function() {
+  var resizer = document.getElementById('resizer');
+  if (!resizer) return;
+  var layout = resizer.parentElement;
+  var children = layout.children;
+  var leftPanel = null, rightPanel = null;
+  for (var i = 0; i < children.length; i++) {
+    if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+  }
+  if (!leftPanel || !rightPanel) return;
+  var isResizing = false, startX = 0, startLeftWidth = 0;
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true; startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    var delta = e.clientX - startX;
+    var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+    rightPanel.style.flex = '1';
+  });
+  document.addEventListener('mouseup', function() {
+    if (isResizing) { isResizing = false; resizer.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+  });
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+  });
+})();
 </script>
 </body>
 </html>

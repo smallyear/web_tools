@@ -9,7 +9,7 @@
 <style>
 .io-row{display:flex;gap:12px;margin-bottom:12px}
 .io-row>div{flex:1;display:flex;flex-direction:column}
-.io-row textarea{flex:1;min-height:250px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius: 10px;resize:vertical;box-sizing:border-box}
+.io-row textarea{flex:1;min-height:250px;font-family:monospace;font-size:14px;padding:12px;border:1px solid #ddd;border-radius: 10px;resize:vertical;box-sizing:border-box;overflow-x:auto}
 .btn-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
 .btn{padding:8px 18px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;font-weight:600}
 .btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
@@ -21,7 +21,23 @@
 .char-table{font-size:13px;color:#555;background:#f9f9f9;padding:10px;border-radius: 10px;margin-bottom:12px;line-height:1.8}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius: 10px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
 @media(max-width:768px){.io-row{flex-direction:column}.io-row textarea{min-height:180px}}
-</style>
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px; cursor: col-resize; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; user-select: none;
+    }
+    .resizer::after {
+      content: ''; width: 4px; height: 48px; background: var(--border);
+      border-radius: 2px; transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after, .resizer.active::after { background: var(--primary); height: 64px; }
+    @media (max-width: 768px) {
+      .resizer { width: 100%; height: 12px; cursor: row-resize; }
+      .resizer::after { width: 48px; height: 4px; }
+    }
+
+  </style>
 </head>
 <body>
 <nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
@@ -42,6 +58,7 @@
 </div>
 <div class="io-row">
 <div><label style="font-weight:600;margin-bottom:4px">输入文本</label><textarea id="input" placeholder="请输入要转换的文本..." oninput="liveConvert()"></textarea></div>
+<div class="resizer" id="resizer"></div>
 <div><label style="font-weight:600;margin-bottom:4px">转换结果</label><textarea id="output" readonly placeholder="转换结果将显示在这里..."></textarea></div>
 </div>
 </div>
@@ -132,6 +149,41 @@ function clearAll(){
 document.getElementById('input').value='';
 document.getElementById('output').value='';
 }
+
+(function() {
+  var resizer = document.getElementById('resizer');
+  if (!resizer) return;
+  var layout = resizer.parentElement;
+  var children = layout.children;
+  var leftPanel = null, rightPanel = null;
+  for (var i = 0; i < children.length; i++) {
+    if (children[i] === resizer) { leftPanel = children[i-1]; rightPanel = children[i+1]; break; }
+  }
+  if (!leftPanel || !rightPanel) return;
+  var isResizing = false, startX = 0, startLeftWidth = 0;
+  resizer.addEventListener('mousedown', function(e) {
+    isResizing = true; startX = e.clientX;
+    startLeftWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('active'); document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    var totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+    var delta = e.clientX - startX;
+    var newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+    leftPanel.style.flex = 'none';
+    leftPanel.style.width = (newLeftWidth / totalWidth * 100) + '%';
+    rightPanel.style.flex = '1';
+  });
+  document.addEventListener('mouseup', function() {
+    if (isResizing) { isResizing = false; resizer.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+  });
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.flex = ''; leftPanel.style.width = ''; rightPanel.style.flex = '';
+  });
+})();
 </script>
 </body>
 </html>
