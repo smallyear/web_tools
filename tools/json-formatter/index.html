@@ -8,11 +8,57 @@
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
     .json-layout {
-      display: grid;
-      gap: 24px;
+      display: flex;
+      gap: 0;
+      align-items: stretch;
     }
-    @media (min-width: 768px) {
-      .json-layout { grid-template-columns: 1fr 1fr; }
+    .json-layout .card {
+      flex: 1;
+      min-width: 0;
+    }
+    @media (max-width: 768px) {
+      .json-layout { flex-direction: column; }
+    }
+
+    /* 拖拽分隔条 */
+    .resizer {
+      width: 12px;
+      cursor: col-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      user-select: none;
+    }
+    .resizer::after {
+      content: '';
+      width: 4px;
+      height: 48px;
+      background: var(--border);
+      border-radius: 2px;
+      transition: background 0.2s, height 0.2s;
+    }
+    .resizer:hover::after,
+    .resizer.active::after {
+      background: var(--primary);
+      height: 64px;
+    }
+    @media (max-width: 768px) {
+      .resizer {
+        width: 100%;
+        height: 12px;
+        cursor: row-resize;
+      }
+      .resizer::after {
+        width: 48px;
+        height: 4px;
+      }
+      .resizer:hover::after,
+      .resizer.active::after {
+        width: 64px;
+        height: 4px;
+      }
     }
 
     .editor-header {
@@ -114,8 +160,9 @@
       position: relative;
       border: 2px solid var(--border);
       border-radius: 10px;
-      overflow: hidden;
       background: #f8fafc;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
     .line-numbers {
       position: absolute;
@@ -234,6 +281,9 @@
         </div>
         <textarea class="code-area" id="jsonInput" placeholder='在此粘贴或输入 JSON 文本...&#10;&#10;例如：{"name": "test", "value": 123}'></textarea>
       </div>
+
+      <!-- 拖拽分隔条 -->
+      <div class="resizer" id="resizer"></div>
 
       <!-- 输出 -->
       <div class="card" style="padding-bottom: 0;">
@@ -558,6 +608,54 @@
 
       // 实时显示输入大小
       jsonInput.addEventListener('input', updateInputSize);
+
+      // 拖拽分隔条逻辑
+      (function() {
+        const resizer = document.getElementById('resizer');
+        const layout = document.querySelector('.json-layout');
+        const leftCard = layout.children[0];
+        const rightCard = layout.children[2]; // index 1 is resizer
+        let isResizing = false;
+        let startX = 0;
+        let startLeftWidth = 0;
+
+        resizer.addEventListener('mousedown', function(e) {
+          isResizing = true;
+          startX = e.clientX;
+          startLeftWidth = leftCard.getBoundingClientRect().width;
+          resizer.classList.add('active');
+          document.body.style.cursor = 'col-resize';
+          document.body.style.userSelect = 'none';
+          e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+          if (!isResizing) return;
+          const totalWidth = layout.getBoundingClientRect().width - resizer.getBoundingClientRect().width;
+          const delta = e.clientX - startX;
+          const newLeftWidth = Math.max(200, Math.min(startLeftWidth + delta, totalWidth - 200));
+          const leftPercent = (newLeftWidth / totalWidth) * 100;
+          leftCard.style.flex = 'none';
+          leftCard.style.width = leftPercent + '%';
+          rightCard.style.flex = '1';
+        });
+
+        document.addEventListener('mouseup', function() {
+          if (isResizing) {
+            isResizing = false;
+            resizer.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+          }
+        });
+
+        // 双击重置
+        resizer.addEventListener('dblclick', function() {
+          leftCard.style.flex = '';
+          leftCard.style.width = '';
+          rightCard.style.flex = '';
+        });
+      })();
     })();
   </script>
 </body>
