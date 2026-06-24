@@ -778,9 +778,79 @@
         qrCode.append(container);
         document.getElementById('placeholder').style.display = 'none';
         container.style.display = 'block';
+
+        // 边框处理
+        window._framedCanvas = null;
+        if (state.addFrame) {
+          setTimeout(function() { addFrameToCanvas(container, size); }, 100);
+        }
       } catch(e) {
         console.error('QR generation error:', e);
       }
+    }
+
+    function addFrameToCanvas(container, qrSize) {
+      var srcCanvas = container.querySelector('canvas');
+      if (!srcCanvas) return;
+
+      var frameText = document.getElementById('frameText').value || '扫码访问';
+      var frameColor = document.getElementById('frameColor').value || '#000000';
+      var frameWidth = parseInt(document.getElementById('frameWidth').value) || 4;
+      var frameRadius = parseInt(document.getElementById('frameRadius').value) || 16;
+
+      // 计算画布大小：QR码 + 边框 + 文字空间
+      var padding = 24;
+      var textHeight = frameText ? 36 : 0;
+      var totalW = qrSize + padding * 2;
+      var totalH = qrSize + padding * 2 + textHeight;
+
+      var canvas = document.createElement('canvas');
+      canvas.width = totalW;
+      canvas.height = totalH;
+      var ctx = canvas.getContext('2d');
+
+      // 背景
+      ctx.fillStyle = state.bgColor;
+      ctx.beginPath();
+      if (frameRadius > 0) {
+        roundRect(ctx, 0, 0, totalW, totalH, frameRadius);
+      } else {
+        ctx.rect(0, 0, totalW, totalH);
+      }
+      ctx.fill();
+
+      // 边框
+      ctx.strokeStyle = frameColor;
+      ctx.lineWidth = frameWidth;
+      ctx.beginPath();
+      if (frameRadius > 0) {
+        roundRect(ctx, frameWidth/2, frameWidth/2, totalW - frameWidth, totalH - frameWidth, frameRadius);
+      } else {
+        ctx.rect(frameWidth/2, frameWidth/2, totalW - frameWidth, totalH - frameWidth);
+      }
+      ctx.stroke();
+
+      // 画QR码
+      ctx.drawImage(srcCanvas, padding, padding);
+
+      // 文字
+      if (frameText) {
+        ctx.fillStyle = frameColor;
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(frameText, totalW / 2, qrSize + padding + textHeight / 2);
+      }
+
+      // 替换容器内容
+      container.innerHTML = '';
+      canvas.style.maxWidth = '100%';
+      canvas.style.height = 'auto';
+      canvas.style.borderRadius = frameRadius + 'px';
+      container.appendChild(canvas);
+
+      // 更新全局qrCode的下载用canvas
+      window._framedCanvas = canvas;
     }
 
     function debounceGenerate() {
@@ -889,7 +959,12 @@
     document.getElementById('addFrame').addEventListener('change', function(e) {
       state.addFrame = e.target.checked;
       document.getElementById('frameOptions').style.display = e.target.checked ? '' : 'none';
+      debounceGenerate();
     });
+    document.getElementById('frameText').addEventListener('input', debounceGenerate);
+    document.getElementById('frameColor').addEventListener('input', debounceGenerate);
+    document.getElementById('frameWidth').addEventListener('change', debounceGenerate);
+    document.getElementById('frameRadius').addEventListener('change', debounceGenerate);
 
     // 设置
     document.getElementById('qrSize').addEventListener('change', debounceGenerate);
@@ -903,6 +978,14 @@
 
     // 下载
     document.getElementById('downloadPng').addEventListener('click', function() {
+      var framedCanvas = window._framedCanvas;
+      if (framedCanvas) {
+        var link = document.createElement('a');
+        link.download = 'qrcode-' + Date.now() + '.png';
+        link.href = framedCanvas.toDataURL('image/png');
+        link.click();
+        return;
+      }
       if (!qrCode) { showMessage('error', '请先生成二维码'); return; }
       qrCode.download({ name: 'qrcode-' + Date.now(), extension: 'png' });
     });
@@ -911,17 +994,16 @@
       qrCode.download({ name: 'qrcode-' + Date.now(), extension: 'svg' });
     });
     document.getElementById('copyBtn').addEventListener('click', function() {
-      if (!qrCode) { showMessage('error', '请先生成二维码'); return; }
-      var canvas = document.querySelector('#qrCanvas canvas');
-      if (canvas) {
-        canvas.toBlob(function(blob) {
-          navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
-            showMessage('success', '已复制到剪贴板');
-          }).catch(function() {
-            showMessage('error', '复制失败，请使用下载按钮');
-          });
+      var framedCanvas = window._framedCanvas;
+      var canvas = framedCanvas || document.querySelector('#qrCanvas canvas');
+      if (!canvas) { showMessage('error', '请先生成二维码'); return; }
+      canvas.toBlob(function(blob) {
+        navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
+          showMessage('success', '已复制到剪贴板');
+        }).catch(function() {
+          showMessage('error', '复制失败，请使用下载按钮');
         });
-      }
+      });
     });
 
     // 初始化
