@@ -275,12 +275,19 @@
         <!-- 样式配置 -->
         <div class="card" style="margin-top: 16px;">
           <div class="tab-bar">
+            <button class="tab-btn" data-tab="tab-templates">✨ 模板</button>
             <button class="tab-btn active" data-tab="tab-style">🎨 图案</button>
             <button class="tab-btn" data-tab="tab-eye">👁️ 图眼</button>
             <button class="tab-btn" data-tab="tab-color">🎨 颜色</button>
             <button class="tab-btn" data-tab="tab-logo">🖼️ Logo</button>
             <button class="tab-btn" data-tab="tab-frame">🖼️ 边框</button>
             <button class="tab-btn" data-tab="tab-settings">⚙️ 设置</button>
+          </div>
+
+          <!-- 模板 -->
+          <div class="tab-panel" id="tab-templates">
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">点击模板一键应用整套样式</p>
+            <div class="style-grid" id="templateGrid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;"></div>
           </div>
 
           <!-- 图案样式 -->
@@ -1013,9 +1020,150 @@
       });
     });
 
+    // === 预设模板 ===
+    var templates = [
+      {
+        name: '经典黑白',
+        desc: '简洁方块，黑色',
+        preview: { fg: '#000000', bg: '#FFFFFF', style: 'square' },
+        apply: { dotsStyle: 'square', eyeStyle: 'frame0', eyeBall: 'ball0', fgColor: '#000000', bgColor: '#FFFFFF', useGradient: false, eyeColor: '' }
+      },
+      {
+        name: '商务蓝',
+        desc: '圆角方块，蓝色渐变',
+        preview: { fg: '#1565C0', bg: '#FFFFFF', style: 'rounded' },
+        apply: { dotsStyle: 'rounded', eyeStyle: 'frame1', eyeBall: 'ball1', fgColor: '#1565C0', bgColor: '#FFFFFF', useGradient: true, gradientColor: '#42A5F5', gradientDir: 'diagonal', eyeColor: '#0D47A1' }
+      },
+      {
+        name: '活力橙',
+        desc: '圆点，暖色渐变',
+        preview: { fg: '#E65100', bg: '#FFF8E1', style: 'dots' },
+        apply: { dotsStyle: 'dots', eyeStyle: 'frame2', eyeBall: 'ball1', fgColor: '#E65100', bgColor: '#FFF8E1', useGradient: true, gradientColor: '#FF9800', gradientDir: 'horizontal', eyeColor: '#BF360C' }
+      },
+      {
+        name: '科技紫',
+        desc: '菱形，紫色渐变',
+        preview: { fg: '#6A1B9A', bg: '#F3E5F5', style: 'diamond' },
+        apply: { dotsStyle: 'diamond', eyeStyle: 'frame0', eyeBall: 'ball3', fgColor: '#6A1B9A', bgColor: '#F3E5F5', useGradient: true, gradientColor: '#AB47BC', gradientDir: 'vertical', eyeColor: '#4A148C' }
+      },
+      {
+        name: '自然绿',
+        desc: '叶子，绿色',
+        preview: { fg: '#2E7D32', bg: '#E8F5E9', style: 'leaf' },
+        apply: { dotsStyle: 'leaf', eyeStyle: 'frame1', eyeBall: 'ball1', fgColor: '#2E7D32', bgColor: '#E8F5E9', useGradient: false, eyeColor: '#1B5E20' }
+      },
+      {
+        name: '暗黑模式',
+        desc: '圆角，深色背景',
+        preview: { fg: '#E0E0E0', bg: '#1A1A2E', style: 'rounded' },
+        apply: { dotsStyle: 'rounded', eyeStyle: 'frame1', eyeBall: 'ball0', fgColor: '#E0E0E0', bgColor: '#1A1A2E', useGradient: true, gradientColor: '#90CAF9', gradientDir: 'diagonal', eyeColor: '#FFFFFF' }
+      },
+      {
+        name: '浪漫粉',
+        desc: '爱心图案，粉色',
+        preview: { fg: '#C2185B', bg: '#FCE4EC', style: 'heart' },
+        apply: { dotsStyle: 'heart', eyeStyle: 'frame3', eyeBall: 'ball1', fgColor: '#C2185B', bgColor: '#FCE4EC', useGradient: true, gradientColor: '#F06292', gradientDir: 'horizontal', eyeColor: '#880E4F' }
+      },
+      {
+        name: '极简细线',
+        desc: '竖条纹，深灰',
+        preview: { fg: '#424242', bg: '#FAFAFA', style: 'vertical' },
+        apply: { dotsStyle: 'vertical', eyeStyle: 'frame0', eyeBall: 'ball0', fgColor: '#424242', bgColor: '#FAFAFA', useGradient: false, eyeColor: '#212121' }
+      },
+      {
+        name: '珊瑚红',
+        desc: '星形，红金渐变',
+        preview: { fg: '#D32F2F', bg: '#FFFFFF', style: 'star' },
+        apply: { dotsStyle: 'star', eyeStyle: 'frame2', eyeBall: 'ball1', fgColor: '#D32F2F', bgColor: '#FFFFFF', useGradient: true, gradientColor: '#FFCDD2', gradientDir: 'diagonal', eyeColor: '#B71C1C' }
+      },
+      {
+        name: '海洋蓝',
+        desc: '圆环，蓝青渐变',
+        preview: { fg: '#0277BD', bg: '#E1F5FE', style: 'circle' },
+        apply: { dotsStyle: 'circle', eyeStyle: 'frame1', eyeBall: 'ball2', fgColor: '#0277BD', bgColor: '#E1F5FE', useGradient: true, gradientColor: '#00BCD4', gradientDir: 'horizontal', eyeColor: '#01579B' }
+      }
+    ];
+
+    function renderTemplates() {
+      var grid = document.getElementById('templateGrid');
+      grid.innerHTML = '';
+      templates.forEach(function(tpl) {
+        var div = document.createElement('div');
+        div.style.cssText = 'border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;background:white;transition:all 0.2s;';
+
+        // 小预览图
+        var canvas = document.createElement('canvas');
+        canvas.width = 80; canvas.height = 80;
+        canvas.style.cssText = 'border-radius:6px;margin-bottom:8px;';
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = tpl.preview.bg;
+        ctx.fillRect(0, 0, 80, 80);
+        ctx.fillStyle = tpl.preview.fg;
+        var drawFn = dotsStyles.find(function(s){return s.name===tpl.preview.style;});
+        if (drawFn) {
+          for (var r=0; r<5; r++) for (var c=0; c<5; c++) {
+            if (Math.random() > 0.3) drawFn.draw(ctx, 4+c*15, 4+r*15, 12);
+          }
+          // Eye corners
+          drawFn.draw(ctx, 4, 4, 18);
+          drawFn.draw(ctx, 58, 4, 18);
+          drawFn.draw(ctx, 4, 58, 18);
+        }
+        div.appendChild(canvas);
+
+        var name = document.createElement('div');
+        name.style.cssText = 'font-size:13px;font-weight:600;margin-bottom:2px;';
+        name.textContent = tpl.name;
+        div.appendChild(name);
+
+        var desc = document.createElement('div');
+        desc.style.cssText = 'font-size:11px;color:var(--text-secondary);';
+        desc.textContent = tpl.desc;
+        div.appendChild(desc);
+
+        div.onmouseenter = function() { div.style.borderColor = 'var(--primary)'; };
+        div.onmouseleave = function() { div.style.borderColor = 'var(--border)'; };
+
+        div.onclick = function() {
+          // 应用模板
+          var a = tpl.apply;
+          state.dotsStyle = a.dotsStyle;
+          state.eyeStyle = a.eyeStyle;
+          state.eyeBall = a.eyeBall;
+          state.fgColor = a.fgColor;
+          state.bgColor = a.bgColor;
+          state.useGradient = a.useGradient || false;
+          state.gradientColor = a.gradientColor || '#1E88E5';
+          state.gradientDir = a.gradientDir || 'horizontal';
+          state.eyeColor = a.eyeColor || '';
+
+          // 更新 UI 控件
+          document.getElementById('fgColor').value = a.fgColor;
+          document.getElementById('fgHex').textContent = a.fgColor;
+          document.getElementById('bgColor').value = a.bgColor;
+          document.getElementById('bgHex').textContent = a.bgColor;
+          document.getElementById('eyeColor').value = a.eyeColor || '#000000';
+          document.getElementById('useGradient').checked = a.useGradient || false;
+          document.getElementById('gradientOptions').style.display = a.useGradient ? '' : 'none';
+          if (a.gradientColor) document.getElementById('gradientColor').value = a.gradientColor;
+          if (a.gradientDir) document.getElementById('gradientDir').value = a.gradientDir;
+
+          // 更新样式选中态
+          renderStyleThumbnails();
+          renderEyeThumbnails();
+
+          debounceGenerate();
+          showMessage('success', '已应用模板: ' + tpl.name);
+        };
+
+        grid.appendChild(div);
+      });
+    }
+
     // 初始化
     renderStyleThumbnails();
     renderEyeThumbnails();
+    renderTemplates();
   })();
   </script>
 </body>
