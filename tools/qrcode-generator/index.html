@@ -4,26 +4,194 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>二维码生成器 - Web Tools</title>
-  <meta name="description" content="在线二维码生成器，文本/链接生成二维码，支持自定义大小和颜色">
+  <meta name="description" content="专业二维码生成器，支持Logo嵌入、自定义样式、渐变色、特殊内容类型">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
-    .qr-layout { display: grid; gap: 24px; max-width: 800px; margin: 0 auto; }
-    @media (min-width: 768px) { .qr-layout { grid-template-columns: 1fr 1fr; } }
-    .qr-preview { background: var(--bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; min-height: 300px; padding: 24px; }
-    .qr-placeholder { text-align: center; color: var(--text-secondary); }
-    .qr-placeholder-icon { font-size: 64px; margin-bottom: 16px; }
-    #qrContainer { background: transparent; }
-    #qrContainer canvas, #qrContainer img { border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    #qrContainer > p { display: none; }
+    .qr-layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    @media (max-width: 900px) {
+      .qr-layout { flex-direction: column; }
+    }
+    .qr-left { flex: 1; min-width: 0; }
+    .qr-right { width: 340px; flex-shrink: 0; position: sticky; top: 20px; }
+    @media (max-width: 900px) {
+      .qr-right { width: 100%; position: static; }
+    }
+
+    /* 标签页切换 */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* 样式网格 */
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .style-option {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      background: white;
+    }
+    .style-option:hover { border-color: var(--primary); }
+    .style-option.active {
+      border-color: var(--primary);
+      background: #e3f2fd;
+    }
+    .style-option canvas, .style-option svg {
+      width: 48px;
+      height: 48px;
+      display: block;
+      margin: 0 auto 4px;
+    }
+    .style-option .label {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    /* 预览区 */
+    .preview-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .preview-area {
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .preview-area canvas, .preview-area svg {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+    .preview-placeholder {
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    .preview-placeholder .icon { font-size: 64px; margin-bottom: 12px; }
+    .download-bar {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* 颜色预览 */
+    .color-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .color-row input[type="color"] {
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      cursor: pointer;
+    }
+    .color-row label {
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 60px;
+    }
+    .gradient-preview {
+      height: 24px;
+      border-radius: 6px;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+    }
+
+    /* 特殊内容表单 */
+    .content-type-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .content-type-btn {
+      padding: 10px 8px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      font-size: 12px;
+    }
+    .content-type-btn:hover { border-color: var(--primary); }
+    .content-type-btn.active {
+      border-color: var(--primary);
+      background: #e3f2fd;
+    }
+    .content-type-btn .icon { font-size: 24px; display: block; margin-bottom: 4px; }
+
+    /* Logo上传区 */
+    .logo-upload {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    .logo-upload:hover { border-color: var(--primary); background: #f0f7ff; }
+    .logo-upload.has-logo { border-style: solid; border-color: var(--success); }
+    .logo-preview {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
+      margin: 0 auto 8px;
+      display: block;
+    }
   </style>
 </head>
 <body>
   <nav class="navbar">
     <div class="navbar-container">
       <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
-      <div class="navbar-links">
-        <a href="../../index.html" class="navbar-link">首页</a>
-      </div>
+      <div class="navbar-links"><a href="../../index.html" class="navbar-link">首页</a></div>
     </div>
   </nav>
 
@@ -31,159 +199,735 @@
     <div class="tool-header">
       <div class="breadcrumb"><a href="../../index.html">首页</a> / 二维码生成器</div>
       <h1>📱 二维码生成器</h1>
-      <p style="color: var(--text-secondary); margin-top: 8px;">输入文本或链接，一键生成二维码，支持自定义大小和颜色</p>
+      <p style="color: var(--text-secondary); margin-top: 8px;">支持Logo嵌入、自定义样式、渐变色、WiFi/名片等多种内容类型</p>
     </div>
 
     <div class="qr-layout">
-      <div class="card">
-        <div class="card-title">生成配置</div>
-        <div class="form-group">
-          <label class="form-label">文本/链接</label>
-          <textarea class="form-input" id="qrText" rows="4" placeholder="输入要生成二维码的文本或链接..."></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">二维码尺寸</label>
-          <select class="form-select" id="qrSize">
-            <option value="128">128 x 128 px（小）</option>
-            <option value="256" selected>256 x 256 px（中）</option>
-            <option value="512">512 x 512 px（大）</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">容错级别</label>
-          <select class="form-select" id="qrCorrectLevel">
-            <option value="L">L - 低 (7%)</option>
-            <option value="M" selected>M - 中 (15%)</option>
-            <option value="Q">Q - 较高 (25%)</option>
-            <option value="H">H - 高 (30%)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">前景色</label>
-          <div class="color-picker-group">
-            <input type="color" id="fgColor" value="#000000">
-            <span class="color-hex" id="fgHex">#000000</span>
+      <!-- 左侧：配置区 -->
+      <div class="qr-left">
+        <div class="card">
+          <!-- 内容类型 -->
+          <div class="card-title">内容类型</div>
+          <div class="content-type-grid" id="contentTypeGrid">
+            <button class="content-type-btn active" data-type="text"><span class="icon">📝</span>文本/链接</button>
+            <button class="content-type-btn" data-type="wifi"><span class="icon">📶</span>WiFi</button>
+            <button class="content-type-btn" data-type="vcard"><span class="icon">👤</span>名片</button>
+            <button class="content-type-btn" data-type="email"><span class="icon">📧</span>邮箱</button>
+            <button class="content-type-btn" data-type="phone"><span class="icon">📞</span>电话</button>
+            <button class="content-type-btn" data-type="sms"><span class="icon">💬</span>短信</button>
+          </div>
+
+          <!-- 文本/链接 -->
+          <div class="tab-panel active" id="panel-text">
+            <div class="form-group">
+              <label class="form-label">文本或链接</label>
+              <textarea class="form-input" id="inputText" rows="3" placeholder="https://example.com 或任意文本"></textarea>
+            </div>
+          </div>
+
+          <!-- WiFi -->
+          <div class="tab-panel" id="panel-wifi">
+            <div class="form-group">
+              <label class="form-label">网络名称 (SSID)</label>
+              <input type="text" class="form-input" id="wifiSSID" placeholder="WiFi名称">
+            </div>
+            <div class="form-group">
+              <label class="form-label">密码</label>
+              <input type="text" class="form-input" id="wifiPass" placeholder="WiFi密码">
+            </div>
+            <div class="form-group">
+              <label class="form-label">加密方式</label>
+              <select class="form-select" id="wifiEnc">
+                <option value="WPA">WPA/WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="">无加密</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 名片 -->
+          <div class="tab-panel" id="panel-vcard">
+            <div class="form-group"><label class="form-label">姓名</label><input type="text" class="form-input" id="vcName" placeholder="张三"></div>
+            <div class="form-group"><label class="form-label">手机</label><input type="text" class="form-input" id="vcPhone" placeholder="13800138000"></div>
+            <div class="form-group"><label class="form-label">邮箱</label><input type="text" class="form-input" id="vcEmail" placeholder="zhang@example.com"></div>
+            <div class="form-group"><label class="form-label">公司</label><input type="text" class="form-input" id="vcOrg" placeholder="公司名称"></div>
+            <div class="form-group"><label class="form-label">职位</label><input type="text" class="form-input" id="vcTitle" placeholder="工程师"></div>
+          </div>
+
+          <!-- 邮箱 -->
+          <div class="tab-panel" id="panel-email">
+            <div class="form-group"><label class="form-label">邮箱地址</label><input type="email" class="form-input" id="emailAddr" placeholder="hello@example.com"></div>
+            <div class="form-group"><label class="form-label">主题（可选）</label><input type="text" class="form-input" id="emailSubject" placeholder="邮件主题"></div>
+          </div>
+
+          <!-- 电话 -->
+          <div class="tab-panel" id="panel-phone">
+            <div class="form-group"><label class="form-label">电话号码</label><input type="text" class="form-input" id="phoneNum" placeholder="+86 13800138000"></div>
+          </div>
+
+          <!-- 短信 -->
+          <div class="tab-panel" id="panel-sms">
+            <div class="form-group"><label class="form-label">手机号</label><input type="text" class="form-input" id="smsNum" placeholder="13800138000"></div>
+            <div class="form-group"><label class="form-label">短信内容</label><textarea class="form-input" id="smsBody" rows="2" placeholder="短信内容"></textarea></div>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">背景色</label>
-          <div class="color-picker-group">
-            <input type="color" id="bgColor" value="#FFFFFF">
-            <span class="color-hex" id="bgHex">#FFFFFF</span>
+
+        <!-- 样式配置 -->
+        <div class="card" style="margin-top: 16px;">
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="tab-style">🎨 图案</button>
+            <button class="tab-btn" data-tab="tab-eye">👁️ 图眼</button>
+            <button class="tab-btn" data-tab="tab-color">🎨 颜色</button>
+            <button class="tab-btn" data-tab="tab-logo">🖼️ Logo</button>
+            <button class="tab-btn" data-tab="tab-frame">🖼️ 边框</button>
+            <button class="tab-btn" data-tab="tab-settings">⚙️ 设置</button>
           </div>
-        </div>
-        <div class="btn-group" style="margin-top: 24px;">
-          <button class="btn btn-primary" id="generateBtn">✨ 生成二维码</button>
-          <button class="btn btn-secondary" id="downloadBtn">📥 下载PNG</button>
+
+          <!-- 图案样式 -->
+          <div class="tab-panel active" id="tab-style">
+            <label class="form-label">点阵样式</label>
+            <div class="style-grid" id="dotsStyleGrid"></div>
+          </div>
+
+          <!-- Eye样式 -->
+          <div class="tab-panel" id="tab-eye">
+            <label class="form-label">图眼样式</label>
+            <div class="style-grid" id="eyeStyleGrid"></div>
+            <label class="form-label" style="margin-top: 12px;">图眼内部样式</label>
+            <div class="style-grid" id="eyeBallGrid"></div>
+          </div>
+
+          <!-- 颜色 -->
+          <div class="tab-panel" id="tab-color">
+            <div class="color-row">
+              <label>前景色</label>
+              <input type="color" id="fgColor" value="#000000">
+              <span id="fgHex" style="font-size:12px;color:var(--text-secondary)">#000000</span>
+            </div>
+            <div class="color-row">
+              <label>背景色</label>
+              <input type="color" id="bgColor" value="#FFFFFF">
+              <span id="bgHex" style="font-size:12px;color:var(--text-secondary)">#FFFFFF</span>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+              <label><input type="checkbox" id="useGradient"> 启用渐变色</label>
+            </div>
+            <div id="gradientOptions" style="display:none;">
+              <div class="color-row">
+                <label>渐变色2</label>
+                <input type="color" id="gradientColor" value="#1E88E5">
+              </div>
+              <div class="form-group">
+                <label class="form-label">渐变方向</label>
+                <select class="form-select" id="gradientDir">
+                  <option value="horizontal">水平 →</option>
+                  <option value="vertical">垂直 ↓</option>
+                  <option value="diagonal">对角线 ↘</option>
+                </select>
+              </div>
+              <div class="gradient-preview" id="gradientPreview"></div>
+            </div>
+            <div class="color-row" style="margin-top: 12px;">
+              <label>图眼色</label>
+              <input type="color" id="eyeColor" value="#000000">
+              <span style="font-size:11px;color:var(--text-secondary)">（可选，留空同前景色）</span>
+            </div>
+          </div>
+
+          <!-- Logo -->
+          <div class="tab-panel" id="tab-logo">
+            <div class="logo-upload" id="logoUpload">
+              <div id="logoPlaceholder">
+                <div style="font-size:32px;margin-bottom:8px;">🖼️</div>
+                <div style="font-size:13px;color:var(--text-secondary)">点击上传Logo图片</div>
+                <div style="font-size:11px;color:#aaa">支持 JPG/PNG/SVG</div>
+              </div>
+              <img id="logoPreviewImg" class="logo-preview" style="display:none;">
+              <div id="logoInfo" style="display:none;font-size:12px;color:var(--text-secondary)"></div>
+            </div>
+            <input type="file" id="logoFileInput" accept="image/*" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Logo大小: <span id="logoSizeVal">50</span>%</label>
+              <input type="range" id="logoSize" min="10" max="80" value="50" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Logo圆角: <span id="logoRadiusVal">8</span>px</label>
+              <input type="range" id="logoRadius" min="0" max="50" value="8" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="logoMargin" checked> Logo边距</label>
+            </div>
+            <button class="btn btn-secondary" id="removeLogoBtn" style="display:none;">🗑️ 移除Logo</button>
+          </div>
+
+          <!-- 边框 -->
+          <div class="tab-panel" id="tab-frame">
+            <div class="form-group">
+              <label><input type="checkbox" id="addFrame"> 添加边框</label>
+            </div>
+            <div id="frameOptions" style="display:none;">
+              <div class="form-group">
+                <label class="form-label">边框文字</label>
+                <input type="text" class="form-input" id="frameText" value="扫码访问" placeholder="边框上的文字">
+              </div>
+              <div class="color-row">
+                <label>边框色</label>
+                <input type="color" id="frameColor" value="#000000">
+              </div>
+              <div class="form-group">
+                <label class="form-label">边框粗细</label>
+                <select class="form-select" id="frameWidth">
+                  <option value="2">细</option>
+                  <option value="4" selected>中</option>
+                  <option value="6">粗</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">圆角</label>
+                <select class="form-select" id="frameRadius">
+                  <option value="0">无</option>
+                  <option value="8">小</option>
+                  <option value="16" selected>中</option>
+                  <option value="24">大</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 设置 -->
+          <div class="tab-panel" id="tab-settings">
+            <div class="form-group">
+              <label class="form-label">尺寸</label>
+              <select class="form-select" id="qrSize">
+                <option value="200">200 x 200</option>
+                <option value="300" selected>300 x 300</option>
+                <option value="400">400 x 400</option>
+                <option value="500">500 x 500</option>
+                <option value="800">800 x 800</option>
+                <option value="1000">1000 x 1000</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">纠错级别</label>
+              <select class="form-select" id="errorLevel">
+                <option value="L">L - 低 (7%)</option>
+                <option value="M">M - 中 (15%)</option>
+                <option value="Q">Q - 较高 (25%)</option>
+                <option value="H" selected>H - 高 (30%)</option>
+              </select>
+              <p style="font-size:11px;color:var(--text-secondary);margin-top:4px;">💡 有Logo时建议使用H级别</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">边距 (quiet zone)</label>
+              <select class="form-select" id="qrMargin">
+                <option value="0">无边距</option>
+                <option value="10">小</option>
+                <option value="20" selected>中</option>
+                <option value="40">大</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div class="card">
-        <div class="card-title">预览</div>
-        <div class="qr-preview">
-          <div class="qr-placeholder" id="placeholder">
-            <div class="qr-placeholder-icon">📱</div>
-            <div>输入文本后生成二维码</div>
+
+      <!-- 右侧：预览区 -->
+      <div class="qr-right">
+        <div class="preview-card">
+          <div class="card-title" style="text-align:center;">预览</div>
+          <div class="preview-area" id="previewArea">
+            <div class="preview-placeholder" id="placeholder">
+              <div class="icon">📱</div>
+              <div>输入内容后自动生成</div>
+            </div>
+            <div id="qrCanvas" style="display:none;"></div>
           </div>
-          <div id="qrContainer" style="display: none;"></div>
+          <div class="download-bar">
+            <button class="btn btn-primary" id="downloadPng">📥 PNG</button>
+            <button class="btn btn-secondary" id="downloadSvg">📥 SVG</button>
+            <button class="btn btn-secondary" id="copyBtn">📋 复制</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <footer class="footer">
-    <div class="footer-container">
-      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
-    </div>
+    <div class="footer-container"><p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p></div>
   </footer>
 
-  <script src="../../assets/js/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.8.4/lib/qr-code-styling.js"></script>
   <script src="../../assets/js/common.js"></script>
   <script>
-    (function() {
-      var qrText = document.getElementById('qrText');
-      var qrSize = document.getElementById('qrSize');
-      var qrCorrectLevel = document.getElementById('qrCorrectLevel');
-      var fgColor = document.getElementById('fgColor');
-      var bgColor = document.getElementById('bgColor');
-      var fgHex = document.getElementById('fgHex');
-      var bgHex = document.getElementById('bgHex');
-      var placeholder = document.getElementById('placeholder');
-      var qrContainer = document.getElementById('qrContainer');
-      var generateBtn = document.getElementById('generateBtn');
-      var downloadBtn = document.getElementById('downloadBtn');
-      
-      var qrInstance = null;
-      
-      var correctMap = {};
-      try {
-        correctMap = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
-      } catch(e) {
-        correctMap = { L: 1, M: 0, Q: 3, H: 2 };
+  (function() {
+    // === 状态 ===
+    var state = {
+      contentType: 'text',
+      dotsStyle: 'square',
+      dotsType: 'square',
+      eyeStyle: 'frame0',
+      eyeBall: 'ball0',
+      fgColor: '#000000',
+      bgColor: '#FFFFFF',
+      useGradient: false,
+      gradientColor: '#1E88E5',
+      gradientDir: 'horizontal',
+      eyeColor: '',
+      logoDataUrl: null,
+      logoSize: 50,
+      logoRadius: 8,
+      logoMargin: true,
+      addFrame: false,
+      frameText: '扫码访问',
+      frameColor: '#000000',
+      frameWidth: 4,
+      frameRadius: 16
+    };
+
+    var qrCode = null;
+    var debounceTimer = null;
+
+    // === 样式定义 ===
+    var dotsStyles = [
+      { name: 'square', label: '方块', draw: function(ctx, x, y, s) { ctx.fillRect(x, y, s, s); } },
+      { name: 'rounded', label: '圆角', draw: function(ctx, x, y, s) { roundRect(ctx, x, y, s, s, s*0.3); } },
+      { name: 'dots', label: '圆点', draw: function(ctx, x, y, s) { ctx.beginPath(); ctx.arc(x+s/2, y+s/2, s/2, 0, Math.PI*2); ctx.fill(); } },
+      { name: 'diamond', label: '菱形', draw: function(ctx, x, y, s) { ctx.beginPath(); ctx.moveTo(x+s/2,y); ctx.lineTo(x+s,y+s/2); ctx.lineTo(x+s/2,y+s); ctx.lineTo(x,y+s/2); ctx.closePath(); ctx.fill(); } },
+      { name: 'star', label: '星形', draw: function(ctx, x, y, s) { drawStar(ctx, x+s/2, y+s/2, 5, s/2, s/4); } },
+      { name: 'horizontal', label: '横条', draw: function(ctx, x, y, s) { ctx.fillRect(x, y+s*0.2, s, s*0.6); } },
+      { name: 'vertical', label: '竖条', draw: function(ctx, x, y, s) { ctx.fillRect(x+s*0.2, y, s*0.6, s); } },
+      { name: 'leaf', label: '叶子', draw: function(ctx, x, y, s) { ctx.beginPath(); ctx.arc(x+s/2, y, s/2, 0, Math.PI); ctx.arc(x+s/2, y+s, s/2, Math.PI, 0); ctx.fill(); } },
+      { name: 'circle', label: '圆环', draw: function(ctx, x, y, s) { ctx.beginPath(); ctx.arc(x+s/2, y+s/2, s/2, 0, Math.PI*2); ctx.lineWidth = s*0.2; ctx.stroke(); } },
+      { name: 'heart', label: '爱心', draw: function(ctx, x, y, s) { drawHeart(ctx, x, y, s); } },
+    ];
+
+    var eyeStyles = [
+      { name: 'frame0', label: '方形' },
+      { name: 'frame1', label: '圆角' },
+      { name: 'frame2', label: '圆形' },
+      { name: 'frame3', label: '圆角方' },
+      { name: 'frame4', label: '花形' },
+      { name: 'frame5', label: '六角' },
+    ];
+
+    var eyeBalls = [
+      { name: 'ball0', label: '方块' },
+      { name: 'ball1', label: '圆点' },
+      { name: 'ball2', label: '圆环' },
+      { name: 'ball3', label: '菱形' },
+    ];
+
+    // === 绘图辅助 ===
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+      ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+      ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+      ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+      ctx.closePath(); ctx.fill();
+    }
+
+    function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+      var rot = Math.PI/2*3, step = Math.PI/spikes;
+      ctx.beginPath(); ctx.moveTo(cx, cy-outerR);
+      for (var i=0; i<spikes; i++) {
+        ctx.lineTo(cx+Math.cos(rot)*outerR, cy+Math.sin(rot)*outerR); rot+=step;
+        ctx.lineTo(cx+Math.cos(rot)*innerR, cy+Math.sin(rot)*innerR); rot+=step;
+      }
+      ctx.closePath(); ctx.fill();
+    }
+
+    function drawHeart(ctx, x, y, s) {
+      var cx=x+s/2, cy=y+s*0.4, r=s*0.25;
+      ctx.beginPath();
+      ctx.arc(cx-r, cy, r, Math.PI, 0);
+      ctx.arc(cx+r, cy, r, Math.PI, 0);
+      ctx.quadraticCurveTo(cx+s*0.5, cy+s*0.7, cx, cy+s*0.9);
+      ctx.quadraticCurveTo(cx-s*0.5, cy+s*0.7, cx-r*2+r, cy);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // === 渲染样式预览缩略图 ===
+    function renderStyleThumbnails() {
+      var grid = document.getElementById('dotsStyleGrid');
+      grid.innerHTML = '';
+      dotsStyles.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'style-option' + (s.name === state.dotsStyle ? ' active' : '');
+        div.dataset.style = s.name;
+        var canvas = document.createElement('canvas');
+        canvas.width = 48; canvas.height = 48;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#333';
+        s.draw(ctx, 4, 4, 12);
+        s.draw(ctx, 20, 4, 12);
+        s.draw(ctx, 4, 20, 12);
+        s.draw(ctx, 20, 20, 12);
+        s.draw(ctx, 36, 20, 12);
+        s.draw(ctx, 20, 36, 12);
+        div.appendChild(canvas);
+        var label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = s.label;
+        div.appendChild(label);
+        div.onclick = function() {
+          state.dotsStyle = s.name;
+          document.querySelectorAll('#dotsStyleGrid .style-option').forEach(function(el){el.classList.remove('active')});
+          div.classList.add('active');
+          debounceGenerate();
+        };
+        grid.appendChild(div);
+      });
+    }
+
+    function renderEyeThumbnails() {
+      var grid = document.getElementById('eyeStyleGrid');
+      grid.innerHTML = '';
+      eyeStyles.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'style-option' + (s.name === state.eyeStyle ? ' active' : '');
+        div.dataset.style = s.name;
+        var canvas = document.createElement('canvas');
+        canvas.width = 48; canvas.height = 48;
+        var ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.fillStyle = '#333';
+        drawEyePreview(ctx, s.name, 8, 8, 32);
+        div.appendChild(canvas);
+        var label = document.createElement('div');
+        label.className = 'label'; label.textContent = s.label;
+        div.appendChild(label);
+        div.onclick = function() {
+          state.eyeStyle = s.name;
+          document.querySelectorAll('#eyeStyleGrid .style-option').forEach(function(el){el.classList.remove('active')});
+          div.classList.add('active');
+          debounceGenerate();
+        };
+        grid.appendChild(div);
+      });
+
+      var ballGrid = document.getElementById('eyeBallGrid');
+      ballGrid.innerHTML = '';
+      eyeBalls.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'style-option' + (s.name === state.eyeBall ? ' active' : '');
+        var canvas = document.createElement('canvas');
+        canvas.width = 48; canvas.height = 48;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#333';
+        drawBallPreview(ctx, s.name, 12, 12, 24);
+        div.appendChild(canvas);
+        var label = document.createElement('div');
+        label.className = 'label'; label.textContent = s.label;
+        div.appendChild(label);
+        div.onclick = function() {
+          state.eyeBall = s.name;
+          document.querySelectorAll('#eyeBallGrid .style-option').forEach(function(el){el.classList.remove('active')});
+          div.classList.add('active');
+          debounceGenerate();
+        };
+        ballGrid.appendChild(div);
+      });
+    }
+
+    function drawEyePreview(ctx, style, x, y, s) {
+      var r = s*0.2;
+      ctx.beginPath();
+      if (style==='frame0') { ctx.rect(x,y,s,s); }
+      else if (style==='frame1') { roundRect(ctx,x,y,s,s,r); }
+      else if (style==='frame2') { ctx.arc(x+s/2,y+s/2,s/2,0,Math.PI*2); }
+      else if (style==='frame3') { roundRect(ctx,x,y,s,s,r*2); }
+      else if (style==='frame4') { /* flower - simplified */ ctx.arc(x+s/2,y+s/2,s/2,0,Math.PI*2); }
+      else { ctx.rect(x,y,s,s); }
+      ctx.lineWidth = 4; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x+s/2, y+s/2, s*0.25, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawBallPreview(ctx, style, x, y, s) {
+      if (style==='ball0') { ctx.fillRect(x,y,s,s); }
+      else if (style==='ball1') { ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s/2,0,Math.PI*2); ctx.fill(); }
+      else if (style==='ball2') { ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s/2,0,Math.PI*2); ctx.lineWidth=3; ctx.stroke(); }
+      else if (style==='ball3') { ctx.beginPath(); ctx.moveTo(x+s/2,y); ctx.lineTo(x+s,y+s/2); ctx.lineTo(x+s/2,y+s); ctx.lineTo(x,y+s/2); ctx.closePath(); ctx.fill(); }
+    }
+
+    // === 内容类型 ===
+    function getContent() {
+      var type = state.contentType;
+      if (type === 'text') return document.getElementById('inputText').value.trim();
+      if (type === 'wifi') {
+        var ssid = document.getElementById('wifiSSID').value;
+        var pass = document.getElementById('wifiPass').value;
+        var enc = document.getElementById('wifiEnc').value;
+        if (!ssid) return '';
+        return 'WIFI:T:' + enc + ';S:' + ssid + ';P:' + pass + ';;';
+      }
+      if (type === 'vcard') {
+        var name = document.getElementById('vcName').value;
+        if (!name) return '';
+        var v = 'BEGIN:VCARD\nVERSION:3.0\nN:' + name;
+        if (document.getElementById('vcPhone').value) v += '\nTEL:' + document.getElementById('vcPhone').value;
+        if (document.getElementById('vcEmail').value) v += '\nEMAIL:' + document.getElementById('vcEmail').value;
+        if (document.getElementById('vcOrg').value) v += '\nORG:' + document.getElementById('vcOrg').value;
+        if (document.getElementById('vcTitle').value) v += '\nTITLE:' + document.getElementById('vcTitle').value;
+        v += '\nEND:VCARD';
+        return v;
+      }
+      if (type === 'email') {
+        var addr = document.getElementById('emailAddr').value;
+        if (!addr) return '';
+        var subj = document.getElementById('emailSubject').value;
+        return 'mailto:' + addr + (subj ? '?subject=' + encodeURIComponent(subj) : '');
+      }
+      if (type === 'phone') {
+        var num = document.getElementById('phoneNum').value;
+        return num ? 'tel:' + num : '';
+      }
+      if (type === 'sms') {
+        var num = document.getElementById('smsNum').value;
+        var body = document.getElementById('smsBody').value;
+        if (!num) return '';
+        return 'smsto:' + num + (body ? ':' + body : '');
+      }
+      return '';
+    }
+
+    // === 渐变 ===
+    function getGradientOptions() {
+      if (!state.useGradient) return null;
+      var type = 'linear';
+      var rotation = 0;
+      if (state.gradientDir === 'horizontal') rotation = 0;
+      else if (state.gradientDir === 'vertical') rotation = 90;
+      else rotation = 135;
+      return { type: type, rotation: rotation, colorStops: [
+        { offset: 0, color: state.fgColor },
+        { offset: 1, color: state.gradientColor }
+      ]};
+    }
+
+    // === 生成二维码 ===
+    function generate() {
+      var content = getContent();
+      if (!content) {
+        document.getElementById('placeholder').style.display = '';
+        document.getElementById('qrCanvas').style.display = 'none';
+        return;
       }
 
-      function generate() {
-        var text = qrText.value.trim();
-        if (!text) { showMessage('warning', '请输入要生成二维码的文本'); return; }
-        
-        qrContainer.innerHTML = '';
-        
-        try {
-          qrInstance = new QRCode(qrContainer, {
-            text: text,
-            width: parseInt(qrSize.value),
-            height: parseInt(qrSize.value),
-            colorDark: fgColor.value,
-            colorLight: bgColor.value,
-            correctLevel: correctMap[qrCorrectLevel.value]
-          });
-          
-          setTimeout(function() {
-            var canvas = qrContainer.querySelector('canvas');
-            var img = qrContainer.querySelector('img');
-            if (canvas || img) {
-              placeholder.style.display = 'none';
-              qrContainer.style.display = 'flex';
-              
-              // If QR uses img instead of canvas, convert for download
-              if (img && !canvas) {
-                img.crossOrigin = 'anonymous';
-                canvas = document.createElement('canvas');
-                canvas.width = parseInt(qrSize.value);
-                canvas.height = parseInt(qrSize.value);
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                canvas.id = 'qrCanvas';
-                canvas.style.display = 'block';
-                qrContainer.replaceChild(canvas, img);
-              }
-              
-              showMessage('success', '二维码生成成功');
-            }
-          }, 200);
-        } catch(e) {
-          showMessage('error', '生成失败: ' + e.message);
+      var size = parseInt(document.getElementById('qrSize').value);
+      var margin = parseInt(document.getElementById('qrMargin').value);
+      var errorLevel = document.getElementById('errorLevel').value;
+
+      var dotsOptions = {
+        type: state.dotsStyle === 'square' ? 'square' :
+              state.dotsStyle === 'dots' ? 'dots' :
+              state.dotsStyle === 'rounded' ? 'rounded' :
+              state.dotsStyle === 'diamond' ? 'diamond' :
+              state.dotsStyle === 'star' ? 'star' :
+              state.dotsStyle === 'horizontal' ? 'classy' :
+              state.dotsStyle === 'vertical' ? 'classy' :
+              state.dotsStyle === 'leaf' ? 'extra-rounded' :
+              state.dotsStyle === 'heart' ? 'classy-rounded' :
+              state.dotsStyle === 'circle' ? 'dots' : 'square',
+        color: state.fgColor,
+        gradient: getGradientOptions() || undefined
+      };
+
+      var cornersSquareOptions = {
+        type: state.eyeStyle === 'frame0' ? 'square' :
+              state.eyeStyle === 'frame1' ? 'extra-rounded' :
+              state.eyeStyle === 'frame2' ? 'dot' : 'square',
+        color: state.eyeColor || state.fgColor
+      };
+
+      var cornersDotOptions = {
+        type: state.eyeBall === 'ball0' ? 'square' :
+              state.eyeBall === 'ball1' ? 'dot' :
+              state.eyeBall === 'ball2' ? 'dot' :
+              state.eyeBall === 'ball3' ? 'diamond' : 'square',
+        color: state.eyeColor || state.fgColor
+      };
+
+      var backgroundOptions = { color: state.bgColor };
+
+      var logoImage = state.logoDataUrl || undefined;
+      var logoMargin = state.logoMargin ? 5 : 0;
+
+      var options = {
+        width: size,
+        height: size,
+        data: content,
+        margin: margin,
+        qrOptions: { errorCorrectionLevel: errorLevel },
+        dotsOptions: dotsOptions,
+        cornersSquareOptions: cornersSquareOptions,
+        cornersDotOptions: cornersDotOptions,
+        backgroundOptions: backgroundOptions,
+        image: logoImage,
+        imageOptions: {
+          hideBackgroundDots: true,
+          imageSize: state.logoSize / 100,
+          margin: logoMargin,
+          crossOrigin: 'anonymous'
         }
+      };
+
+      try {
+        qrCode = new QRCodeStyling(options);
+        var container = document.getElementById('qrCanvas');
+        container.innerHTML = '';
+        qrCode.append(container);
+        document.getElementById('placeholder').style.display = 'none';
+        container.style.display = 'block';
+      } catch(e) {
+        console.error('QR generation error:', e);
       }
+    }
 
-      generateBtn.addEventListener('click', generate);
-      qrText.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
-      });
-      fgColor.addEventListener('input', function(e) { fgHex.textContent = e.target.value; });
-      bgColor.addEventListener('input', function(e) { bgHex.textContent = e.target.value; });
+    function debounceGenerate() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(generate, 300);
+    }
 
-      downloadBtn.addEventListener('click', function() {
-        if (qrContainer.style.display === 'none') { showMessage('warning', '请先生成二维码'); return; }
-        var canvas = qrContainer.querySelector('canvas');
-        if (!canvas) { showMessage('error', 'Canvas未找到'); return; }
-        var link = document.createElement('a');
-        link.download = 'qrcode-' + Date.now() + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showMessage('success', '二维码已下载');
+    // === 事件绑定 ===
+    // 内容类型切换
+    document.getElementById('contentTypeGrid').addEventListener('click', function(e) {
+      var btn = e.target.closest('.content-type-btn');
+      if (!btn) return;
+      state.contentType = btn.dataset.type;
+      document.querySelectorAll('.content-type-btn').forEach(function(b){b.classList.remove('active')});
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel[id^="panel-"]').forEach(function(p){p.classList.remove('active')});
+      var panel = document.getElementById('panel-' + btn.dataset.type);
+      if (panel) panel.classList.add('active');
+    });
+
+    // 标签页切换
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
+        document.querySelectorAll('.tab-panel[id^="tab-"]').forEach(function(p){p.classList.remove('active')});
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
       });
-    })();
+    });
+
+    // 颜色
+    document.getElementById('fgColor').addEventListener('input', function(e) {
+      state.fgColor = e.target.value;
+      document.getElementById('fgHex').textContent = e.target.value;
+      debounceGenerate();
+    });
+    document.getElementById('bgColor').addEventListener('input', function(e) {
+      state.bgColor = e.target.value;
+      document.getElementById('bgHex').textContent = e.target.value;
+      debounceGenerate();
+    });
+    document.getElementById('useGradient').addEventListener('change', function(e) {
+      state.useGradient = e.target.checked;
+      document.getElementById('gradientOptions').style.display = e.target.checked ? '' : 'none';
+      debounceGenerate();
+    });
+    document.getElementById('gradientColor').addEventListener('input', function(e) {
+      state.gradientColor = e.target.value;
+      debounceGenerate();
+    });
+    document.getElementById('gradientDir').addEventListener('change', function(e) {
+      state.gradientDir = e.target.value;
+      debounceGenerate();
+    });
+    document.getElementById('eyeColor').addEventListener('input', function(e) {
+      state.eyeColor = e.target.value;
+      debounceGenerate();
+    });
+
+    // Logo
+    var logoUpload = document.getElementById('logoUpload');
+    var logoFileInput = document.getElementById('logoFileInput');
+    logoUpload.addEventListener('click', function() { logoFileInput.click(); });
+    logoFileInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        state.logoDataUrl = ev.target.result;
+        document.getElementById('logoPreviewImg').src = ev.target.result;
+        document.getElementById('logoPreviewImg').style.display = 'block';
+        document.getElementById('logoPlaceholder').style.display = 'none';
+        document.getElementById('logoInfo').textContent = file.name + ' (' + (file.size/1024).toFixed(1) + 'KB)';
+        document.getElementById('logoInfo').style.display = '';
+        document.getElementById('removeLogoBtn').style.display = '';
+        logoUpload.classList.add('has-logo');
+        debounceGenerate();
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('removeLogoBtn').addEventListener('click', function() {
+      state.logoDataUrl = null;
+      document.getElementById('logoPreviewImg').style.display = 'none';
+      document.getElementById('logoPlaceholder').style.display = '';
+      document.getElementById('logoInfo').style.display = 'none';
+      this.style.display = 'none';
+      logoUpload.classList.remove('has-logo');
+      logoFileInput.value = '';
+      debounceGenerate();
+    });
+    document.getElementById('logoSize').addEventListener('input', function(e) {
+      state.logoSize = parseInt(e.target.value);
+      document.getElementById('logoSizeVal').textContent = e.target.value;
+      debounceGenerate();
+    });
+    document.getElementById('logoRadius').addEventListener('input', function(e) {
+      state.logoRadius = parseInt(e.target.value);
+      document.getElementById('logoRadiusVal').textContent = e.target.value;
+    });
+    document.getElementById('logoMargin').addEventListener('change', function(e) {
+      state.logoMargin = e.target.checked;
+      debounceGenerate();
+    });
+
+    // 边框
+    document.getElementById('addFrame').addEventListener('change', function(e) {
+      state.addFrame = e.target.checked;
+      document.getElementById('frameOptions').style.display = e.target.checked ? '' : 'none';
+    });
+
+    // 设置
+    document.getElementById('qrSize').addEventListener('change', debounceGenerate);
+    document.getElementById('errorLevel').addEventListener('change', debounceGenerate);
+    document.getElementById('qrMargin').addEventListener('change', debounceGenerate);
+
+    // 所有输入框实时生成
+    document.querySelectorAll('input[type="text"], textarea, input[type="email"]').forEach(function(el) {
+      el.addEventListener('input', debounceGenerate);
+    });
+
+    // 下载
+    document.getElementById('downloadPng').addEventListener('click', function() {
+      if (!qrCode) { showMessage('error', '请先生成二维码'); return; }
+      qrCode.download({ name: 'qrcode-' + Date.now(), extension: 'png' });
+    });
+    document.getElementById('downloadSvg').addEventListener('click', function() {
+      if (!qrCode) { showMessage('error', '请先生成二维码'); return; }
+      qrCode.download({ name: 'qrcode-' + Date.now(), extension: 'svg' });
+    });
+    document.getElementById('copyBtn').addEventListener('click', function() {
+      if (!qrCode) { showMessage('error', '请先生成二维码'); return; }
+      var canvas = document.querySelector('#qrCanvas canvas');
+      if (canvas) {
+        canvas.toBlob(function(blob) {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
+            showMessage('success', '已复制到剪贴板');
+          }).catch(function() {
+            showMessage('error', '复制失败，请使用下载按钮');
+          });
+        });
+      }
+    });
+
+    // 初始化
+    renderStyleThumbnails();
+    renderEyeThumbnails();
+  })();
   </script>
 </body>
 </html>
