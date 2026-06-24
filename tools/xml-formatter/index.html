@@ -1,172 +1,534 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XML格式化/压缩 - Web工具箱</title>
-  <meta name="description" content="XML代码美化、压缩">
-<link rel="stylesheet" href="../../assets/css/style.css">
-<script src="../../assets/js/common.js"></script>
-<style>
-.tool-container{max-width:900px;margin:0 auto;padding:20px}
-.card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
-.breadcrumb{font-size:14px;color:#666;margin-bottom:20px}
-.breadcrumb a{color:#4a90d9;text-decoration:none}
-.breadcrumb a:hover{text-decoration:underline}
-.input-area{width:100%;min-height:200px;padding:12px;border:1px solid #ddd;border-radius: 10px;font-family:'Courier New',monospace;font-size:14px;resize:vertical;box-sizing:border-line}
-.output-area{width:100%;min-height:200px;padding:12px;border:1px solid #ddd;border-radius: 10px;font-family:'Courier New',monospace;font-size:14px;background:#f9f9f9;white-space:pre-wrap;word-break:break-all;overflow:auto;box-sizing:border-box}
-.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;align-items:center}
-.btn{padding:10px 20px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;transition:all .2s}
-.btn-primary{background:#4a90d9;color:#fff}
-.btn-primary:hover{background:#357abd}
-.btn-success{background:#27ae60;color:#fff}
-.btn-success:hover{background:#219a52}
-.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
-.btn-outline:hover{background:#f5f5f5}
-select{padding:8px 12px;border:1px solid #ddd;border-radius: 10px;font-size:14px}
-label{font-size:14px;color:#555;display:flex;align-items:center;gap:6px}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius: 10px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s}
-.toast.show{opacity:1}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XML格式化工具 - Web Tools</title>
+  <meta name="description" content="XML在线格式化、压缩、语法高亮显示">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .xml-layout {
+      display: grid;
+      gap: 24px;
+    }
+    @media (min-width: 768px) {
+      .xml-layout { grid-template-columns: 1fr 1fr; }
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .editor-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .editor-title .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .badge-success { background: #e8f5e9; color: #2e7d32; }
+    .badge-error { background: #ffebee; color: #c62828; }
+    .badge-info { background: #e3f2fd; color: #1565c0; }
+    .editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .editor-actions .btn {
+      padding: 6px 12px;
+      height: 32px;
+      font-size: 12px;
+    }
+
+    /* 输入区 */
+    .code-area {
+      width: 100%;
+      height: 500px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      resize: vertical;
+      tab-size: 2;
+      background: #fff;
+      color: #1e293b;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .code-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
+    }
+    .code-area::placeholder {
+      color: #94a3b8;
+    }
+
+    /* 输出区 - 语法高亮 */
+    .output-area {
+      width: 100%;
+      height: 500px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: auto;
+      background: #f8fafc;
+      white-space: pre;
+      word-wrap: normal;
+      overflow-wrap: normal;
+      tab-size: 2;
+      color: #1e293b;
+    }
+    .output-area:empty::before {
+      content: '格式化结果将在这里显示...';
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* XML 语法高亮颜色 */
+    .xml-tag { color: #116329; }
+    .xml-attr { color: #953800; }
+    .xml-string { color: #0a3069; }
+    .xml-comment { color: #6e7781; font-style: italic; }
+    .xml-cdata { color: #6e7781; }
+    .xml-pi { color: #8250df; }
+    .xml-bracket { color: #6e7781; }
+    .xml-ns { color: #0550ae; }
+    .xml-text { color: #1e293b; }
+
+    /* 行号 */
+    .output-wrapper {
+      position: relative;
+    }
+    .line-numbers {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      padding: 16px 8px 16px 0;
+      text-align: right;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94a3b8;
+      background: #f1f5f9;
+      border-right: 1px solid var(--border);
+      border-radius: 10px 0 0 10px;
+      overflow: hidden;
+      user-select: none;
+      white-space: pre;
+    }
+    .output-area.with-lines {
+      margin-left: 49px;
+      border-radius: 0 10px 10px 0;
+    }
+
+    /* 操作栏 */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .action-bar .spacer { flex: 1; }
+
+    /* 统计信息 */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .stats-bar span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 暗黑模式语法颜色 */
+    body.dark-mode .xml-tag { color: #7ee787; }
+    body.dark-mode .xml-attr { color: #ffa657; }
+    body.dark-mode .xml-string { color: #a5d6ff; }
+    body.dark-mode .xml-comment { color: #8b949e; }
+    body.dark-mode .xml-cdata { color: #8b949e; }
+    body.dark-mode .xml-pi { color: #d2a8ff; }
+    body.dark-mode .xml-bracket { color: #8b949e; }
+    body.dark-mode .xml-ns { color: #79c0ff; }
+    body.dark-mode .xml-text { color: #c9d1d9; }
+    body.dark-mode .output-area { background: #0d1117; color: #c9d1d9; }
+    body.dark-mode .line-numbers { background: #161b22; border-color: #30363d; color: #484f58; }
+  </style>
 </head>
 <body>
-<nav style="background:#4a90d9;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
-<a href="../../index.html" style="color:#fff;text-decoration:none;font-size:18px;font-weight:bold">🛠 Web工具箱</a>
-<span style="font-size:14px">XML格式化/压缩</span>
-</nav>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
 
-<div class="tool-container">
-<div class="breadcrumb">
-<a href="../../index.html">首页</a> &gt; <span>XML格式化/压缩</span>
-</div>
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / XML格式化工具
+      </div>
+      <h1>📄 XML格式化工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">XML格式化、压缩、语法高亮显示，支持大文件</p>
+    </div>
 
-<div class="card">
-<h2 style="margin-top:0;font-size:20px">📄 XML格式化/压缩</h2>
-<p style="color:#666;font-size:14px">格式化XML使其易读，或压缩XML去除多余空白</p>
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="btn btn-primary" id="formatBtn">✨ 格式化</button>
+      <button class="btn btn-secondary" id="compressBtn">📦 压缩</button>
+      <select class="form-select" id="indentSelect" style="width:auto;height:40px;font-size:13px;padding:8px 32px 8px 12px;">
+        <option value="2">2 空格</option>
+        <option value="4">4 空格</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" id="clearBtn">🗑️ 清空</button>
+    </div>
 
-<label style="margin-bottom:8px">输入XML：</label>
-<textarea id="inputXml" class="input-area" placeholder="请粘贴XML内容..."></textarea>
+    <!-- 提示消息 -->
+    <div id="errorMessage" class="message message-error" style="display: none; margin-bottom: 16px;"></div>
+    <div id="successMessage" class="message message-success" style="display: none; margin-bottom: 16px;"></div>
 
-<div class="btn-group">
-<button class="btn btn-primary" onclick="beautifyXml()">✨ 格式化</button>
-<button class="btn btn-outline" onclick="minifyXml()">📦 压缩</button>
-<div style="display:flex;align-items:center;gap:6px;margin-left:10px">
-<label>缩进：</label>
-<select id="indentSize">
-<option value="2">2空格</option>
-<option value="4">4空格</option>
-</select>
-</div>
-<button class="btn btn-success" onclick="copyOutput()" style="margin-left:auto">📋 复制结果</button>
-</div>
+    <!-- 编辑器布局 -->
+    <div class="xml-layout">
+      <!-- 输入 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">
+            📥 输入
+            <span class="badge badge-info" id="inputSize"></span>
+          </span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="pasteBtn">📋 粘贴</button>
+          </div>
+        </div>
+        <textarea class="code-area" id="xmlInput" placeholder="在此粘贴或输入 XML 文本...&#10;&#10;例如：&#10;&lt;?xml version=&quot;1.0&quot;?&gt;&#10;&lt;root&gt;&#10;  &lt;item name=&quot;test&quot;&gt;value&lt;/item&gt;&#10;&lt;/root&gt;"></textarea>
+      </div>
 
-<label style="margin-bottom:8px">输出结果：</label>
-<div id="outputArea" class="output-area">结果将显示在这里...</div>
-</div>
-</div>
+      <!-- 输出 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">
+            📤 输出
+            <span class="badge badge-success" id="outputInfo" style="display:none;"></span>
+          </span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="copyBtn">📋 复制</button>
+          </div>
+        </div>
+        <div class="output-wrapper">
+          <div class="line-numbers" id="lineNumbers"></div>
+          <div class="output-area with-lines" id="xmlOutput"></div>
+        </div>
+        <div class="stats-bar" id="statsBar" style="display:none;">
+          <span>📊 行数: <strong id="statLines">0</strong></span>
+          <span>📏 字符: <strong id="statChars">0</strong></span>
+          <span>📦 大小: <strong id="statSize">0 B</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<div class="toast" id="toast"></div>
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
 
-<footer style="text-align:center;padding:20px;color:#999;font-size:13px;border-top:1px solid #eee;margin-top:40px">
-© 2024 Web工具箱 | 纯前端工具，数据不上传服务器
-</footer>
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const xmlInput = document.getElementById('xmlInput');
+      const xmlOutput = document.getElementById('xmlOutput');
+      const lineNumbers = document.getElementById('lineNumbers');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      const indentSelect = document.getElementById('indentSelect');
+      const inputSize = document.getElementById('inputSize');
+      const outputInfo = document.getElementById('outputInfo');
+      const statsBar = document.getElementById('statsBar');
 
-<script>
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000)}
-
-function copyOutput(){var text=document.getElementById('outputArea').textContent;if(!text||text==='结果将显示在这里...')return;navigator.clipboard.writeText(text).then(function(){showToast('已复制到剪贴板')}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制到剪贴板')})}
-
-function beautifyXml(){
-  var xml=document.getElementById('inputXml').value.trim();
-  if(!xml){showToast('请先输入XML内容');return}
-  var indent=parseInt(document.getElementById('indentSize').value);
-  var indentStr=' '.repeat(indent);
-  try{
-    var result=formatXml(xml,indentStr);
-    document.getElementById('outputArea').textContent=result;
-  }catch(e){
-    document.getElementById('outputArea').textContent='错误：XML格式不正确 - '+e.message;
-  }
-}
-
-function minifyXml(){
-  var xml=document.getElementById('inputXml').value.trim();
-  if(!xml){showToast('请先输入XML内容');return}
-  try{
-    var result=xml.replace(/>\s+</g,'><').replace(/\s+/g,' ').replace(/>\s+/g,'>').replace(/\s+</g,'<').trim();
-    document.getElementById('outputArea').textContent=result;
-  }catch(e){
-    document.getElementById('outputArea').textContent='错误：'+e.message;
-  }
-}
-
-function formatXml(xml,indentStr){
-  var formatted='';
-  var level=0;
-  // Parse XML using regex to handle elements, attributes, comments, CDATA, etc.
-  // Tokenize the XML
-  var tokens=[];
-  var i=0;
-  while(i<xml.length){
-    if(xml.substr(i,4)==='<!--'){
-      var end=xml.indexOf('-->',i);
-      if(end===-1)throw new Error('未闭合的注释');
-      tokens.push({type:'comment',value:xml.substring(i,end+3)});
-      i=end+3;
-    }else if(xml.substr(i,9)==='<![CDATA['){
-      var end=xml.indexOf(']]>',i);
-      if(end===-1)throw new Error('未闭合的CDATA');
-      tokens.push({type:'cdata',value:xml.substring(i,end+3)});
-      i=end+3;
-    }else if(xml.substr(i,2)==='<?'){
-      var end=xml.indexOf('?>',i);
-      if(end===-1)throw new Error('未闭合的处理指令');
-      tokens.push({type:'processing',value:xml.substring(i,end+2)});
-      i=end+2;
-    }else if(xml[i]==='<'){
-      var end=xml.indexOf('>',i);
-      if(end===-1)throw new Error('未闭合的标签');
-      var tagContent=xml.substring(i+1,end);
-      if(tagContent[0]==='/'){
-        tokens.push({type:'close',value:tagContent.substring(1).trim()});
-      }else if(tagContent[end-i-2]==='/'){
-        tokens.push({type:'selfclose',value:tagContent.substring(0,tagContent.length-1).trim()});
-      }else{
-        tokens.push({type:'open',value:tagContent.trim()});
+      function showMsg(el, type, text) {
+        el.textContent = `${type === 'error' ? '❌' : '✅'} ${text}`;
+        el.className = `message message-${type}`;
+        el.style.display = 'flex';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
       }
-      i=end+1;
-    }else{
-      var next=xml.indexOf('<',i);
-      if(next===-1)next=xml.length;
-      var text=xml.substring(i,next).trim();
-      if(text)tokens.push({type:'text',value:text});
-      i=next;
-    }
-  }
 
-  for(var t=0;t<tokens.length;t++){
-    var tok=tokens[t];
-    if(tok.type==='close'){
-      level--;
-      if(level<0)level=0;
-      formatted+=indentStr.repeat(level)+'</'+tok.value+'>\n';
-    }else if(tok.type==='open'){
-      formatted+=indentStr.repeat(level)+'<'+tok.value+'>\n';
-      level++;
-    }else if(tok.type==='selfclose'){
-      formatted+=indentStr.repeat(level)+'<'+tok.value+'/>\n';
-    }else if(tok.type==='text'){
-      formatted+=indentStr.repeat(level)+tok.value+'\n';
-    }else if(tok.type==='comment'){
-      formatted+=indentStr.repeat(level)+tok.value+'\n';
-    }else if(tok.type==='cdata'){
-      formatted+=indentStr.repeat(level)+tok.value+'\n';
-    }else if(tok.type==='processing'){
-      formatted+=indentStr.repeat(level)+tok.value+'\n';
-    }
-  }
-  return formatted.trim();
-}
-</script>
+      function getIndent() {
+        return parseInt(indentSelect.value);
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+
+      function updateLineNumbers(text) {
+        const count = text.split('\n').length;
+        const nums = [];
+        for (let i = 1; i <= count; i++) nums.push(i);
+        lineNumbers.textContent = nums.join('\n');
+      }
+
+      function updateStats(text) {
+        const lines = text.split('\n').length;
+        const chars = text.length;
+        const bytes = new Blob([text]).size;
+        document.getElementById('statLines').textContent = lines.toLocaleString();
+        document.getElementById('statChars').textContent = chars.toLocaleString();
+        document.getElementById('statSize').textContent = formatFileSize(bytes);
+        statsBar.style.display = 'flex';
+      }
+
+      function updateInputSize() {
+        const text = xmlInput.value;
+        if (!text) {
+          inputSize.style.display = 'none';
+          return;
+        }
+        const size = new Blob([text]).size;
+        inputSize.textContent = formatFileSize(size);
+        inputSize.style.display = 'inline';
+      }
+
+      function setOutput(text, highlighted) {
+        if (highlighted) {
+          xmlOutput.innerHTML = highlighted;
+        } else {
+          xmlOutput.textContent = text;
+        }
+        updateLineNumbers(text);
+        updateStats(text);
+      }
+
+      // XML 语法高亮
+      function highlightXML(xml) {
+        // 大文件跳过高亮
+        if (xml.length > 500000) {
+          return escapeHtml(xml);
+        }
+        return xml
+          // 处理指令 <?...?>
+          .replace(/&lt;\?([\s\S]*?)\?&gt;/g, '<span class="xml-pi">&lt;?$1?&gt;</span>')
+          // CDATA
+          .replace(/&lt;!\[CDATA\[([\s\S]*?)\]\]&gt;/g, '<span class="xml-cdata">&lt;![CDATA[$1]]&gt;</span>')
+          // 注释
+          .replace(/&lt;!--([\s\S]*?)--&gt;/g, '<span class="xml-comment">&lt;!--$1--&gt;</span>')
+          // 自闭合标签 <tag ... />
+          .replace(/&lt;(\/?)([\w:.-]+)((?:\s+[\w:.-]+\s*=\s*"(?:[^"]*)")*)\s*(\/?)&gt;/g, function(match, slash, tag, attrs, selfclose) {
+            var result = '<span class="xml-bracket">&lt;' + slash + '</span>';
+            // 处理命名空间前缀
+            if (tag.indexOf(':') !== -1) {
+              var parts = tag.split(':');
+              result += '<span class="xml-ns">' + escapeHtml(parts[0]) + '</span>:<span class="xml-tag">' + escapeHtml(parts[1]) + '</span>';
+            } else {
+              result += '<span class="xml-tag">' + escapeHtml(tag) + '</span>';
+            }
+            if (attrs) {
+              result += attrs.replace(/([\w:.-]+)\s*=\s*"([^"]*)"/g, function(m, name, val) {
+                var attrResult = '';
+                if (name.indexOf(':') !== -1) {
+                  var ap = name.split(':');
+                  attrResult = '<span class="xml-ns">' + escapeHtml(ap[0]) + '</span>:<span class="xml-attr">' + escapeHtml(ap[1]) + '</span>';
+                } else {
+                  attrResult = '<span class="xml-attr">' + escapeHtml(name) + '</span>';
+                }
+                return attrResult + '=<span class="xml-string">"' + escapeHtml(val) + '"</span>';
+              });
+            }
+            result += '<span class="xml-bracket">' + selfclose + '&gt;</span>';
+            return result;
+          });
+      }
+
+      // XML 格式化
+      function formatXml(xml, indentStr) {
+        var formatted = '';
+        var level = 0;
+        var tokens = [];
+        var i = 0;
+        while (i < xml.length) {
+          if (xml.substr(i, 4) === '<!--') {
+            var end = xml.indexOf('-->', i);
+            if (end === -1) throw new Error('未闭合的注释');
+            tokens.push({type: 'comment', value: xml.substring(i, end + 3)});
+            i = end + 3;
+          } else if (xml.substr(i, 9) === '<![CDATA[') {
+            var end = xml.indexOf(']]>', i);
+            if (end === -1) throw new Error('未闭合的CDATA');
+            tokens.push({type: 'cdata', value: xml.substring(i, end + 3)});
+            i = end + 3;
+          } else if (xml.substr(i, 2) === '<?') {
+            var end = xml.indexOf('?>', i);
+            if (end === -1) throw new Error('未闭合的处理指令');
+            tokens.push({type: 'processing', value: xml.substring(i, end + 2)});
+            i = end + 2;
+          } else if (xml[i] === '<') {
+            var end = xml.indexOf('>', i);
+            if (end === -1) throw new Error('未闭合的标签');
+            var tagContent = xml.substring(i + 1, end);
+            if (tagContent[0] === '/') {
+              tokens.push({type: 'close', value: tagContent.substring(1).trim()});
+            } else if (tagContent[end - i - 2] === '/') {
+              tokens.push({type: 'selfclose', value: tagContent.substring(0, tagContent.length - 1).trim()});
+            } else {
+              tokens.push({type: 'open', value: tagContent.trim()});
+            }
+            i = end + 1;
+          } else {
+            var next = xml.indexOf('<', i);
+            if (next === -1) next = xml.length;
+            var text = xml.substring(i, next).trim();
+            if (text) tokens.push({type: 'text', value: text});
+            i = next;
+          }
+        }
+
+        for (var t = 0; t < tokens.length; t++) {
+          var tok = tokens[t];
+          if (tok.type === 'close') {
+            level--;
+            if (level < 0) level = 0;
+            formatted += indentStr.repeat(level) + '</' + tok.value + '>\n';
+          } else if (tok.type === 'open') {
+            formatted += indentStr.repeat(level) + '<' + tok.value + '>\n';
+            level++;
+          } else if (tok.type === 'selfclose') {
+            formatted += indentStr.repeat(level) + '<' + tok.value + '/>\n';
+          } else if (tok.type === 'text') {
+            formatted += indentStr.repeat(level) + tok.value + '\n';
+          } else if (tok.type === 'comment') {
+            formatted += indentStr.repeat(level) + tok.value + '\n';
+          } else if (tok.type === 'cdata') {
+            formatted += indentStr.repeat(level) + tok.value + '\n';
+          } else if (tok.type === 'processing') {
+            formatted += indentStr.repeat(level) + tok.value + '\n';
+          }
+        }
+        return formatted.trim();
+      }
+
+      function formatXML() {
+        const input = xmlInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入XML文本');
+          return;
+        }
+        const indent = getIndent();
+        const indentStr = ' '.repeat(indent);
+        try {
+          const formatted = formatXml(input, indentStr);
+          const highlighted = highlightXML(formatted);
+          setOutput(formatted, highlighted);
+          outputInfo.textContent = '✅ 格式化成功';
+          outputInfo.className = 'badge badge-success';
+          outputInfo.style.display = 'inline';
+          showMsg(successMessage, 'success', 'XML格式化成功');
+        } catch (e) {
+          showMsg(errorMessage, 'error', 'XML格式错误: ' + e.message);
+        }
+      }
+
+      function compressXML() {
+        const input = xmlInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入XML文本');
+          return;
+        }
+        try {
+          const compressed = input.replace(/>\s+</g, '><').replace(/\s+/g, ' ').replace(/>\s+/g, '>').replace(/\s+</g, '<').trim();
+          setOutput(compressed, null);
+          showMsg(successMessage, 'success', `XML压缩成功 (${formatFileSize(compressed.length)})`);
+        } catch (e) {
+          showMsg(errorMessage, 'error', '压缩失败: ' + e.message);
+        }
+      }
+
+      // 事件绑定
+      document.getElementById('formatBtn').addEventListener('click', formatXML);
+      document.getElementById('compressBtn').addEventListener('click', compressXML);
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        xmlInput.value = '';
+        xmlOutput.innerHTML = '';
+        lineNumbers.textContent = '';
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+        statsBar.style.display = 'none';
+        outputInfo.style.display = 'none';
+        inputSize.style.display = 'none';
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        const text = xmlOutput.textContent;
+        if (!text) {
+          showMsg(errorMessage, 'error', '输出为空，无法复制');
+          return;
+        }
+        copyToClipboard(text);
+        showMsg(successMessage, 'success', '已复制到剪贴板');
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          xmlInput.value = text;
+          updateInputSize();
+          showMsg(successMessage, 'success', '已粘贴');
+        } catch (err) {
+          showMsg(errorMessage, 'error', '无法读取剪贴板内容');
+        }
+      });
+
+      // 快捷键
+      xmlInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          formatXML();
+        }
+        // Tab 缩进
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = xmlInput.selectionStart;
+          const end = xmlInput.selectionEnd;
+          xmlInput.value = xmlInput.value.substring(0, start) + '  ' + xmlInput.value.substring(end);
+          xmlInput.selectionStart = xmlInput.selectionEnd = start + 2;
+        }
+      });
+
+      // 实时显示输入大小
+      xmlInput.addEventListener('input', updateInputSize);
+    })();
+  </script>
 </body>
 </html>

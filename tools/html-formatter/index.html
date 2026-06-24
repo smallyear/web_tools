@@ -1,144 +1,577 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HTML格式化工具 - Web工具箱</title>
-<link rel="stylesheet" href="../../assets/css/style.css">
-<style>
-.io-row{display:flex;gap:12px;margin-bottom:12px}
-.io-row>div{flex:1;display:flex;flex-direction:column}
-.io-row textarea,.io-row .output{flex:1;min-height:300px;font-family:monospace;font-size:13px;padding:10px;border:1px solid #ddd;border-radius: 10px;resize:vertical}
-.io-row .output{background:#f9f9f9;overflow:auto;white-space:pre-wrap;word-break:break-all}
-.btn-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.btn{padding:8px 18px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;font-weight:600}
-.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
-.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
-.btn-secondary{background:#6c757d;color:#fff}
-select{padding:6px 10px;border:1px solid #ddd;border-radius: 10px;font-size:14px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius: 10px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
-@media(max-width:768px){.io-row{flex-direction:column}.io-row textarea,.io-row .output{min-height:200px}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML格式化工具 - Web Tools</title>
+  <meta name="description" content="在线HTML格式化、压缩、语法高亮显示">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .html-layout {
+      display: grid;
+      gap: 24px;
+    }
+    @media (min-width: 768px) {
+      .html-layout { grid-template-columns: 1fr 1fr; }
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .editor-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .editor-title .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .badge-success { background: #e8f5e9; color: #2e7d32; }
+    .badge-error { background: #ffebee; color: #c62828; }
+    .badge-info { background: #e3f2fd; color: #1565c0; }
+    .editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .editor-actions .btn {
+      padding: 6px 12px;
+      height: 32px;
+      font-size: 12px;
+    }
+
+    .code-area {
+      width: 100%;
+      height: 500px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      resize: vertical;
+      tab-size: 2;
+      background: #fff;
+      color: #1e293b;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .code-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
+    }
+    .code-area::placeholder {
+      color: #94a3b8;
+    }
+
+    .output-area {
+      width: 100%;
+      height: 500px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: auto;
+      background: #f8fafc;
+      white-space: pre;
+      word-wrap: normal;
+      overflow-wrap: normal;
+      tab-size: 2;
+      color: #1e293b;
+    }
+    .output-area:empty::before {
+      content: '格式化结果将在这里显示...';
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* HTML 语法高亮颜色 */
+    .html-tag { color: #116329; font-weight: 500; }
+    .html-attr { color: #953800; }
+    .html-value { color: #0a3069; }
+    .html-comment { color: #6e7781; font-style: italic; }
+    .html-doctype { color: #6e7781; }
+    .html-bracket { color: #6e7781; }
+
+    /* 行号 */
+    .output-wrapper {
+      position: relative;
+    }
+    .line-numbers {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      padding: 16px 8px 16px 0;
+      text-align: right;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94a3b8;
+      background: #f1f5f9;
+      border-right: 1px solid var(--border);
+      border-radius: 10px 0 0 10px;
+      overflow: hidden;
+      user-select: none;
+      white-space: pre;
+    }
+    .output-area.with-lines {
+      margin-left: 49px;
+      border-radius: 0 10px 10px 0;
+    }
+
+    /* 操作栏 */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .action-bar .spacer { flex: 1; }
+
+    /* 统计信息 */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .stats-bar span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 暗黑模式语法颜色 */
+    body.dark-mode .html-tag { color: #7ee787; }
+    body.dark-mode .html-attr { color: #ffa657; }
+    body.dark-mode .html-value { color: #a5d6ff; }
+    body.dark-mode .html-comment { color: #8b949e; }
+    body.dark-mode .html-doctype { color: #8b949e; }
+    body.dark-mode .html-bracket { color: #8b949e; }
+    body.dark-mode .output-area { background: #0d1117; color: #c9d1d9; }
+    body.dark-mode .line-numbers { background: #161b22; border-color: #30363d; color: #484f58; }
+  </style>
 </head>
 <body>
-<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
-<div class="container">
-<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>HTML格式化工具</span></div>
-<div class="card tool-header"><h1>HTML格式化工具</h1><p>格式化美化或压缩HTML代码</p></div>
-<div class="card">
-<div class="btn-row">
-<button class="btn btn-primary" onclick="beautify()">✨ 格式化</button>
-<button class="btn btn-primary" onclick="minify()">📦 压缩</button>
-<select id="indentSize"><option value="2">2空格</option><option value="4">4空格</option><option value="tab">Tab</option></select>
-<button class="btn btn-success" onclick="copyOutput()">📋 复制结果</button>
-<button class="btn btn-secondary" onclick="clearAll()">清空</button>
-</div>
-<div class="io-row">
-<div><label style="font-weight:600;margin-bottom:4px">输入 HTML</label><textarea id="input" placeholder="粘贴 HTML 代码..."></textarea></div>
-<div><label style="font-weight:600;margin-bottom:4px">输出结果</label><div class="output" id="output">结果将显示在这里...</div></div>
-</div>
-</div>
-</div>
-<footer class="footer"><p>Web工具箱 © 2024</p></footer>
-<script src="../../assets/js/common.js"></script>
-<script>
-function getIndent(){
-const v=document.getElementById('indentSize').value;
-return v==='tab'?'\t':' '.repeat(parseInt(v));
-}
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
 
-const VOID_TAGS=new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
-const INLINE_TAGS=new Set(['a','abbr','b','bdo','br','cite','code','dfn','em','i','img','input','kbd','label','map','object','output','q','samp','select','small','span','strong','sub','sup','textarea','time','var']);
-const NO_INDENT_CONTENT=new Set(['pre','textarea','script','style']);
-const BLOCK_TAGS=new Set(['html','body','div','p','ul','ol','li','table','thead','tbody','tfoot','tr','td','th','form','fieldset','nav','header','footer','main','section','article','aside','h1','h2','h3','h4','h5','h6','dl','dt','dd','blockquote','figure','figcaption']);
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / HTML格式化工具
+      </div>
+      <h1>🌐 HTML格式化/压缩工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">HTML代码格式化、压缩、语法高亮显示</p>
+    </div>
 
-function tokenize(html){
-const tokens=[];
-const re=/(<!\-\-[\s\S]*?\-\->)|(<!\[CDATA\[[\s\S]*?\]\]>)|(<!DOCTYPE[^>]*>)|(<\/?\w[\s\S]*?>)/gi;
-let lastIndex=0;
-let m;
-while((m=re.exec(html))!==null){
-if(m.index>lastIndex)tokens.push({type:'text',value:html.slice(lastIndex,m.index)});
-if(m[1])tokens.push({type:'comment',value:m[1]});
-else if(m[2])tokens.push({type:'cdata',value:m[2]});
-else if(m[3])tokens.push({type:'doctype',value:m[3]});
-else tokens.push({type:'tag',value:m[4]});
-lastIndex=re.lastIndex;
-}
-if(lastIndex<html.length)tokens.push({type:'text',value:html.slice(lastIndex)});
-return tokens;
-}
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="btn btn-primary" id="formatBtn">✨ 格式化</button>
+      <button class="btn btn-secondary" id="compressBtn">📦 压缩</button>
+      <select class="form-select" id="indentSelect" style="width:auto;height:40px;font-size:13px;padding:8px 32px 8px 12px;">
+        <option value="2">2 空格</option>
+        <option value="4">4 空格</option>
+        <option value="tab">Tab</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" id="clearBtn">🗑️ 清空</button>
+    </div>
 
-function parseTag(tagStr){
-const m=tagStr.match(/^<\/?([a-zA-Z][a-zA-Z0-9]*)/);
-if(!m)return null;
-const name=m[1].toLowerCase();
-const isClosing=tagStr.startsWith('</');
-const isSelfClose=tagStr.endsWith('/>');
-return{name,isClosing,isSelfClose};
-}
+    <!-- 提示消息 -->
+    <div id="errorMessage" class="message message-error" style="display: none; margin-bottom: 16px;"></div>
+    <div id="successMessage" class="message message-success" style="display: none; margin-bottom: 16px;"></div>
 
-function beautify(){
-const html=document.getElementById('input').value;
-if(!html.trim()){showMessage('请输入HTML');return}
-const indent=getIndent();
-const tokens=tokenize(html);
-let result='',level=0;
+    <!-- 编辑器布局 -->
+    <div class="html-layout">
+      <!-- 输入 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">
+            📥 输入
+            <span class="badge badge-info" id="inputSize"></span>
+          </span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="pasteBtn">📋 粘贴</button>
+          </div>
+        </div>
+        <textarea class="code-area" id="htmlInput" placeholder="在此粘贴或输入 HTML 代码...&#10;&#10;例如：<div class=&quot;hello&quot;>World</div>"></textarea>
+      </div>
 
-for(let i=0;i<tokens.length;i++){
-const tk=tokens[i];
-if(tk.type==='comment'||tk.type==='cdata'||tk.type==='doctype'){
-result+=indent.repeat(level)+tk.value.trim()+'\n';
-continue;
-}
-if(tk.type==='text'){
-const text=tk.value.trim();
-if(!text)continue;
-// Check if inside pre/textarea etc
-result+=indent.repeat(level)+text+'\n';
-continue;
-}
-if(tk.type==='tag'){
-const info=parseTag(tk.value);
-if(!info){result+=indent.repeat(level)+tk.value+'\n';continue}
-// Closing tag: dedent first
-if(info.isClosing){
-level=Math.max(0,level-1);
-result+=indent.repeat(level)+tk.value+'\n';
-continue;
-}
-// Self-closing or void tag
-if(info.isSelfClose||VOID_TAGS.has(info.name)){
-result+=indent.repeat(level)+tk.value+'\n';
-continue;
-}
-// Opening tag
-result+=indent.repeat(level)+tk.value+'\n';
-level++;
-}
-}
-result=result.replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n');
-if(result.endsWith('\n\n'))result=result.slice(0,-1);
-document.getElementById('output').textContent=result;
-}
+      <!-- 输出 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">
+            📤 输出
+            <span class="badge badge-success" id="outputInfo" style="display:none;"></span>
+          </span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="copyBtn">📋 复制</button>
+          </div>
+        </div>
+        <div class="output-wrapper">
+          <div class="line-numbers" id="lineNumbers"></div>
+          <div class="output-area with-lines" id="htmlOutput"></div>
+        </div>
+        <div class="stats-bar" id="statsBar" style="display:none;">
+          <span>📊 行数: <strong id="statLines">0</strong></span>
+          <span>📏 字符: <strong id="statChars">0</strong></span>
+          <span>📦 大小: <strong id="statSize">0 B</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-function minify(){
-let html=document.getElementById('input').value;
-if(!html.trim()){showMessage('请输入HTML');return}
-// Remove comments
-html=html.replace(/<!\-\-[\s\S]*?\-\->/g,'');
-// Remove extra whitespace between tags
-html=html.replace(/>\s+</g,'><');
-// Collapse whitespace in text nodes
-html=html.replace(/\s{2,}/g,' ');
-// Remove whitespace at start/end of tags
-html=html.replace(/\s*\/>/g,'/>');
-html=html.trim();
-document.getElementById('output').textContent=html;
-}
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
 
-function copyOutput(){const t=document.getElementById('output').textContent;if(!t||t==='结果将显示在这里...')return;copyToClipboard(t);showMessage('已复制结果')}
-function clearAll(){document.getElementById('input').value='';document.getElementById('output').textContent='结果将显示在这里...'}
-</script>
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const htmlInput = document.getElementById('htmlInput');
+      const htmlOutput = document.getElementById('htmlOutput');
+      const lineNumbers = document.getElementById('lineNumbers');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      const indentSelect = document.getElementById('indentSelect');
+      const inputSize = document.getElementById('inputSize');
+      const outputInfo = document.getElementById('outputInfo');
+      const statsBar = document.getElementById('statsBar');
+
+      const VOID_TAGS = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+
+      function showMsg(el, type, text) {
+        el.textContent = `${type === 'error' ? '❌' : '✅'} ${text}`;
+        el.className = `message message-${type}`;
+        el.style.display = 'flex';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+
+      function updateLineNumbers(text) {
+        const count = text.split('\n').length;
+        const nums = [];
+        for (let i = 1; i <= count; i++) nums.push(i);
+        lineNumbers.textContent = nums.join('\n');
+      }
+
+      function updateStats(text) {
+        const lines = text.split('\n').length;
+        const chars = text.length;
+        const bytes = new Blob([text]).size;
+        document.getElementById('statLines').textContent = lines.toLocaleString();
+        document.getElementById('statChars').textContent = chars.toLocaleString();
+        document.getElementById('statSize').textContent = formatFileSize(bytes);
+        statsBar.style.display = 'flex';
+      }
+
+      function updateInputSize() {
+        const text = htmlInput.value;
+        if (!text) {
+          inputSize.style.display = 'none';
+          return;
+        }
+        const size = new Blob([text]).size;
+        inputSize.textContent = formatFileSize(size);
+        inputSize.style.display = 'inline';
+      }
+
+      // HTML 语法高亮
+      function highlightHTML(html) {
+        if (html.length > 500000) {
+          return escapeHtml(html);
+        }
+
+        var result = '';
+        var re = /(<!--[\s\S]*?-->)|(<!\[CDATA\[[\s\S]*?\]\]>)|(<!DOCTYPE[^>]*>)|(<\/?[a-zA-Z][\s\S]*?>)/gi;
+        var lastIndex = 0;
+        var m;
+
+        while ((m = re.exec(html)) !== null) {
+          // Text before match
+          if (m.index > lastIndex) {
+            result += escapeHtml(html.slice(lastIndex, m.index));
+          }
+
+          if (m[1]) {
+            // Comment
+            result += '<span class="html-comment">' + escapeHtml(m[1]) + '</span>';
+          } else if (m[2]) {
+            // CDATA
+            result += '<span class="html-comment">' + escapeHtml(m[2]) + '</span>';
+          } else if (m[3]) {
+            // DOCTYPE
+            result += '<span class="html-doctype">' + escapeHtml(m[3]) + '</span>';
+          } else if (m[4]) {
+            // Tag
+            result += highlightTag(m[4]);
+          }
+
+          lastIndex = re.lastIndex;
+        }
+
+        // Remaining text
+        if (lastIndex < html.length) {
+          result += escapeHtml(html.slice(lastIndex));
+        }
+
+        return result;
+      }
+
+      function highlightTag(tagStr) {
+        // Parse tag: <tagName attr="val" ...> or </tagName>
+        var s = '';
+        var isClosing = tagStr.startsWith('</');
+        var isSelfClose = tagStr.endsWith('/>');
+
+        // Extract tag name
+        var nameMatch = tagStr.match(/^<\/?([a-zA-Z][a-zA-Z0-9-]*)/);
+        if (!nameMatch) return escapeHtml(tagStr);
+
+        var tagName = nameMatch[1];
+        var offset = isClosing ? 2 : 1; // skip </ or <
+
+        s += '<span class="html-bracket">' + escapeHtml(tagStr.slice(0, offset)) + '</span>';
+        s += '<span class="html-tag">' + escapeHtml(tagName) + '</span>';
+
+        var rest = tagStr.slice(offset + tagName.length);
+
+        // Parse attributes in the rest
+        var attrRe = /\s+([a-zA-Z_:][a-zA-Z0-9_.:-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]*)))?/g;
+        var attrLastIndex = 0;
+        var am;
+
+        while ((am = attrRe.exec(rest)) !== null) {
+          // Whitespace before attribute
+          if (am.index > attrLastIndex) {
+            s += escapeHtml(rest.slice(attrLastIndex, am.index));
+          }
+
+          s += ' <span class="html-attr">' + escapeHtml(am[1]) + '</span>';
+          if (am[0].indexOf('=') !== -1) {
+            s += '<span class="html-bracket">=</span>';
+            var val = am[2] !== undefined ? am[2] : (am[3] !== undefined ? am[3] : am[4]);
+            var quote = am[2] !== undefined ? '"' : (am[3] !== undefined ? "'" : '');
+            s += '<span class="html-value">' + escapeHtml(quote + val + quote) + '</span>';
+          }
+
+          attrLastIndex = am.index + am[0].length;
+        }
+
+        // Remaining before >
+        if (attrLastIndex < rest.length) {
+          var remaining = rest.slice(attrLastIndex);
+          // Handle closing > or />
+          s += escapeHtml(remaining);
+        }
+
+        return s;
+      }
+
+      function setOutput(text, highlighted) {
+        if (highlighted) {
+          htmlOutput.innerHTML = highlighted;
+        } else {
+          htmlOutput.textContent = text;
+        }
+        updateLineNumbers(text);
+        updateStats(text);
+      }
+
+      // HTML Tokenizer
+      function tokenize(html) {
+        var tokens = [];
+        var re = /(<!--[\s\S]*?-->)|(<!\[CDATA\[[\s\S]*?\]\]>)|(<!DOCTYPE[^>]*>)|(<\/?\w[\s\S]*?>)/gi;
+        var lastIndex = 0;
+        var m;
+        while ((m = re.exec(html)) !== null) {
+          if (m.index > lastIndex) tokens.push({ type: 'text', value: html.slice(lastIndex, m.index) });
+          if (m[1]) tokens.push({ type: 'comment', value: m[1] });
+          else if (m[2]) tokens.push({ type: 'cdata', value: m[2] });
+          else if (m[3]) tokens.push({ type: 'doctype', value: m[3] });
+          else tokens.push({ type: 'tag', value: m[4] });
+          lastIndex = re.lastIndex;
+        }
+        if (lastIndex < html.length) tokens.push({ type: 'text', value: html.slice(lastIndex) });
+        return tokens;
+      }
+
+      function parseTag(tagStr) {
+        var m = tagStr.match(/^<\/?([a-zA-Z][a-zA-Z0-9]*)/);
+        if (!m) return null;
+        return {
+          name: m[1].toLowerCase(),
+          isClosing: tagStr.startsWith('</'),
+          isSelfClose: tagStr.endsWith('/>')
+        };
+      }
+
+      // HTML Beautifier
+      function beautifyHTML(html) {
+        var indent = indentSelect.value === 'tab' ? '\t' : ' '.repeat(parseInt(indentSelect.value));
+        var tokens = tokenize(html);
+        var result = '', level = 0;
+
+        for (var i = 0; i < tokens.length; i++) {
+          var tk = tokens[i];
+          if (tk.type === 'comment' || tk.type === 'cdata' || tk.type === 'doctype') {
+            result += indent.repeat(level) + tk.value.trim() + '\n';
+            continue;
+          }
+          if (tk.type === 'text') {
+            var text = tk.value.trim();
+            if (!text) continue;
+            result += indent.repeat(level) + text + '\n';
+            continue;
+          }
+          if (tk.type === 'tag') {
+            var info = parseTag(tk.value);
+            if (!info) { result += indent.repeat(level) + tk.value + '\n'; continue; }
+            if (info.isClosing) {
+              level = Math.max(0, level - 1);
+              result += indent.repeat(level) + tk.value + '\n';
+              continue;
+            }
+            if (info.isSelfClose || VOID_TAGS.has(info.name)) {
+              result += indent.repeat(level) + tk.value + '\n';
+              continue;
+            }
+            result += indent.repeat(level) + tk.value + '\n';
+            level++;
+          }
+        }
+        result = result.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n');
+        if (result.endsWith('\n\n')) result = result.slice(0, -1);
+        return result;
+      }
+
+      // HTML Minifier
+      function minifyHTML(html) {
+        html = html.replace(/<!--[\s\S]*?-->/g, '');
+        html = html.replace(/>\s+</g, '><');
+        html = html.replace(/\s{2,}/g, ' ');
+        html = html.replace(/\s*\/>/g, '/>');
+        return html.trim();
+      }
+
+      function formatHTML() {
+        var input = htmlInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入HTML代码');
+          return;
+        }
+        var formatted = beautifyHTML(input);
+        var highlighted = highlightHTML(formatted);
+        setOutput(formatted, highlighted);
+        outputInfo.textContent = '✅ 格式化成功';
+        outputInfo.className = 'badge badge-success';
+        outputInfo.style.display = 'inline';
+        showMsg(successMessage, 'success', 'HTML格式化成功');
+      }
+
+      function compressHTML() {
+        var input = htmlInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入HTML代码');
+          return;
+        }
+        var compressed = minifyHTML(input);
+        setOutput(compressed, null);
+        showMsg(successMessage, 'success', `HTML压缩成功 (${formatFileSize(compressed.length)})`);
+      }
+
+      // 事件绑定
+      document.getElementById('formatBtn').addEventListener('click', formatHTML);
+      document.getElementById('compressBtn').addEventListener('click', compressHTML);
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        htmlInput.value = '';
+        htmlOutput.innerHTML = '';
+        lineNumbers.textContent = '';
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+        statsBar.style.display = 'none';
+        outputInfo.style.display = 'none';
+        inputSize.style.display = 'none';
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        const text = htmlOutput.textContent;
+        if (!text) {
+          showMsg(errorMessage, 'error', '输出为空，无法复制');
+          return;
+        }
+        copyToClipboard(text);
+        showMsg(successMessage, 'success', '已复制到剪贴板');
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          htmlInput.value = text;
+          updateInputSize();
+          showMsg(successMessage, 'success', '已粘贴');
+        } catch (err) {
+          showMsg(errorMessage, 'error', '无法读取剪贴板内容');
+        }
+      });
+
+      // 快捷键
+      htmlInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          formatHTML();
+        }
+        // Tab 缩进
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = htmlInput.selectionStart;
+          const end = htmlInput.selectionEnd;
+          htmlInput.value = htmlInput.value.substring(0, start) + '  ' + htmlInput.value.substring(end);
+          htmlInput.selectionStart = htmlInput.selectionEnd = start + 2;
+        }
+      });
+
+      // 实时显示输入大小
+      htmlInput.addEventListener('input', updateInputSize);
+    })();
+  </script>
 </body>
 </html>

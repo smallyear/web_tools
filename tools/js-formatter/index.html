@@ -1,154 +1,674 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JavaScript格式化/压缩 - Web工具箱</title>
-<link rel="stylesheet" href="../../assets/css/style.css">
-<style>
-.io-row{display:flex;gap:12px;margin-bottom:12px}
-.io-row>div{flex:1;display:flex;flex-direction:column}
-.io-row textarea,.io-row .output{flex:1;min-height:300px;font-family:monospace;font-size:13px;padding:10px;border:1px solid #ddd;border-radius: 10px;resize:vertical}
-.io-row .output{background:#f9f9f9;overflow:auto;white-space:pre-wrap;word-break:break-all}
-.btn-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.btn{padding:8px 18px;border:none;border-radius: 10px;cursor:pointer;font-size:14px;font-weight:600}
-.btn-primary{background:#4a90d9;color:#fff}.btn-primary:hover{background:#357abd}
-.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
-.btn-secondary{background:#6c757d;color:#fff}
-select{padding:6px 10px;border:1px solid #ddd;border-radius: 10px;font-size:14px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius: 10px;z-index:9999;opacity:0;transition:opacity .3s}.toast.show{opacity:1}
-@media(max-width:768px){.io-row{flex-direction:column}.io-row textarea,.io-row .output{min-height:200px}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript格式化/压缩工具 - Web Tools</title>
+  <meta name="description" content="在线JavaScript格式化、压缩、语法高亮显示">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .js-layout {
+      display: grid;
+      gap: 24px;
+    }
+    @media (min-width: 768px) {
+      .js-layout { grid-template-columns: 1fr 1fr; }
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .editor-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .editor-title .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .badge-success { background: #e8f5e9; color: #2e7d32; }
+    .badge-error { background: #ffebee; color: #c62828; }
+    .badge-info { background: #e3f2fd; color: #1565c0; }
+    .editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .editor-actions .btn {
+      padding: 6px 12px;
+      height: 32px;
+      font-size: 12px;
+    }
+
+    .code-area {
+      width: 100%;
+      height: 500px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      resize: vertical;
+      tab-size: 2;
+      background: #fff;
+      color: #1e293b;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .code-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
+    }
+    .code-area::placeholder {
+      color: #94a3b8;
+    }
+
+    .output-area {
+      width: 100%;
+      height: 500px;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: auto;
+      background: #f8fafc;
+      white-space: pre;
+      word-wrap: normal;
+      overflow-wrap: normal;
+      tab-size: 2;
+      color: #1e293b;
+    }
+    .output-area:empty::before {
+      content: '格式化结果将在这里显示...';
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* JavaScript 语法高亮颜色 */
+    .js-keyword { color: #cf222e; font-weight: 500; }
+    .js-string { color: #0a3069; }
+    .js-number { color: #953800; }
+    .js-comment { color: #6e7781; font-style: italic; }
+    .js-boolean { color: #cf222e; font-weight: 600; }
+    .js-null { color: #cf222e; font-weight: 600; }
+    .js-function { color: #8250df; }
+    .js-operator { color: #6e7781; }
+
+    /* 行号 */
+    .output-wrapper {
+      position: relative;
+    }
+    .line-numbers {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      padding: 16px 8px 16px 0;
+      text-align: right;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94a3b8;
+      background: #f1f5f9;
+      border-right: 1px solid var(--border);
+      border-radius: 10px 0 0 10px;
+      overflow: hidden;
+      user-select: none;
+      white-space: pre;
+    }
+    .output-area.with-lines {
+      margin-left: 49px;
+      border-radius: 0 10px 10px 0;
+    }
+
+    /* 操作栏 */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .action-bar .spacer { flex: 1; }
+
+    /* 统计信息 */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .stats-bar span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 暗黑模式语法颜色 */
+    body.dark-mode .js-keyword { color: #ff7b72; }
+    body.dark-mode .js-string { color: #a5d6ff; }
+    body.dark-mode .js-number { color: #ffa657; }
+    body.dark-mode .js-comment { color: #8b949e; }
+    body.dark-mode .js-boolean { color: #ff7b72; }
+    body.dark-mode .js-null { color: #ff7b72; }
+    body.dark-mode .js-function { color: #d2a8ff; }
+    body.dark-mode .js-operator { color: #8b949e; }
+    body.dark-mode .output-area { background: #0d1117; color: #c9d1d9; }
+    body.dark-mode .line-numbers { background: #161b22; border-color: #30363d; color: #484f58; }
+  </style>
 </head>
 <body>
-<nav class="navbar"><div class="container"><a href="../../" class="logo">🛠️ Web工具箱</a></div></nav>
-<div class="container">
-<div class="breadcrumb"><a href="../../">首页</a> &gt; <span>JavaScript格式化/压缩</span></div>
-<div class="card tool-header"><h1>JavaScript格式化/压缩</h1><p>格式化美化或压缩JavaScript代码</p></div>
-<div class="card">
-<div class="btn-row">
-<button class="btn btn-primary" onclick="beautify()">✨ 格式化</button>
-<button class="btn btn-primary" onclick="minify()">📦 压缩</button>
-<select id="indentSize"><option value="2">2空格</option><option value="4">4空格</option><option value="tab">Tab</option></select>
-<button class="btn btn-success" onclick="copyOutput()">📋 复制结果</button>
-<button class="btn btn-secondary" onclick="clearAll()">清空</button>
-</div>
-<div class="io-row">
-<div><label style="font-weight:600;margin-bottom:4px">输入 JavaScript</label><textarea id="input" placeholder="粘贴 JavaScript 代码..."></textarea></div>
-<div><label style="font-weight:600;margin-bottom:4px">输出结果</label><div class="output" id="output">结果将显示在这里...</div></div>
-</div>
-</div>
-</div>
-<footer class="footer"><p>Web工具箱 © 2024</p></footer>
-<script src="../../assets/js/common.js"></script>
-<script>
-function getIndent(){
-const v=document.getElementById('indentSize').value;
-return v==='tab'?'\t':' '.repeat(parseInt(v));
-}
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="../../index.html" class="navbar-brand">🛠️ Web Tools</a>
+      <div class="navbar-links">
+        <a href="../../index.html" class="navbar-link">首页</a>
+      </div>
+    </div>
+  </nav>
 
-function beautify(){
-const code=document.getElementById('input').value;
-if(!code.trim()){showMessage('请输入代码');return}
-const indent=getIndent();
-let result='',level=0,inStr=false,strCh='',inLineComment=false,inBlockComment=false,prevCh='',i=0;
-const src=code;
-function ws(){return indent.repeat(level)}
-let lineStart=true;
-while(i<src.length){
-const ch=src[i],next=src[i+1];
-// Handle comments
-if(!inStr&&ch==='/'&&next==='/'){inLineComment=true;if(lineStart)result+=ws();result+=ch;i++;lineStart=false;continue}
-if(inLineComment){result+=ch;if(ch==='\n'){inLineComment=false;result+=ws().replace(/[^\n]/g,'');lineStart=true}i++;continue}
-if(!inStr&&ch==='/'&&next==='*'){inBlockComment=true;if(lineStart)result+=ws();result+='/*';i+=2;lineStart=false;continue}
-if(inBlockComment){result+=ch;if(ch==='*'&&next==='/'){result+='/';i+=2;inBlockComment=false}else i++;continue}
-// Handle strings
-if(!inStr&&(ch==='"'||ch==="'"||ch==='`')){
-inStr=true;strCh=ch;if(lineStart){result+=ws();lineStart=false}result+=ch;i++;continue}
-if(inStr){
-result+=ch;
-if(ch==='\\'){result+=src[i+1]||'';i+=2;continue}
-if(ch===strCh)inStr=false;
-i++;continue}
-// Whitespace
-if(ch==='\n'){lineStart=true;i++;continue}
-if(ch===' '||ch==='\t'){i++;continue}
-lineStart=false;
-// Opening braces
-if(ch==='{'||ch==='('||ch==='['){
-result+=ch;
-let nextNonSpace='';
-let j=i+1;while(j<src.length&&(src[j]===' '||src[j]==='\t'||src[j]==='\n'))j++;
-if(j<src.length)nextNonSpace=src[j];
-if(nextNonSpace!=='}'&&nextNonSpace!==')'&&nextNonSpace!==']'){
-result+='\n';level++;result+=ws();
-}
-i++;continue}
-// Closing braces
-if(ch==='}'||ch===')'||ch===']'){
-result+='\n';level=Math.max(0,level-1);result+=ws()+ch;
-let j=i+1;while(j<src.length&&(src[j]===' '||src[j]==='\t'))j++;
-if(j<src.length&&src[j]!==';'&&src[j]!==','&&src[j]!==')'&&src[j]!=='}'&&src[j]!==']'&&src[j]!=='\n'){
-result+='\n'+ws();
-}
-i++;continue}
-// Semicolons
-if(ch===';'){
-result+=';\n';
-let j=i+1;while(j<src.length&&(src[j]===' '||src[j]==='\t'))j++;
-if(j<src.length&&(src[j]==='}')){}else{result+=ws()}
-i++;continue}
-// Operators and punctuation with spaces
-if('+-*/%=<>!&|?:'.includes(ch)){
-let j=i;while(j<src.length&&'+-*/%=<>!&|?:'.includes(src[j]))j++;
-const op=src.slice(i,j);
-const needSpaceBefore=!('({[=;:,!&|?'.includes(prevCh)||prevCh==='');
-result+=(needSpaceBefore&&i>0?' ':'')+op+' ';
-prevCh=op;i=j;lineStart=false;continue}
-// Comma
-if(ch===','){result+=', ';i++;prevCh=',';continue}
-result+=ch;prevCh=ch;i++;
-}
-// Clean up extra blank lines
-result=result.replace(/\n{3,}/g,'\n\n').replace(/ +\n/g,'\n').trim()+'\n';
-document.getElementById('output').textContent=result;
-}
+  <div class="container">
+    <div class="tool-header">
+      <div class="breadcrumb">
+        <a href="../../index.html">首页</a> / JavaScript格式化工具
+      </div>
+      <h1>⚡ JavaScript格式化/压缩工具</h1>
+      <p style="color: var(--text-secondary); margin-top: 8px;">JavaScript代码格式化、压缩、语法高亮显示</p>
+    </div>
 
-function minify(){
-const code=document.getElementById('input').value;
-if(!code.trim()){showMessage('请输入代码');return}
-let result='',inStr=false,strCh='',i=0;
-const src=code;
-while(i<src.length){
-const ch=src[i],next=src[i+1];
-// Line comment
-if(!inStr&&ch==='/'&&next==='/'){while(i<src.length&&src[i]!=='\n')i++;continue}
-// Block comment
-if(!inStr&&ch==='/'&&next==='*'){i+=2;while(i<src.length-1&&!(src[i]==='*'&&src[i+1]==='/'))i++;i+=2;continue}
-// Strings
-if(!inStr&&(ch==='"'||ch==="'"||ch==='`')){
-inStr=true;strCh=ch;result+=ch;i++;continue}
-if(inStr){result+=ch;if(ch==='\\'){result+=src[i+1]||'';i+=2;continue}if(ch===strCh)inStr=false;i++;continue}
-// Newlines and whitespace
-if(ch==='\n'||ch==='\r'){i++;continue}
-if(ch===' '||ch==='\t'){
-let j=i;while(j<src.length&&(src[j]===' '||src[j]==='\t'))j++;
-const prev=result[result.length-1]||'';
-const nxt=src[j]||'';
-const needSpace=(
-(prev.match(/[a-zA-Z0-9_$]/)&&nxt.match(/[a-zA-Z0-9_$]/))||
-(prev==='/'&&nxt==='*')||
-(prev==='#'&&nxt==='!')
-);
-if(needSpace)result+=' ';
-i=j;continue}
-result+=ch;i++;
-}
-document.getElementById('output').textContent=result;
-}
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <button class="btn btn-primary" id="formatBtn">✨ 格式化</button>
+      <button class="btn btn-secondary" id="compressBtn">📦 压缩</button>
+      <select class="form-select" id="indentSelect" style="width:auto;height:40px;font-size:13px;padding:8px 32px 8px 12px;">
+        <option value="2">2 空格</option>
+        <option value="4">4 空格</option>
+        <option value="tab">Tab</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" id="clearBtn">🗑️ 清空</button>
+    </div>
 
-function copyOutput(){const t=document.getElementById('output').textContent;if(!t||t==='结果将显示在这里...')return;copyToClipboard(t);showMessage('已复制结果')}
-function clearAll(){document.getElementById('input').value='';document.getElementById('output').textContent='结果将显示在这里...'}
-</script>
+    <!-- 提示消息 -->
+    <div id="errorMessage" class="message message-error" style="display: none; margin-bottom: 16px;"></div>
+    <div id="successMessage" class="message message-success" style="display: none; margin-bottom: 16px;"></div>
+
+    <!-- 编辑器布局 -->
+    <div class="js-layout">
+      <!-- 输入 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">
+            📥 输入
+            <span class="badge badge-info" id="inputSize"></span>
+          </span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="pasteBtn">📋 粘贴</button>
+          </div>
+        </div>
+        <textarea class="code-area" id="jsInput" placeholder="在此粘贴或输入 JavaScript 代码...&#10;&#10;例如：function hello() { console.log('hi'); }"></textarea>
+      </div>
+
+      <!-- 输出 -->
+      <div class="card" style="padding-bottom: 0;">
+        <div class="editor-header">
+          <span class="editor-title">
+            📤 输出
+            <span class="badge badge-success" id="outputInfo" style="display:none;"></span>
+          </span>
+          <div class="editor-actions">
+            <button class="btn btn-secondary" id="copyBtn">📋 复制</button>
+          </div>
+        </div>
+        <div class="output-wrapper">
+          <div class="line-numbers" id="lineNumbers"></div>
+          <div class="output-area with-lines" id="jsOutput"></div>
+        </div>
+        <div class="stats-bar" id="statsBar" style="display:none;">
+          <span>📊 行数: <strong id="statLines">0</strong></span>
+          <span>📏 字符: <strong id="statChars">0</strong></span>
+          <span>📦 大小: <strong id="statSize">0 B</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 Web Tools - 纯前端工具，数据安全</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function() {
+      const jsInput = document.getElementById('jsInput');
+      const jsOutput = document.getElementById('jsOutput');
+      const lineNumbers = document.getElementById('lineNumbers');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      const indentSelect = document.getElementById('indentSelect');
+      const inputSize = document.getElementById('inputSize');
+      const outputInfo = document.getElementById('outputInfo');
+      const statsBar = document.getElementById('statsBar');
+
+      const JS_KEYWORDS = new Set(['const','let','var','function','return','if','else','for','while','class','import','export','from','async','await','new','this','typeof','instanceof','try','catch','finally','throw','switch','case','break','default','continue','do','in','of','void','delete','yield','with','extends','super','static','get','set']);
+
+      function showMsg(el, type, text) {
+        el.textContent = `${type === 'error' ? '❌' : '✅'} ${text}`;
+        el.className = `message message-${type}`;
+        el.style.display = 'flex';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+
+      function updateLineNumbers(text) {
+        const count = text.split('\n').length;
+        const nums = [];
+        for (let i = 1; i <= count; i++) nums.push(i);
+        lineNumbers.textContent = nums.join('\n');
+      }
+
+      function updateStats(text) {
+        const lines = text.split('\n').length;
+        const chars = text.length;
+        const bytes = new Blob([text]).size;
+        document.getElementById('statLines').textContent = lines.toLocaleString();
+        document.getElementById('statChars').textContent = chars.toLocaleString();
+        document.getElementById('statSize').textContent = formatFileSize(bytes);
+        statsBar.style.display = 'flex';
+      }
+
+      function updateInputSize() {
+        const text = jsInput.value;
+        if (!text) {
+          inputSize.style.display = 'none';
+          return;
+        }
+        const size = new Blob([text]).size;
+        inputSize.textContent = formatFileSize(size);
+        inputSize.style.display = 'inline';
+      }
+
+      // JavaScript 语法高亮（基于 token 方式）
+      function highlightJS(js) {
+        if (js.length > 500000) {
+          return escapeHtml(js);
+        }
+
+        var result = '';
+        var i = 0;
+        var len = js.length;
+
+        while (i < len) {
+          var ch = js[i];
+          var next = i + 1 < len ? js[i + 1] : '';
+
+          // Line comment
+          if (ch === '/' && next === '/') {
+            var start = i;
+            while (i < len && js[i] !== '\n') i++;
+            result += '<span class="js-comment">' + escapeHtml(js.slice(start, i)) + '</span>';
+            continue;
+          }
+
+          // Block comment
+          if (ch === '/' && next === '*') {
+            var start = i;
+            i += 2;
+            while (i < len - 1 && !(js[i] === '*' && js[i + 1] === '/')) i++;
+            if (i < len - 1) i += 2;
+            result += '<span class="js-comment">' + escapeHtml(js.slice(start, i)) + '</span>';
+            continue;
+          }
+
+          // Template literal
+          if (ch === '`') {
+            var start = i;
+            i++;
+            while (i < len && js[i] !== '`') {
+              if (js[i] === '\\') i++;
+              i++;
+            }
+            if (i < len) i++;
+            result += '<span class="js-string">' + escapeHtml(js.slice(start, i)) + '</span>';
+            continue;
+          }
+
+          // String (double or single quote)
+          if (ch === '"' || ch === "'") {
+            var quote = ch;
+            var start = i;
+            i++;
+            while (i < len && js[i] !== quote) {
+              if (js[i] === '\\') i++;
+              i++;
+            }
+            if (i < len) i++;
+            result += '<span class="js-string">' + escapeHtml(js.slice(start, i)) + '</span>';
+            continue;
+          }
+
+          // Number
+          if (ch >= '0' && ch <= '9') {
+            var start = i;
+            if (ch === '0' && i + 1 < len && (js[i + 1] === 'x' || js[i + 1] === 'X')) {
+              i += 2;
+              while (i < len && /[0-9a-fA-F]/.test(js[i])) i++;
+            } else {
+              while (i < len && /[0-9.]/.test(js[i])) i++;
+              if (i < len && (js[i] === 'e' || js[i] === 'E')) {
+                i++;
+                if (i < len && (js[i] === '+' || js[i] === '-')) i++;
+                while (i < len && /[0-9]/.test(js[i])) i++;
+              }
+            }
+            result += '<span class="js-number">' + escapeHtml(js.slice(start, i)) + '</span>';
+            continue;
+          }
+
+          // Identifiers and keywords
+          if (/[a-zA-Z_$]/.test(ch)) {
+            var start = i;
+            while (i < len && /[a-zA-Z0-9_$]/.test(js[i])) i++;
+            var word = js.slice(start, i);
+
+            // Check if followed by ( to detect function calls
+            var nextNonSpace = '';
+            var j = i;
+            while (j < len && js[j] === ' ') j++;
+            if (j < len) nextNonSpace = js[j];
+
+            if (word === 'true' || word === 'false') {
+              result += '<span class="js-boolean">' + escapeHtml(word) + '</span>';
+            } else if (word === 'null' || word === 'undefined' || word === 'NaN' || word === 'Infinity') {
+              result += '<span class="js-null">' + escapeHtml(word) + '</span>';
+            } else if (JS_KEYWORDS.has(word)) {
+              result += '<span class="js-keyword">' + escapeHtml(word) + '</span>';
+            } else if (nextNonSpace === '(') {
+              result += '<span class="js-function">' + escapeHtml(word) + '</span>';
+            } else {
+              result += escapeHtml(word);
+            }
+            continue;
+          }
+
+          // Operators
+          if ('+-*/%=<>!&|?:^~'.indexOf(ch) !== -1) {
+            var start = i;
+            while (i < len && '+-*/%=<>!&|?:^~'.indexOf(js[i]) !== -1) i++;
+            result += '<span class="js-operator">' + escapeHtml(js.slice(start, i)) + '</span>';
+            continue;
+          }
+
+          // Everything else (braces, parens, brackets, commas, semicolons, dots, whitespace)
+          result += escapeHtml(ch);
+          i++;
+        }
+
+        return result;
+      }
+
+      function setOutput(text, highlighted) {
+        if (highlighted) {
+          jsOutput.innerHTML = highlighted;
+        } else {
+          jsOutput.textContent = text;
+        }
+        updateLineNumbers(text);
+        updateStats(text);
+      }
+
+      // JS Beautifier
+      function beautifyJS(code) {
+        var indent = indentSelect.value === 'tab' ? '\t' : ' '.repeat(parseInt(indentSelect.value));
+        var result = '', level = 0, inStr = false, strCh = '';
+        var inLineComment = false, inBlockComment = false;
+        var lineStart = true;
+        var i = 0;
+
+        function ws() { return indent.repeat(level); }
+
+        while (i < code.length) {
+          var ch = code[i], next = code[i + 1];
+
+          if (!inStr && ch === '/' && next === '/') {
+            inLineComment = true;
+            if (lineStart) result += ws();
+            result += ch; i++; lineStart = false;
+            continue;
+          }
+          if (inLineComment) {
+            result += ch;
+            if (ch === '\n') { inLineComment = false; lineStart = true; }
+            i++; continue;
+          }
+          if (!inStr && ch === '/' && next === '*') {
+            inBlockComment = true;
+            if (lineStart) result += ws();
+            result += '/*'; i += 2; lineStart = false;
+            continue;
+          }
+          if (inBlockComment) {
+            result += ch;
+            if (ch === '*' && next === '/') { result += '/'; i += 2; inBlockComment = false; }
+            else i++;
+            continue;
+          }
+
+          if (!inStr && (ch === '"' || ch === "'" || ch === '`')) {
+            inStr = true; strCh = ch;
+            if (lineStart) { result += ws(); lineStart = false; }
+            result += ch; i++; continue;
+          }
+          if (inStr) {
+            result += ch;
+            if (ch === '\\') { result += code[i + 1] || ''; i += 2; continue; }
+            if (ch === strCh) inStr = false;
+            i++; continue;
+          }
+
+          if (ch === '\n') { lineStart = true; i++; continue; }
+          if (ch === ' ' || ch === '\t') { i++; continue; }
+          lineStart = false;
+
+          if (ch === '{' || ch === '(' || ch === '[') {
+            result += ch;
+            var j = i + 1;
+            while (j < code.length && (code[j] === ' ' || code[j] === '\t' || code[j] === '\n')) j++;
+            var nextNonSpace = j < code.length ? code[j] : '';
+            if (nextNonSpace !== '}' && nextNonSpace !== ')' && nextNonSpace !== ']') {
+              result += '\n'; level++; result += ws();
+            }
+            i++; continue;
+          }
+
+          if (ch === '}' || ch === ')' || ch === ']') {
+            result += '\n'; level = Math.max(0, level - 1); result += ws() + ch;
+            var j = i + 1;
+            while (j < code.length && (code[j] === ' ' || code[j] === '\t')) j++;
+            if (j < code.length && code[j] !== ';' && code[j] !== ',' && code[j] !== ')' && code[j] !== '}' && code[j] !== ']' && code[j] !== '\n') {
+              result += '\n' + ws();
+            }
+            i++; continue;
+          }
+
+          if (ch === ';') {
+            result += ';\n';
+            var j = i + 1;
+            while (j < code.length && (code[j] === ' ' || code[j] === '\t')) j++;
+            if (j < code.length && code[j] === '}') {} else { result += ws(); }
+            i++; continue;
+          }
+
+          if ('+-*/%=<>!&|?:'.indexOf(ch) !== -1) {
+            var j = i;
+            while (j < code.length && '+-*/%=<>!&|?:'.indexOf(code[j]) !== -1) j++;
+            var op = code.slice(i, j);
+            var prev = result[result.length - 1] || '';
+            var needSpaceBefore = !('({[=;:,!&|?'.indexOf(prev) !== -1 || prev === '');
+            result += (needSpaceBefore && i > 0 ? ' ' : '') + op + ' ';
+            i = j; lineStart = false; continue;
+          }
+
+          if (ch === ',') { result += ', '; i++; continue; }
+          result += ch; i++;
+        }
+
+        result = result.replace(/\n{3,}/g, '\n\n').replace(/ +\n/g, '\n').trim() + '\n';
+        return result;
+      }
+
+      // JS Minifier
+      function minifyJS(code) {
+        var result = '', inStr = false, strCh = '', i = 0;
+        while (i < code.length) {
+          var ch = code[i], next = code[i + 1];
+          if (!inStr && ch === '/' && next === '/') {
+            while (i < code.length && code[i] !== '\n') i++;
+            continue;
+          }
+          if (!inStr && ch === '/' && next === '*') {
+            i += 2;
+            while (i < code.length - 1 && !(code[i] === '*' && code[i + 1] === '/')) i++;
+            i += 2; continue;
+          }
+          if (!inStr && (ch === '"' || ch === "'" || ch === '`')) {
+            inStr = true; strCh = ch; result += ch; i++; continue;
+          }
+          if (inStr) {
+            result += ch;
+            if (ch === '\\') { result += code[i + 1] || ''; i += 2; continue; }
+            if (ch === strCh) inStr = false;
+            i++; continue;
+          }
+          if (ch === '\n' || ch === '\r') { i++; continue; }
+          if (ch === ' ' || ch === '\t') {
+            var j = i;
+            while (j < code.length && (code[j] === ' ' || code[j] === '\t')) j++;
+            var prev = result[result.length - 1] || '';
+            var nxt = code[j] || '';
+            var needSpace = (
+              (prev.match(/[a-zA-Z0-9_$]/) && nxt.match(/[a-zA-Z0-9_$]/)) ||
+              (prev === '/' && nxt === '*') ||
+              (prev === '#' && nxt === '!')
+            );
+            if (needSpace) result += ' ';
+            i = j; continue;
+          }
+          result += ch; i++;
+        }
+        return result;
+      }
+
+      function formatJS() {
+        var input = jsInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入JavaScript代码');
+          return;
+        }
+        var formatted = beautifyJS(input);
+        var highlighted = highlightJS(formatted);
+        setOutput(formatted, highlighted);
+        outputInfo.textContent = '✅ 格式化成功';
+        outputInfo.className = 'badge badge-success';
+        outputInfo.style.display = 'inline';
+        showMsg(successMessage, 'success', 'JavaScript格式化成功');
+      }
+
+      function compressJS() {
+        var input = jsInput.value.trim();
+        if (!input) {
+          showMsg(errorMessage, 'error', '请先输入JavaScript代码');
+          return;
+        }
+        var compressed = minifyJS(input);
+        setOutput(compressed, null);
+        showMsg(successMessage, 'success', `JavaScript压缩成功 (${formatFileSize(compressed.length)})`);
+      }
+
+      // 事件绑定
+      document.getElementById('formatBtn').addEventListener('click', formatJS);
+      document.getElementById('compressBtn').addEventListener('click', compressJS);
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        jsInput.value = '';
+        jsOutput.innerHTML = '';
+        lineNumbers.textContent = '';
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+        statsBar.style.display = 'none';
+        outputInfo.style.display = 'none';
+        inputSize.style.display = 'none';
+      });
+
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        const text = jsOutput.textContent;
+        if (!text) {
+          showMsg(errorMessage, 'error', '输出为空，无法复制');
+          return;
+        }
+        copyToClipboard(text);
+        showMsg(successMessage, 'success', '已复制到剪贴板');
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          jsInput.value = text;
+          updateInputSize();
+          showMsg(successMessage, 'success', '已粘贴');
+        } catch (err) {
+          showMsg(errorMessage, 'error', '无法读取剪贴板内容');
+        }
+      });
+
+      // 快捷键
+      jsInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          formatJS();
+        }
+        // Tab 缩进
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = jsInput.selectionStart;
+          const end = jsInput.selectionEnd;
+          jsInput.value = jsInput.value.substring(0, start) + '  ' + jsInput.value.substring(end);
+          jsInput.selectionStart = jsInput.selectionEnd = start + 2;
+        }
+      });
+
+      // 实时显示输入大小
+      jsInput.addEventListener('input', updateInputSize);
+    })();
+  </script>
 </body>
 </html>
