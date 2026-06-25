@@ -111,6 +111,41 @@
     }
     .no-results .no-results-icon { font-size: 48px; margin-bottom: 12px; }
     .no-results.visible { display: block; }
+
+    /* 快捷入口标签 */
+    .quick-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .quick-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 13px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .quick-tag:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .quick-tag .tag-icon { font-size: 16px; }
+    .quick-tag .tag-count {
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg);
+      padding: 1px 6px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -136,6 +171,21 @@
     </div>
 
     <div class="container">
+      <!-- 最近使用 + 常用工具 -->
+      <div id="quickAccess" style="display:none; margin-bottom: 24px;">
+        <div id="recentSection" style="display:none; margin-bottom: 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <span style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">⏱ 最近使用</span>
+            <button class="btn btn-secondary" id="clearHistoryBtn" style="padding:4px 10px;font-size:11px;height:24px;">清空</button>
+          </div>
+          <div class="quick-tags" id="recentTags"></div>
+        </div>
+        <div id="frequentSection" style="display:none; margin-bottom: 16px;">
+          <span style="font-size: 14px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 10px;">🔥 常用工具</span>
+          <div class="quick-tags" id="frequentTags"></div>
+        </div>
+      </div>
+
       <div class="category-bar" id="categoryBar"></div>
 
       <div class="tools-header">
@@ -1074,6 +1124,73 @@
 
       filter();
       initDarkMode();
+
+      // === 最近使用 + 常用工具 ===
+      (function() {
+        // 从卡片构建工具信息映射
+        var toolMap = {};
+        cards.forEach(function(card) {
+          var href = card.getAttribute('href');
+          var icon = card.querySelector('.tool-icon');
+          var name = card.querySelector('.tool-name');
+          if (href && name) {
+            // 从 href 提取工具目录名
+            var match = href.match(/tools\/([^/]+)\//);
+            if (match) {
+              toolMap[match[1]] = {
+                icon: icon ? icon.textContent : '🔧',
+                name: name.textContent.trim(),
+                url: href
+              };
+            }
+          }
+        });
+
+        // 渲染标签
+        function renderTags(container, tools, showCount) {
+          container.innerHTML = '';
+          tools.forEach(function(t) {
+            var info = toolMap[t.name];
+            if (!info) return;
+            var a = document.createElement('a');
+            a.href = info.url;
+            a.className = 'quick-tag';
+            var html = '<span class="tag-icon">' + info.icon + '</span>' + info.name;
+            if (showCount && t.count) {
+              html += '<span class="tag-count">' + t.count + '次</span>';
+            }
+            a.innerHTML = html;
+            container.appendChild(a);
+          });
+        }
+
+        // 最近使用
+        var recent = getRecentTools().slice(0, 8);
+        if (recent.length > 0) {
+          document.getElementById('recentSection').style.display = '';
+          renderTags(document.getElementById('recentTags'), recent, false);
+          document.getElementById('quickAccess').style.display = '';
+        }
+
+        // 常用工具 (按访问次数排序，取前 8)
+        var topTools = getTopTools(8);
+        if (topTools.length > 0) {
+          document.getElementById('frequentSection').style.display = '';
+          renderTags(document.getElementById('frequentTags'), topTools, true);
+          document.getElementById('quickAccess').style.display = '';
+        }
+
+        // 清空历史
+        document.getElementById('clearHistoryBtn').addEventListener('click', function() {
+          clearRecentTools();
+          document.getElementById('recentSection').style.display = 'none';
+          // 如果常用也没了，隐藏整个区域
+          if (getTopTools(1).length === 0) {
+            document.getElementById('quickAccess').style.display = 'none';
+          }
+          showMessage('success', '已清空使用记录');
+        });
+      })();
     })();
   </script>
 </body>

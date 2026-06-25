@@ -184,6 +184,28 @@ function getTotalVisits() {
   return Object.values(stats).reduce((sum, count) => sum + count, 0);
 }
 
+// 最近使用记录
+function trackRecent(toolName) {
+  if (!toolName) return;
+  const key = 'toolRecent';
+  let recent = JSON.parse(localStorage.getItem(key) || '[]');
+  // 移除已有的同名记录
+  recent = recent.filter(r => r.name !== toolName);
+  // 添加到最前面
+  recent.unshift({ name: toolName, time: Date.now() });
+  // 最多保留 20 条
+  if (recent.length > 20) recent = recent.slice(0, 20);
+  localStorage.setItem(key, JSON.stringify(recent));
+}
+
+function getRecentTools() {
+  return JSON.parse(localStorage.getItem('toolRecent') || '[]');
+}
+
+function clearRecentTools() {
+  localStorage.removeItem('toolRecent');
+}
+
 // 自动初始化：暗黑模式 + 访问统计（每个页面加载时自动执行）
 (function autoInit() {
   // 暗黑模式
@@ -192,5 +214,6 @@ function getTotalVisits() {
   const match = window.location.pathname.match(/\/tools\/([^/]+)\//);
   if (match) {
     trackVisit(match[1]);
+    trackRecent(match[1]);
   }
 })();
