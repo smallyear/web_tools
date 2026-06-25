@@ -158,13 +158,19 @@
       padding: 16px;
       border-radius: 10px;
       overflow-x: auto;
+      overflow-y: visible;
       margin-bottom: 16px;
+      white-space: pre;
+      word-wrap: normal;
     }
 
     #preview pre code {
       background: none;
       color: inherit;
       padding: 0;
+      white-space: pre;
+      word-wrap: normal;
+      display: block;
     }
 
     #preview blockquote {
@@ -326,10 +332,7 @@ console.log('代码块');
       if (typeof marked !== 'undefined') {
         marked.setOptions({
           breaks: true,
-          gfm: true,
-          highlight: function(code, lang) {
-            return '<pre><code>' + code + '</code></pre>';
-          }
+          gfm: true
         });
       }
 
