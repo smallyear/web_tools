@@ -314,7 +314,7 @@ console.log('代码块');
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
   <script src="../../assets/js/common.js"></script>
   <script>
     (function() {
@@ -336,6 +336,23 @@ console.log('代码块');
         });
       }
 
+      // 简单 Markdown fallback（CDN 加载失败时使用）
+      function simpleMarkdown(text) {
+        return text
+          .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+          .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+          .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/`(.+?)`/g, '<code>$1</code>')
+          .replace(/^- (.+)$/gm, '<li>$1</li>')
+          .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+          .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+          .replace(/\n\n/g, '</p><p>')
+          .replace(/^(?!<)(.+)$/gm, '<p>$1</p>')
+          .replace(/<p><\/p>/g, '');
+      }
+
       // 更新预览
       function updatePreview() {
         const raw = markdownInput.value;
@@ -349,7 +366,8 @@ console.log('代码块');
         if (typeof marked !== 'undefined') {
           preview.innerHTML = marked.parse(raw);
         } else {
-          preview.innerHTML = '<p style="color: var(--error;">Markdown 解析库加载失败，请检查网络连接。</p>';
+          // CDN 加载失败，使用简单 fallback
+          preview.innerHTML = simpleMarkdown(raw);
         }
       }
 
